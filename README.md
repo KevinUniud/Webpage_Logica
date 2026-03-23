@@ -84,5 +84,5 @@ docker compose logs -f
 docker compose down
 
 docker rm -f webpage-logica
-docker run -d --name webpage-logica -p 8080:80 --restart unless-stopped webpage-logica
+docker run -d --name webpage-logica -p 12345:80 --restart unless-stopped webpage-logica
 ```
