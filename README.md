@@ -67,19 +67,6 @@ Questo progetto contiene una piccola web app didattica in HTML/CSS/JavaScript pe
 - Focus visibile tastiera e supporto preferenze utente (`prefers-reduced-motion`, `prefers-contrast`).
 - Dialog impostazioni con focus trap ed escape.
 
-## API esterne usate dal quiz
+## Implementazioni
 
-In `scripts/quiz.js` sono configurati endpoint HTTP per la generazione dinamica esercizi.
-
-- Equivalenza formule.
-- Valore di verita.
-
-Se gli endpoint non sono raggiungibili, il quiz mostra un messaggio di errore in UI.
-
-## Avvio locale
-
-Non e richiesto build tool.
-
-1. Apri `index.html` in un browser.
-2. Vai su lezioni o esercizi.
-3. Per il quiz dinamico assicurati che le API remote siano disponibili.
+Aggiungere report dei test
