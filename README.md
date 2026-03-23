@@ -67,6 +67,19 @@ Questo progetto contiene una piccola web app didattica in HTML/CSS/JavaScript pe
 - Focus visibile tastiera e supporto preferenze utente (`prefers-reduced-motion`, `prefers-contrast`).
 - Dialog impostazioni con focus trap ed escape.
 
-## Implementazioni
+## Implementazioni future
 
 Aggiungere report dei test
+
+### Comandi utili
+
+```bash
+# Avvio
+docker compose up -d --build
+
+# Log del container
+docker compose logs -f
+
+# Stop
+docker compose down
+```

@@ -1,0 +1,9 @@
+services:
+  webpage-logica:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: webpage-logica
+    ports:
+      - "8080:80"
+    restart: unless-stopped
