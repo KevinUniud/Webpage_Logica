@@ -67,6 +67,12 @@ Questo progetto contiene una piccola web app didattica in HTML/CSS/JavaScript pe
 - Focus visibile tastiera e supporto preferenze utente (`prefers-reduced-motion`, `prefers-contrast`).
 - Dialog impostazioni con focus trap ed escape.
 
+## API esercizi
+
+- Il frontend usa endpoint relativi (`/api/...`) per evitare problemi CORS/mixed content nel browser.
+- Nel container Docker, Nginx fa da reverse proxy verso `http://158.110.146.199:5000`.
+- Opzionale: e possibile impostare `window.LOGIC_API_BASE_URL` prima di caricare `scripts/quiz.js` per usare una base API diversa.
+
 ## Implementazioni future
 
 Aggiungere report dei test
