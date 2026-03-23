@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Introduzione</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="../styles/base.css">
+        <link rel="stylesheet" href="../styles/components.css">
+        <link rel="stylesheet" href="../styles/quiz.css">
+        <link rel="stylesheet" href="../styles/themes.css">
+    </head>
+    <body>
+        <script src="../scripts/lesson-checks.js"></script>
+        <script src="../scripts/settings.js"></script>
+        <script src="../scripts/lesson-radio.js"></script>
+        <script src="../scripts/app.js"></script>
+
+        <details class="lesson-switcher">
+            <summary class="btn-wide lesson-switcher-symbol" title="Navigazione lezioni">☰</summary>
+            <div class="lesson-switcher-list">
+                <a class="lesson-switcher-link" href="../index.html">Index</a>
+                <a class="lesson-switcher-link" href="lezione-1.html">Lezione 1</a>
+                <a class="lesson-switcher-link" href="lezione-2.html">Lezione 2</a>
+                <a class="lesson-switcher-link" href="lezione-3.html">Lezione 3</a>
+                <a class="lesson-switcher-link" href="lezione-4.html">Lezione 4</a>
+                <a class="lesson-switcher-link" href="lezione-5.html">Lezione 5</a>
+                <a class="lesson-switcher-link" href="lezione-6.html">Lezione 6</a>
+            </div>
+        </details>
+
+        <h1>Introduzione</h1>
+        <section id="lezione-5">
+            <h2>Lezione 5: Se e solo se</h2>
+
+            <p>
+                Introduciamo ora il se e solo se (<code>↔</code>): questo operatore logico deriva
+                dall'unione di due implicazioni (<code>→</code>) in versi opposti.
+            </p>
+
+            <div class="table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>P → Q</th>
+                            <th>Q → P</th>
+                            <th>P ↔ Q</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>T</td>
+                            <td>T</td>
+                            <td>T</td>
+                        </tr>
+                        <tr>
+                            <td>T</td>
+                            <td>F</td>
+                            <td>F</td>
+                        </tr>
+                        <tr>
+                            <td>F</td>
+                            <td>T</td>
+                            <td>F</td>
+                        </tr>
+                        <tr>
+                            <td>F</td>
+                            <td>F</td>
+                            <td>T</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p>
+                Dalla tabella risulta che entrambe le affermazioni devono avere lo stesso valore
+                di verita affinche la relazione sia vera.
+            </p>
+
+            <div class="important">
+                <p>
+                    <b>Importante</b><br>
+                    Una deduzione immediata e che i due predicati sono interscambiabili:
+                    <br>
+                    <code>P ↔ Q</code> e identico a <code>Q ↔ P</code>.
+                </p>
+            </div>
+        </section>
+
+        <div class="rounded-box lesson-nav">
+            <a class="lesson-nav-btn" href="lezione-4.html">Previous</a>
+            <a class="lesson-nav-btn" href="lezione-6.html">Next</a>
+        </div>
+    </body>
+</html>

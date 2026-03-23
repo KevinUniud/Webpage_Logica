@@ -1,0 +1,342 @@
+/* Trigger, overlay e struttura del pannello impostazioni. */
+.settings-trigger {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 1200;
+    min-width: 56px;
+    font-size: 28px;
+    line-height: 1;
+    margin: 0;
+    text-align: center;
+}
+
+.settings-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--overlay-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1300;
+    padding: 16px;
+}
+
+.settings-overlay[hidden] {
+    display: none;
+}
+
+.settings-modal {
+    width: min(560px, 100%);
+    background: var(--box-bg);
+    border: 2px solid var(--box-border);
+    border-radius: 10px;
+    padding: 16px;
+}
+
+.settings-modal h2 {
+    margin: 0 0 12px;
+    text-align: center;
+}
+
+.settings-modal h3 {
+    margin: 10px 0 8px;
+    font-size: 1em;
+    color: var(--muted);
+}
+
+.settings-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.settings-input {
+    width: 90px;
+    border-radius: 8px;
+    padding: 6px 8px;
+    text-align: right;
+}
+
+.settings-input-wide {
+    width: 180px;
+    text-align: left;
+}
+
+.settings-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+/* Azioni e controlli della home/index. */
+.index-actions {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+}
+
+.index-actions .btn-wide {
+    text-align: center;
+    text-decoration: none;
+}
+
+/* Blocchi contenuto e controlli comuni degli esercizi. */
+.rounded-box {
+    padding: 20px;
+    background-color: var(--box-bg);
+    border: 2px solid var(--box-border);
+    border-radius: 8px;
+}
+
+.expressionInput{
+    border: 2px solid var(--input-border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    background: transparent;
+    color: var(--fg);
+    font-size: 1em;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.controls{
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.btn-wide{
+    border-radius: 10px;
+    padding: 8px 14px;
+    border: 1px solid var(--border-soft);
+    background: transparent;
+    color: var(--fg);
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.btn-wide:hover,
+.deleteBtn:hover{
+    background: var(--hover-bg);
+}
+
+.deleteBtn{
+    border-radius: 10px;
+    padding: 8px 12px;
+    border: 1px solid var(--border-soft);
+    background: transparent;
+    color: var(--fg);
+    font-size: 1em;
+    cursor: pointer;
+}
+
+button[onclick="check()"],
+button[onclick^="checkArray"]{
+    display: block;
+    margin: 10px auto;
+    border-radius: 10px;
+    padding: 8px 14px;
+    border: 1px solid var(--border-soft);
+    background: transparent;
+    color: var(--fg);
+    font-size: 1em;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+button[onclick="check()"]:hover,
+button[onclick^="checkArray"]:hover{
+    background: var(--hover-bg);
+}
+
+/* Tabelle didattiche standard e varianti compatte. */
+.table{
+    max-width: 900px;
+    width: 100%;
+    overflow: auto;
+    margin: 0 0 1rem 0;
+}
+
+.table table{
+    border-collapse: collapse;
+    width: 100%;
+    max-width: none;
+    border: 2px solid var(--box-border);
+}
+
+.table th,
+.table td{
+    border: 1px solid var(--box-border);
+    padding: 8px 10px;
+    text-align: center;
+}
+
+table thead th,
+.table thead th,
+.table th{
+    text-transform: none;
+}
+
+.table_inv{
+    width: 100%;
+    max-width: 400px;
+    overflow: auto;
+    margin: 0 auto 1rem;
+}
+
+.table_inv table{
+    border-collapse: collapse;
+    width: 100%;
+    border: none;
+}
+
+.table_inv th,
+.table_inv td{
+    border: none;
+    padding: 10px;
+    text-align: center;
+}
+
+/* Evidenziatore contenuti importanti. */
+.important{
+    background-color: var(--important-bg);
+    border: none;
+    border-radius: 8px;
+    padding: 18px;
+    color: var(--fg);
+}
+
+body::after{
+    content: "";
+    display: block;
+    height: 16vh;
+    width: 100%;
+    pointer-events: none;
+}
+
+#quizReviewNav[hidden] {
+    display: none !important;
+}
+
+/* Navigazione tra lezioni (precedente/successivo e switcher laterale). */
+.lesson-nav {
+    position: relative;
+    display: block;
+    min-height: 56px;
+    padding: 8px 0;
+    border: none;
+    background: transparent;
+}
+
+.lesson-nav-btn {
+    min-width: 120px;
+    text-align: center;
+    padding: 8px 14px;
+    color: var(--fg);
+    text-decoration: none;
+    font-weight: 600;
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    background: transparent;
+    display: inline-block;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.lesson-nav-btn:first-child {
+    left: 25%;
+}
+
+.lesson-nav-btn:last-child {
+    left: 75%;
+}
+
+.lesson-nav-btn:hover {
+    background: var(--hover-bg);
+}
+
+.lesson-nav-btn.is-disabled {
+    opacity: 0.45;
+    pointer-events: none;
+}
+
+.lesson-switcher {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 1000;
+}
+
+.lesson-switcher summary {
+    list-style: none;
+    display: inline-block;
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 1002;
+}
+
+.lesson-switcher summary::-webkit-details-marker {
+    display: none;
+}
+
+.lesson-switcher-symbol {
+    font-size: 28px;
+    line-height: 1;
+    margin: 0;
+    min-width: 56px;
+    text-align: center;
+}
+
+.lesson-switcher-list {
+    display: none;
+}
+
+.lesson-switcher[open] {
+    top: 0;
+    left: 0;
+    width: 240px;
+    height: calc(100vh - 16px);
+    background: var(--box-bg);
+    border: 1px solid var(--box-border);
+    border-radius: 10px;
+    padding: 64px 16px 12px;
+    overflow: auto;
+}
+
+.lesson-switcher[open] .lesson-switcher-list {
+    display: flex;
+    gap: 8px;
+    flex-direction: column;
+    margin-top: 10px;
+}
+
+.lesson-switcher-link {
+    display: inline-block;
+    padding: 8px 12px;
+    border-radius: 10px;
+    text-decoration: none;
+    color: var(--fg);
+    background: transparent;
+    border: 1px solid var(--border-soft);
+}
+
+.lesson-switcher-link:hover {
+    background: var(--hover-bg);
+}
+
+/* Adattamenti layout su viewport piccoli. */
+@media (max-width: 700px) {
+    html,
+    body {
+        padding: 3vh 6%;
+    }
+}

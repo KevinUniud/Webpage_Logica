@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Introduzione</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="../styles/base.css">
+        <link rel="stylesheet" href="../styles/components.css">
+        <link rel="stylesheet" href="../styles/quiz.css">
+        <link rel="stylesheet" href="../styles/themes.css">
+    </head>
+    <body>
+        <script src="../scripts/lesson-checks.js"></script>
+        <script src="../scripts/settings.js"></script>
+        <script src="../scripts/lesson-radio.js"></script>
+        <script src="../scripts/app.js"></script>
+
+        <details class="lesson-switcher">
+            <summary class="btn-wide lesson-switcher-symbol" title="Navigazione lezioni">☰</summary>
+            <div class="lesson-switcher-list">
+                <a class="lesson-switcher-link" href="../index.html">Index</a>
+                <a class="lesson-switcher-link" href="lezione-1.html">Lezione 1</a>
+                <a class="lesson-switcher-link" href="lezione-2.html">Lezione 2</a>
+                <a class="lesson-switcher-link" href="lezione-3.html">Lezione 3</a>
+                <a class="lesson-switcher-link" href="lezione-4.html">Lezione 4</a>
+                <a class="lesson-switcher-link" href="lezione-5.html">Lezione 5</a>
+                <a class="lesson-switcher-link" href="lezione-6.html">Lezione 6</a>
+            </div>
+        </details>
+
+        <h1>Introduzione</h1>
+        <section id="lezione-1">
+            <h2>Lezione 1: Proposizioni e linguaggio</h2>
+
+        <p>
+            P e Q sono le nostre affermazioni: possono essere vere o false. Ci aiuteranno ad astrarci dalla lingua e a concentrarci sul fatto che una frase sia corretta o meno.<br>
+            <br>
+            Per rendere la cosa più chiara, si prenda la frase "Anna corre e Anna salta", possiamo dedurre che Anna stia facendo entrambe le cose contemporaneamente.<br>
+            <br>
+            Si prenda ora "Anna corre" come la nostra affermazione P e "Anna salta" come la nostra affermazione Q, deriviamo che se P vero e Q vero allora la congiunzione di P e Q "Anna sta saltando e correndo" è vera.<br>
+            <br>
+            Per esercizio si provi a riscrivere le frasi sostituendo le parole con quelle tra la lista fornita:<br>
+            
+            <div class="table_inv">
+            <table>
+                <thead>
+                    <tr>
+                        <td>Allora</td> 
+                        <td>e</td> 
+                        <td>o</td>
+                        <td>non</td>
+                        <td>P</td>
+                        <td>Q</td>
+                        <td>V</td>
+                    </tr>
+                </thead>
+            </table>
+            </div>
+            Nota: qui la lettera V indica una proposizione (per esempio "nuota"), non il valore di verita "vero".<br>
+        </p>
+
+        <div class="rounded-box"> <!-- Array 1. -->
+        <form id="quiz1_1">
+            <p>
+                1. Se (Anna) salta allora non corre <br><br>
+                Salta = P<br>
+                Corre = Q
+            </p> <!-- P allora non Q -->
+            <label>
+                <input class="expressionInput" name="expr" type="text" readonly aria-label="Expression builder" placeholder="Clicca i bottoni per costruire l'espressione">
+
+                <div class="controls" aria-hidden="false">
+                    <button data-val=" allora " class="btn-wide">allora</button>
+                    <button data-val=" e " class="btn-wide">e</button>
+                    <button data-val=" o " class="btn-wide">o</button>
+                    <button data-val=" non " class="btn-wide">non</button>
+                    <button data-val=" P " class="btn-wide">P</button>
+                    <button data-val=" Q " class="btn-wide">Q</button>
+                    <button class="deleteBtn" title="Delete">Delete</button>
+                </div>
+            </label>
+        </form><br>
+        <button onclick="checkArray(1)">Controlla risposta</button>
+        </div><br>
+
+        <div class="rounded-box"> <!-- Array 2. -->
+        <form id="quiz1_1">
+            <p>
+                2. Se (Anna) non nuota allora salta<br><br>
+                Nuota = V<br>
+                Salta = P
+            </p> <!-- non V allora P -->
+            <label>
+                <input class="expressionInput" name="expr" type="text" readonly aria-label="Expression builder" placeholder="Clicca i bottoni per costruire l'espressione">
+
+                <div class="controls" aria-hidden="false">
+                    <button data-val=" allora " class="btn-wide">allora</button>
+                    <button data-val=" e " class="btn-wide">e</button>
+                    <button data-val=" o " class="btn-wide">o</button>
+                    <button data-val=" non " class="btn-wide">non</button>
+                    <button data-val=" P " class="btn-wide">P</button>
+                    <button data-val=" V " class="btn-wide">V</button>
+                    <button class="deleteBtn" title="Delete">Delete</button>
+                </div>
+            </label>
+        </form><br>
+        <button onclick="checkArray(2)">Controlla risposta</button>
+        </div><br>
+
+        <p>
+            Si riesce a vedere anche un'altra cosa molto interessante su questa frase, si possono unire le due frasi in una singola mantenendo lo stesso significato, "Se Anna non nuota allora salta, e se salta allora non corre", cioè abbiamo appena dedotto: (non V -> P) e (P -> non Q).<br>
+            <br>
+            Iniziamo così a porci domande più complesse, se io so che Anna sta saltando e sta correndo la frase che abbiamo appena dedotto è vera o falsa? Naturalmente è falsa, Anna non può fare entrambe le cose contemporaneamente.<br>
+            <br>
+            Chiediamoci un'altra cosa, se io so che è vero che Anna sta saltando e non sta correndo cos'altro posso dire? Che Anna per forza non sta nuotando, altrimenti non potrebbe star saltando e ciò renderebbe falsa tutta la nostra frase.<br>
+            <br>
+            Abbiamo visto come possiamo fare delle deduzioni sul fatto che Anna stia nuotando, correndo o saltando ma questo non è ristretto a lei, invece di Anna prendiamo Bob:<br>
+            <ol>
+                <li>Se Bob gioca allora non scrive</li>
+                <li>Se Bob non legge allora scrive</li>
+            </ol>
+            Otteniamo le stesse implicazioni precedenti: (non V -> P) e (P -> non Q). Questa struttura non dipende dal nome o dall'azione e ci permette di non confonderci a causa della lingua.<br>
+            <br>
+            Si prenda la frase "Se Carlo salta allora Carlo nuota", questa frase in italiano può sembrare strana ma riscrivendola si perde questa confusione:<br>
+            <ul>
+                <li>P allora Q</li>
+            </ul>
+        </p>
+
+        </section>
+
+        <div class="rounded-box lesson-nav">
+            <span class="lesson-nav-btn is-disabled">Previous</span>
+            <a class="lesson-nav-btn" href="lezione-2.html">Next</a>
+        </div>
+
+    </body>
+</html>
