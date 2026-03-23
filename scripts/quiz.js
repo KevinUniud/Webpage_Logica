@@ -79,8 +79,8 @@ function initEquivalentQuiz(rootId) {
     let quantifierNegationTarget = 0;
     let quantifierNegationUsed = 0;
 
-    const equivalenceApiUrl = 'http://127.0.0.1:5000/api/generator/build-exercise-from-depth';
-    const truthApiUrl = 'http://127.0.0.1:5000/api/generator/build-truth-value-options-question';
+    const equivalenceApiUrl = 'http://158.110.146.199:5000/api/generator/build-exercise-from-depth';
+    const truthApiUrl = 'http://158.110.146.199:5000/api/generator/build-truth-value-options-question';
     const variableSets = [
         ['p', 'q', 'r'],
         ['p', 'q', 'r', 's']
