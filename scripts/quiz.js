@@ -92,6 +92,7 @@ function initEquivalentQuiz(rootId) {
 
     const equivalenceApiUrl = buildApiUrl('generator/build-exercise-from-depth');
     const truthApiUrl = buildApiUrl('generator/build-truth-value-options-question');
+
     const variableSets = [
         ['p', 'q', 'r'],
         ['p', 'q', 'r', 's']
