@@ -104,12 +104,52 @@
     box-sizing: border-box;
 }
 
+.lesson-expression-input-wrap {
+    position: relative;
+    width: 100%;
+}
+
 .controls{
     display: flex;
     gap: 8px;
     justify-content: center;
     flex-wrap: wrap;
     margin-top: 10px;
+}
+
+.expressionInput.is-correct {
+    border-color: var(--success-border);
+    background: var(--success-bg);
+}
+
+.expressionInput.is-wrong {
+    border-color: var(--error-border);
+    background: var(--error-bg);
+}
+
+.lesson-expression-input-wrap.has-feedback .expressionInput {
+    padding-right: 130px;
+}
+
+.lesson-expression-status {
+    position: absolute;
+    top: 50%;
+    right: 14px;
+    transform: translateY(-50%);
+    margin: 0;
+    font-weight: 700;
+    font-size: 0.86em;
+    text-align: right;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.lesson-expression-input-wrap .quiz-status.lesson-expression-status {
+    top: 50%;
+    transform: translateY(-50%);
+    margin: 0;
+    min-height: 0;
+    line-height: 1;
 }
 
 .btn-wide{
@@ -154,6 +194,13 @@ button[onclick^="checkArray"]{
 button[onclick="check()"]:hover,
 button[onclick^="checkArray"]:hover{
     background: var(--hover-bg);
+}
+
+button[onclick="check()"]:disabled,
+button[onclick^="checkArray"]:disabled{
+    opacity: 0.55;
+    cursor: not-allowed;
+    background: transparent;
 }
 
 /* Tabelle didattiche standard e varianti compatte. */

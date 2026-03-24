@@ -8,6 +8,12 @@
  * @post Lo stato visivo viene aggiornato, il feedback testuale e mostrato e il form viene bloccato.
  */
 function check() {
+    function lockCheckButton(button) {
+        if (!button) return;
+        button.disabled = true;
+        button.setAttribute('aria-disabled', 'true');
+    }
+
     function setStatus(targetButton, message, kind) {
         if (!targetButton) return;
         const box = targetButton.closest('.rounded-box') || targetButton.parentElement;
@@ -91,6 +97,7 @@ function check() {
     if (val === 'T') {
         markRadioOption(selected, 'is-correct');
         lockRadioScope(scope);
+        lockCheckButton(caller);
         setStatus(caller, '✓ Corretto.', 'correct');
         return;
     }
@@ -101,6 +108,7 @@ function check() {
             markRadioOption(correct, 'is-correct-answer');
         }
         lockRadioScope(scope);
+        lockCheckButton(caller);
         setStatus(caller, '✕ Errato.', 'wrong');
         return;
     }
@@ -114,6 +122,84 @@ function check() {
  * @post Mostra alert di esito e restituisce true/false in base alla correttezza.
  */
 function checkArray(n) {
+    function lockCheckButton(button) {
+        if (!button) return;
+        button.disabled = true;
+        button.setAttribute('aria-disabled', 'true');
+    }
+
+    function getExpressionScope(input) {
+        if (!input) return null;
+        const label = input.closest('label');
+        if (label) return label;
+        return input.parentElement;
+    }
+
+    function getInputWrap(input) {
+        if (!input) return null;
+        let wrap = input.closest('.lesson-expression-input-wrap');
+        if (wrap) return wrap;
+
+        wrap = document.createElement('div');
+        wrap.className = 'lesson-expression-input-wrap';
+        input.insertAdjacentElement('beforebegin', wrap);
+        wrap.appendChild(input);
+        return wrap;
+    }
+
+    function clearExpressionFeedback(input) {
+        if (!input) return;
+        const inputWrap = getInputWrap(input);
+        input.classList.remove('is-correct');
+        input.classList.remove('is-wrong');
+
+        if (inputWrap) {
+            inputWrap.classList.remove('has-feedback');
+        }
+
+        const status = inputWrap && inputWrap.querySelector('.quiz-status.lesson-expression-status');
+        if (status) {
+            status.classList.remove('is-correct');
+            status.classList.remove('is-wrong');
+            status.textContent = '';
+        }
+    }
+
+    function setExpressionFeedback(input, message, kind) {
+        if (!input) return;
+        clearExpressionFeedback(input);
+
+        const inputWrap = getInputWrap(input);
+        if (!inputWrap) return;
+
+        if (kind === 'correct') {
+            input.classList.add('is-correct');
+        }
+        if (kind === 'wrong') {
+            input.classList.add('is-wrong');
+        }
+        inputWrap.classList.add('has-feedback');
+
+        let status = inputWrap.querySelector('.quiz-status.lesson-expression-status');
+        if (!status) {
+            status = document.createElement('p');
+            status.className = 'quiz-status lesson-expression-status';
+            status.setAttribute('aria-live', 'polite');
+            inputWrap.insertAdjacentElement('beforeend', status);
+        }
+
+        status.classList.remove('is-correct');
+        status.classList.remove('is-wrong');
+        if (kind === 'correct') status.classList.add('is-correct');
+        if (kind === 'wrong') status.classList.add('is-wrong');
+        status.textContent = message || '';
+    }
+
+    // Espone il reset globale per pulire lo stato mentre si compone la formula.
+    window.clearExpressionFeedback = clearExpressionFeedback;
+
+    const caller = document.activeElement;
+
     const answers = {
         1: [['P', 'allora', 'non', 'Q']],
         2: [['non', 'V', 'allora', 'P']],
@@ -128,14 +214,14 @@ function checkArray(n) {
 
     const possibles = answers[n];
     if (!possibles) {
-        alert('Numero domanda non valido');
+        console.warn('Numero domanda non valido:', n);
         return false;
     }
 
     const inputs = document.querySelectorAll('.expressionInput');
     const input = inputs[n - 1];
     if (!input) {
-        alert('Input non trovato');
+        console.warn('Input esercizio non trovato per indice:', n);
         return false;
     }
 
@@ -158,11 +244,13 @@ function checkArray(n) {
             }
         }
         if (ok) {
-            alert('Corretto');
+            setExpressionFeedback(input, '✓ Corretto', 'correct');
+            lockCheckButton(caller);
             return true;
         }
     }
 
-    alert('Sbagliato');
+    setExpressionFeedback(input, '✕ Errato', 'wrong');
+    lockCheckButton(caller);
     return false;
 }

@@ -56,6 +56,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const input = label.querySelector('.expressionInput');
             if (!input) return;
             input.value = (input.value || '') + (btn.dataset.val || '');
+            if (typeof window.clearExpressionFeedback === 'function') {
+                window.clearExpressionFeedback(input);
+            }
             return;
         }
 
@@ -67,7 +70,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const label = controls.closest('label');
             if (!label) return;
             const input = label.querySelector('.expressionInput');
-            if (input) input.value = '';
+            if (input) {
+                input.value = '';
+                if (typeof window.clearExpressionFeedback === 'function') {
+                    window.clearExpressionFeedback(input);
+                }
+            }
+
+            const box = del.closest('.rounded-box');
+            const checkBtn = box && box.querySelector('button[onclick^="checkArray"]');
+            if (checkBtn) {
+                checkBtn.disabled = false;
+                checkBtn.removeAttribute('aria-disabled');
+            }
         }
     });
 });
