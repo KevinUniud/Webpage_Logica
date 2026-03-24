@@ -144,7 +144,7 @@ function initGlobalSettings() {
 
     const title = document.createElement('h2');
     title.id = 'settings-title';
-    title.textContent = 'Impostazioni';
+    title.textContent = 'Impostazioni globali';
 
     const description = document.createElement('p');
     description.id = 'settings-description';
@@ -152,10 +152,10 @@ function initGlobalSettings() {
     description.textContent = 'Pannello impostazioni globali del sito e opzioni di accessibilita.';
 
     const globalTitle = document.createElement('h3');
-    globalTitle.textContent = 'GLOBALE:';
+    globalTitle.textContent = 'Opzioni globali:';
 
     const exercisesTitle = document.createElement('h3');
-    exercisesTitle.textContent = 'ESERCIZI:';
+    exercisesTitle.textContent = 'Opzioni esercitazione:';
 
     const fontRow = document.createElement('div');
     fontRow.className = 'settings-row';

@@ -1,0 +1,30 @@
+Nome file: Report nº #
+
+Initial Data:
+	Scuola:
+	Tempo inizio esercitazione:
+	Tempo totale:
+	Totale domande:
+	Totale domande corrette:
+	Totale domande errate:
+
+Domande:
+	Domanda nº #
+		Tipologia:
+		Tempo impiegato per rispondere:
+		Opzioni attive:
+		Risposta è corretta:
+		Domanda:
+		Risposte:
+		Riposta utente:
+		Riposta corretta:
+	Domanda nº #+1
+	    ...
+	...
+    
+Feedback:
+	Feedback lezioni:
+	Feedback esercitazione:
+	Feedback opzioni:
+	Feedback difficoltà test:
+

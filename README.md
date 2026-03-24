@@ -67,19 +67,28 @@ Questo progetto contiene una piccola web app didattica in HTML/CSS/JavaScript pe
 - Focus visibile tastiera e supporto preferenze utente (`prefers-reduced-motion`, `prefers-contrast`).
 - Dialog impostazioni con focus trap ed escape.
 
-## API esterne usate dal quiz
+## API esercizi
 
-In `scripts/quiz.js` sono configurati endpoint HTTP per la generazione dinamica esercizi.
+- Il frontend usa endpoint relativi (`/api/...`) per evitare problemi CORS/mixed content nel browser.
+- Nel container Docker, Nginx fa da reverse proxy verso `http://158.110.146.199:5000`.
+- Opzionale: e possibile impostare `window.LOGIC_API_BASE_URL` prima di caricare `scripts/quiz.js` per usare una base API diversa.
 
-- Equivalenza formule.
-- Valore di verita.
+## Implementazioni future
 
-Se gli endpoint non sono raggiungibili, il quiz mostra un messaggio di errore in UI.
+Aggiungere report dei test
 
-## Avvio locale
+### Comandi utili
 
-Non e richiesto build tool.
+```bash
+# Avvio
+docker compose up -d --build
 
-1. Apri `index.html` in un browser.
-2. Vai su lezioni o esercizi.
-3. Per il quiz dinamico assicurati che le API remote siano disponibili.
+# Log del container
+docker compose logs -f
+
+# Stop
+docker compose down
+
+docker rm -f webpage-logica
+docker run -d --name webpage-logica -p 12345:80 --restart unless-stopped webpage-logica
+```
