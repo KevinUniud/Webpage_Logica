@@ -147,6 +147,30 @@ function checkArray(n) {
         return wrap;
     }
 
+    function lockExpressionBuilder(input) {
+        const scope = getExpressionScope(input);
+        if (!scope) return;
+        scope.dataset.expressionLocked = 'true';
+
+        const buttons = scope.querySelectorAll('.btn-wide');
+        buttons.forEach(function(button) {
+            button.disabled = true;
+            button.setAttribute('aria-disabled', 'true');
+        });
+    }
+
+    function unlockExpressionBuilder(input) {
+        const scope = getExpressionScope(input);
+        if (!scope) return;
+        delete scope.dataset.expressionLocked;
+
+        const buttons = scope.querySelectorAll('.btn-wide');
+        buttons.forEach(function(button) {
+            button.disabled = false;
+            button.removeAttribute('aria-disabled');
+        });
+    }
+
     function clearExpressionFeedback(input) {
         if (!input) return;
         const inputWrap = getInputWrap(input);
@@ -197,6 +221,7 @@ function checkArray(n) {
 
     // Espone il reset globale per pulire lo stato mentre si compone la formula.
     window.clearExpressionFeedback = clearExpressionFeedback;
+    window.unlockExpressionBuilder = unlockExpressionBuilder;
 
     const caller = document.activeElement;
 
@@ -245,12 +270,14 @@ function checkArray(n) {
         }
         if (ok) {
             setExpressionFeedback(input, '✓ Corretto', 'correct');
+            lockExpressionBuilder(input);
             lockCheckButton(caller);
             return true;
         }
     }
 
     setExpressionFeedback(input, '✕ Errato', 'wrong');
+    lockExpressionBuilder(input);
     lockCheckButton(caller);
     return false;
 }

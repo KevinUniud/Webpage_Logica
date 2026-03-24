@@ -53,6 +53,7 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             const label = controls.closest('label');
             if (!label) return;
+            if (label.dataset.expressionLocked === 'true') return;
             const input = label.querySelector('.expressionInput');
             if (!input) return;
             input.value = (input.value || '') + (btn.dataset.val || '');
@@ -74,6 +75,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 input.value = '';
                 if (typeof window.clearExpressionFeedback === 'function') {
                     window.clearExpressionFeedback(input);
+                }
+                if (typeof window.unlockExpressionBuilder === 'function') {
+                    window.unlockExpressionBuilder(input);
                 }
             }
 
