@@ -59,21 +59,10 @@
 
 /* Variante radio nelle lezioni (input nascosto + bullet custom). */
 .lesson-radio-option {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 10px;
     user-select: none;
-    width: fit-content;
-    max-width: 100%;
-    margin-bottom: 6px;
-}
-
-.lesson-radio-option:hover {
-    background: transparent;
-}
-
-.lesson-radio-option.is-selected {
-    border: 1px solid transparent;
 }
 
 .lesson-radio-input {
@@ -97,72 +86,8 @@
 }
 
 .lesson-radio-text {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
     font-size: 1em;
     line-height: 1.4;
-    border: 2px solid transparent;
-    border-radius: 8px;
-    padding: 8px 12px;
-}
-
-.lesson-radio-option.is-final {
-    border-width: 1px;
-    background: transparent;
-    padding-right: 0;
-}
-
-.lesson-radio-option.is-selected.is-correct {
-    border-color: transparent;
-    background: transparent;
-}
-
-.lesson-radio-option.is-selected.is-wrong {
-    border-color: transparent;
-    background: transparent;
-}
-
-.lesson-radio-option.is-correct-answer {
-    border-color: transparent;
-    background: transparent;
-}
-
-.lesson-radio-option.is-selected.is-correct .lesson-radio-text {
-    border-color: var(--success-border);
-    background: var(--success-bg);
-}
-
-.lesson-radio-option.is-selected.is-wrong .lesson-radio-text {
-    border-color: var(--error-border);
-    background: var(--error-bg);
-}
-
-.lesson-radio-option.is-correct-answer .lesson-radio-text {
-    border-color: var(--warning-border);
-    background: var(--warning-bg);
-}
-
-.lesson-radio-option.is-selected.is-correct::after,
-.lesson-radio-option.is-selected.is-wrong::after,
-.lesson-radio-option.is-correct-answer::after {
-    content: none;
-}
-
-.lesson-radio-option.is-selected.is-correct .lesson-radio-text::after {
-    content: '✓ Giusto';
-    font-size: 0.82em;
-    font-weight: 700;
-    color: var(--success-text);
-    margin-left: 8px;
-}
-
-.lesson-radio-option.is-selected.is-wrong .lesson-radio-text::after {
-    content: '✕ Sbagliato';
-    font-size: 0.82em;
-    font-weight: 700;
-    color: var(--error-text);
-    margin-left: 8px;
 }
 
 /* Stati finali risposta: corretto/errato/corretta. */
