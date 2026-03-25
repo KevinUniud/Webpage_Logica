@@ -28,3 +28,57 @@ Feedback:
 	Feedback opzioni:
 	Feedback difficoltà test:
 
+{
+  "Initial Data": {
+    "Scuola": "Liceo Scientifico Copernico",
+    "Tempo inizio esercitazione": "2026-03-25T09:00:00",
+    "Tempo totale": "00:15:00",
+    "Totale domande": 3,
+    "Totale domande corrette": 2,
+    "Totale domande errate": 1
+  },
+  "Domande": [
+    {
+      "Domanda nº 1": {
+        "Tipologia": "equivalenza",
+        "Tempo impiegato per rispondere": "00:02:30",
+        "Opzioni attive": "A, B, C, D",
+        "Risposta è corretta": "Sì",
+        "Domanda": "Quale formula è equivalente a \"p ∧ q\"?",
+        "Risposte": "A) p ∧ q, B) p ∨ q, C) ¬p ∨ q, D) p → q",
+        "Riposta utente": "A) p ∧ q",
+        "Riposta corretta": "A) p ∧ q"
+      }
+    },
+    {
+      "Domanda nº 2": {
+        "Tipologia": "valore di verità",
+        "Tempo impiegato per rispondere": "00:03:10",
+        "Opzioni attive": "A, B, C, D",
+        "Risposta è corretta": "No",
+        "Domanda": "Quale formula è falsa tra le giuste?",
+        "Risposte": "A) p, B) q, C) ¬p, D) p ∨ q",
+        "Riposta utente": "C) ¬p",
+        "Riposta corretta": "B) q"
+      }
+    },
+    {
+      "Domanda nº 3": {
+        "Tipologia": "negazione quantificatore",
+        "Tempo impiegato per rispondere": "00:01:45",
+        "Opzioni attive": "A, B, C, D",
+        "Risposta è corretta": "Sì",
+        "Domanda": "Qual è la negazione di \"∀x (p(x))\"?",
+        "Risposte": "A) ∃x ¬p(x), B) ∀x ¬p(x), C) ¬∀x p(x), D) ∃x p(x)",
+        "Riposta utente": "A) ∃x ¬p(x)",
+        "Riposta corretta": "A) ∃x ¬p(x)"
+      }
+    }
+  ],
+  "Feedback": {
+    "Feedback lezioni": "",
+    "Feedback esercitazione": "",
+    "Feedback opzioni": "",
+    "Feedback difficoltà test": ""
+  }
+}

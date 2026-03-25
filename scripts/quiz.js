@@ -1384,6 +1384,65 @@ function initEquivalentQuiz(rootId) {
     }
 
     // Render del riepilogo finale con risultati e risposte date.
+    function autoExportQuizResults() {
+        const logDataMode = localStorage.getItem('logDataMode') || 'none';
+        if (logDataMode === 'none') return;
+        let scuola = localStorage.getItem('logDataSchool') || '';
+        if (!scuola) {
+            scuola = prompt('Inserisci il nome della scuola:', '');
+            if (!scuola) return;
+            localStorage.setItem('logDataSchool', scuola);
+        }
+        const now = new Date();
+        const report = {
+            "Initial Data": {
+                "Scuola": scuola,
+                "Tempo inizio esercitazione": '',
+                "Tempo totale": '',
+                "Totale domande": reviewResults.length,
+                "Totale domande corrette": reviewResults.filter(e => e.isCorrect).length,
+                "Totale domande errate": reviewResults.filter(e => !e.isCorrect).length
+            },
+            "Domande": reviewResults.map(function(entry, idx) {
+                return {
+                    ["Domanda nº " + (idx+1)]: {
+                        "Tipologia": '',
+                        "Tempo impiegato per rispondere": '',
+                        "Opzioni attive": '',
+                        "Risposta è corretta": entry.isCorrect ? 'Sì' : 'No',
+                        "Domanda": entry.question,
+                        "Risposte": '',
+                        "Riposta utente": entry.selectedAnswer,
+                        "Riposta corretta": entry.correctAnswer
+                    }
+                };
+            }),
+            "Feedback": {
+                "Feedback lezioni": '',
+                "Feedback esercitazione": '',
+                "Feedback opzioni": '',
+                "Feedback difficoltà test": ''
+            }
+        };
+        const json = JSON.stringify(report, null, 2);
+        // Salva in locale (in futuro: invio API)
+        const blob = new Blob([json], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "Report_Quiz.json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        // FUTURO: invio API
+        // fetch('https://api.example.com/quiz-report', {
+        //     method: 'POST',
+        //     headers: { 'Content-Type': 'application/json' },
+        //     body: json
+        // });
+    }
+
     function renderReview() {
         if (!reviewListEl) return;
         reviewListEl.innerHTML = '';
@@ -1440,6 +1499,8 @@ function initEquivalentQuiz(rootId) {
             item.appendChild(correctLine);
             reviewListEl.appendChild(item);
         });
+        // Esportazione automatica se richiesto
+        setTimeout(autoExportQuizResults, 500);
     }
 
     // Passa alla schermata finale e interrompe il timer.
