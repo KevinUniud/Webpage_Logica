@@ -1501,13 +1501,9 @@ function initEquivalentQuiz(rootId) {
         });
         // Invio automatico dati revisione direttamente all'endpoint esterno
         setTimeout(function() {
-            let scuola = localStorage.getItem('logDataSchool') || '';
-            if (!scuola) {
-                scuola = prompt('Inserisci il nome della scuola:', '');
-                if (!scuola) return;
-                localStorage.setItem('logDataSchool', scuola);
-            }
-            const now = new Date();
+            const logDataMode = localStorage.getItem('logDataMode') || 'none';
+            if (logDataMode === 'none') return;
+            const scuola = localStorage.getItem('logDataSchool') || '';
             const report = {
                 "Initial Data": {
                     "Scuola": scuola,
@@ -1538,7 +1534,7 @@ function initEquivalentQuiz(rootId) {
                     "Feedback difficoltà test": ''
                 }
             };
-            fetch('http://127.0.0.1:5555/upload-json', {
+            fetch('/api/revisione', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(report)
