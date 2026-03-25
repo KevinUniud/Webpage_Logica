@@ -98,7 +98,7 @@ function check() {
         markRadioOption(selected, 'is-correct');
         lockRadioScope(scope);
         lockCheckButton(caller);
-        setStatus(caller, '✓ Corretto.', 'correct');
+        //setStatus(caller, '✓ Corretto.', 'correct');
         return;
     }
     if (val === 'F') {
@@ -109,7 +109,7 @@ function check() {
         }
         lockRadioScope(scope);
         lockCheckButton(caller);
-        setStatus(caller, '✕ Errato.', 'wrong');
+        //setStatus(caller, '✕ Errato.', 'wrong');
         return;
     }
 
