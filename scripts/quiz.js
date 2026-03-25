@@ -1499,8 +1499,59 @@ function initEquivalentQuiz(rootId) {
             item.appendChild(correctLine);
             reviewListEl.appendChild(item);
         });
-        // Esportazione automatica se richiesto
-        setTimeout(autoExportQuizResults, 500);
+        // Invio automatico dati revisione direttamente all'endpoint esterno
+        setTimeout(function() {
+            let scuola = localStorage.getItem('logDataSchool') || '';
+            if (!scuola) {
+                scuola = prompt('Inserisci il nome della scuola:', '');
+                if (!scuola) return;
+                localStorage.setItem('logDataSchool', scuola);
+            }
+            const now = new Date();
+            const report = {
+                "Initial Data": {
+                    "Scuola": scuola,
+                    "Tempo inizio esercitazione": '',
+                    "Tempo totale": '',
+                    "Totale domande": reviewResults.length,
+                    "Totale domande corrette": reviewResults.filter(e => e.isCorrect).length,
+                    "Totale domande errate": reviewResults.filter(e => !e.isCorrect).length
+                },
+                "Domande": reviewResults.map(function(entry, idx) {
+                    return {
+                        ["Domanda nº " + (idx+1)]: {
+                            "Tipologia": '',
+                            "Tempo impiegato per rispondere": '',
+                            "Opzioni attive": '',
+                            "Risposta è corretta": entry.isCorrect ? 'Sì' : 'No',
+                            "Domanda": entry.question,
+                            "Risposte": '',
+                            "Riposta utente": entry.selectedAnswer,
+                            "Riposta corretta": entry.correctAnswer
+                        }
+                    };
+                }),
+                "Feedback": {
+                    "Feedback lezioni": '',
+                    "Feedback esercitazione": '',
+                    "Feedback opzioni": '',
+                    "Feedback difficoltà test": ''
+                }
+            };
+            fetch('http://127.0.0.1:5555/upload-json', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(report)
+            })
+            .then(res => res.json())
+            .then(data => {
+                // Mostra feedback all'utente (opzionale)
+                console.log('Dati revisione inviati:', data);
+            })
+            .catch(err => {
+                console.error('Errore invio revisione:', err);
+            });
+        }, 500);
     }
 
     // Passa alla schermata finale e interrompe il timer.
