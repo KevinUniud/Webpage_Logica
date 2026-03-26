@@ -15,12 +15,21 @@ function initEquivalentQuiz(rootId) {
          * @returns {string[]} Array dei testi delle opzioni attuali.
          */
         function getActiveOptions() {
-            if (state.options && Array.isArray(state.options)) {
-                return state.options.map(opt => (typeof opt === 'object' && opt.text ? opt.text : String(opt)));
-            }
-            return [];
+            if (!Array.isArray(state.options)) return [];
+
+            return state.options.map(opt => {
+                try {
+                    if (!opt) return '';
+                    if (typeof opt === 'object' && opt !== null && 'text' in opt) {
+                        return String(opt.text ?? '');
+                    }
+                    return String(opt);
+                } catch (e) {
+                    return '';
+                }
+            });
         }
-    const root = document.getElementById(rootId);
+        const root = document.getElementById(rootId);
     if (!root) return;
 
     const EX_HIGHLIGHT_KEY = 'logic-exercises-highlight-atoms';
@@ -1242,8 +1251,9 @@ function initEquivalentQuiz(rootId) {
      * @post Aggiorna domanda/opzioni/stato; in caso errore mostra fallback utente senza interrompere l'app.
      */
     async function loadExercise() {
-        state.mode = 'check';
         state.locked = false;
+        state.mode = 'check';
+        state.selectedIndex = null;
         actionButton.textContent = 'Controlla';
         setStatus('Caricamento...');
         optionsEl.innerHTML = '';
@@ -1350,88 +1360,113 @@ function initEquivalentQuiz(rootId) {
      * @post Blocca la domanda corrente, aggiorna feedback visuale/testuale e registra il risultato nel recap.
      */
     function checkAnswer() {
-        if (state.options.length !== 4) {
+        if (!Array.isArray(state.options) || state.options.length !== 4) {
             setStatus('Nessun esercizio disponibile.');
             return;
         }
 
+        if (state.locked) return;
         state.locked = true;
-        resetVisualFeedback();
-        const selected = optionsEl.querySelector('.quiz-option.is-selected');
-        if (!selected) return;
 
-        const isCorrect = state.selectedIndex === state.correctIndex;
-        selected.classList.add('is-final');
-        selected.classList.add(isCorrect ? 'is-correct' : 'is-wrong');
-        if (!isCorrect) {
-            const options = optionsEl.querySelectorAll('.quiz-option');
-            const correctOption = options[state.correctIndex];
-            if (correctOption) {
-                correctOption.classList.add('is-final');
-                correctOption.classList.add('is-correct-answer');
+        try {
+            resetVisualFeedback();
+
+            const selected = optionsEl.querySelector('.quiz-option.is-selected');
+            if (!selected || state.selectedIndex == null) {
+                console.warn("Nessuna selezione valida");
+                return;
             }
-            renderWrongActionImages(false);
-        } else {
-            clearWrongActionImages();
+
+            const isCorrect = state.selectedIndex === state.correctIndex;
+
+            selected.classList.add('is-final');
+            selected.classList.add(isCorrect ? 'is-correct' : 'is-wrong');
+
+            if (!isCorrect) {
+                const options = optionsEl.querySelectorAll('.quiz-option');
+                const correctOption = options[state.correctIndex];
+                if (correctOption) {
+                    correctOption.classList.add('is-final');
+                    correctOption.classList.add('is-correct-answer');
+                }
+                renderWrongActionImages(false);
+            } else {
+                clearWrongActionImages();
+            }
+
+            // Accesso sicuro alle opzioni
+            const selectedRaw = state.options[state.selectedIndex] ?? '';
+            const correctRaw = state.options[state.correctIndex] ?? '';
+
+            const selectedFormula = getOptionDisplayFormula(selectedRaw);
+            const correctFormula = getOptionDisplayFormula(correctRaw);
+
+            // Tempo risposta
+            let timeToAnswer = '';
+            if (questionViewTimestamps[currentExercise] != null) {
+                timeToAnswer = ((Date.now() - questionViewTimestamps[currentExercise]) / 1000).toFixed(2) + 's';
+            }
+
+            // Tipo domanda
+            let tipoDomanda = '';
+            const qText = questionEl.textContent || '';
+
+            if (currentQuestionInfo && currentQuestionInfo.length > 0) {
+                tipoDomanda = 'Ipotesi';
+            } else if (/equivalente|equivalenza/i.test(qText)) {
+                tipoDomanda = 'Equivalenza';
+            } else if (/per ogni|esiste/i.test(qText)) {
+                tipoDomanda = 'Negazione';
+            }
+
+            // Opzioni attive (usa funzione sicura)
+            const opzioniAttive = getActiveOptions();
+
+            // Risposte mostrate (versione robusta)
+            let risposteMostrate = '';
+            if (Array.isArray(state.options)) {
+                risposteMostrate = state.options.map(opt => {
+                    try {
+                        if (!opt) return '';
+                        if (typeof opt === 'object' && opt !== null && 'text' in opt) {
+                            return String(opt.text ?? '');
+                        }
+                        return String(opt);
+                    } catch {
+                        return '';
+                    }
+                }).join(' | ');
+            }
+
+            // Domanda completa
+            let domandaCompleta = qText;
+            if (tipoDomanda === 'Ipotesi' && currentQuestionInfo && currentQuestionInfo.length > 0) {
+                domandaCompleta = qText.replace(/\?$/, '') + ' (' + currentQuestionInfo.join(', ') + ')';
+            }
+
+            reviewResults.push({
+                number: currentExercise,
+                question: domandaCompleta,
+                infoLines: state.spokenlanguage
+                    ? currentQuestionInfo.map(formatSpokenInfoLine)
+                    : currentQuestionInfo.slice(),
+                selectedAnswer: state.spokenlanguage ? applySpokenTransform(selectedFormula) : selectedFormula,
+                correctAnswer: state.spokenlanguage ? applySpokenTransform(correctFormula) : correctFormula,
+                isCorrect: isCorrect,
+                tipoDomanda: tipoDomanda,
+                tempoRisposta: timeToAnswer,
+                opzioniAttive: opzioniAttive,
+                risposteMostrate: risposteMostrate
+            });
+
+            setStatus('Usa il mouse o premi invio per continuare');
+            actionButton.textContent = currentExercise >= totalExercises ? 'Termina' : 'Prossimo';
+
+        } catch (err) {
+            console.error("Errore in checkAnswer:", err);
         }
 
-        const selectedFormula = getOptionDisplayFormula(state.options[state.selectedIndex]);
-        const correctFormula = getOptionDisplayFormula(state.options[state.correctIndex]);
-
-
-        // Calcola tempo impiegato per rispondere
-        let timeToAnswer = '';
-        if (questionViewTimestamps[currentExercise] != null) {
-            timeToAnswer = ((Date.now() - questionViewTimestamps[currentExercise]) / 1000).toFixed(2) + 's';
-        }
-
-        // Determina tipologia domanda
-        let tipoDomanda = '';
-        const qText = questionEl.textContent || '';
-        if (currentQuestionInfo && currentQuestionInfo.length > 0) {
-            tipoDomanda = 'Ipotesi';
-        } else if (/equivalente|equivalenza/i.test(qText)) {
-            tipoDomanda = 'Equivalenza';
-        } else if (/per ogni|esiste/i.test(qText)) {
-            tipoDomanda = 'Negazione';
-        }
-
-        // Opzioni attive
-        const opzioniAttive = getActiveOptions();
-
-        // Raccogli tutte le opzioni mostrate
-        let risposteMostrate = '';
-        if (state.options && Array.isArray(state.options) && state.options.length === 4) {
-            risposteMostrate = state.options.map(opt => {
-                if (typeof opt === 'object' && opt.text) return opt.text;
-                return String(opt);
-            }).join(' | ');
-        }
-
-        // Domanda con eventuali ipotesi
-        let domandaCompleta = qText;
-        if (tipoDomanda === 'Ipotesi' && currentQuestionInfo && currentQuestionInfo.length > 0) {
-            domandaCompleta = qText.replace(/\?$/, '') + ' (' + currentQuestionInfo.join(', ') + ')';
-        }
-
-
-        reviewResults.push({
-            number: currentExercise,
-            question: domandaCompleta,
-            infoLines: state.spokenlanguage
-                ? currentQuestionInfo.map(formatSpokenInfoLine)
-                : currentQuestionInfo.slice(),
-            selectedAnswer: state.spokenlanguage ? applySpokenTransform(selectedFormula) : selectedFormula,
-            correctAnswer: state.spokenlanguage ? applySpokenTransform(correctFormula) : correctFormula,
-            isCorrect: isCorrect,
-            tipoDomanda: tipoDomanda,
-            tempoRisposta: timeToAnswer,
-            opzioniAttive: opzioniAttive,
-            risposteMostrate: risposteMostrate
-        });
-
-        setStatus('Usa il mouse o premi invio per continuare');
-        actionButton.textContent = currentExercise >= totalExercises ? 'Termina' : 'Prossimo';
+        // SEMPRE eseguito → evita blocchi
         state.mode = 'next';
     }
 
