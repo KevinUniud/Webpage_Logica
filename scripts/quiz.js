@@ -1460,7 +1460,11 @@ function initEquivalentQuiz(rootId) {
                 correctAnswer: state.spokenlanguage ? applySpokenTransform(correctFormula) : correctFormula,
                 isCorrect: isCorrect,
                 tipoDomanda: tipoDomanda,
-                tempoRisposta: timeToAnswer,
+                tempoRisposta: formatElapsedTime(
+                    (questionViewTimestamps[currentExercise] != null)
+                        ? (Date.now() - questionViewTimestamps[currentExercise])
+                        : NaN
+                ),
                 opzioniAttive: opzioniAttive,
                 risposteMostrate: risposteMostrate
             });
