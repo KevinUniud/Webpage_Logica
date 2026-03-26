@@ -1593,14 +1593,15 @@ function initEquivalentQuiz(rootId) {
                     "Tempo totale": tempoTotale,
                     "Totale domande": reviewResults.length,
                     "Totale domande corrette": reviewResults.filter(e => e.isCorrect).length,
-                    "Totale domande errate": reviewResults.filter(e => !e.isCorrect).length
+                    "Totale domande errate": reviewResults.filter(e => !e.isCorrect).length,
+                    "Opzioni attive": entry.opzioniAttive || ''
                 },
                 "Domande": reviewResults.map(function(entry, idx) {
                     return {
                         ["Domanda nº " + (idx+1)]: {
                             "Tipologia": entry.tipoDomanda || '',
                             "Tempo impiegato per rispondere": typeof entry.tempoRisposta === 'string' ? entry.tempoRisposta : '',
-                            "Opzioni attive": entry.opzioniAttive || '',
+                            
                             "Risposta è corretta": entry.isCorrect ? 'Sì' : 'No',
                             "Domanda": entry.question,
                             "Risposte": entry.risposteMostrate || '',
