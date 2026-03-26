@@ -97,6 +97,7 @@ function initEquivalentQuiz(rootId) {
     let currentImageFormulaSteps = { question: [], correct: [], wrongByFormula: {} };
     let quantifierNegationTarget = 0;
     let quantifierNegationUsed = 0;
+    var questionViewTimestamps = [];
 
     function normalizeApiBase(rawBase) {
         const base = String(rawBase || '').trim();
