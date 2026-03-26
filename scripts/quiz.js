@@ -97,6 +97,23 @@ function initEquivalentQuiz(rootId) {
     var quizStartTimestamp = Date.now();
     var questionViewTimestamps = [];
 
+    /**
+     * Converte un timestamp in formato leggibile: anno/mese/giorno ore:minuti:secondi
+     * @param {number} timestamp - Timestamp in millisecondi
+     * @returns {string} Data formattata
+     */
+    function formatDateTime(timestamp) {
+        if (!timestamp || typeof timestamp !== 'number') return '';
+        const date = new Date(timestamp);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+        return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
+    }
+
     function normalizeApiBase(rawBase) {
         const base = String(rawBase || '').trim();
         if (!base) return '/api';
@@ -1418,7 +1435,7 @@ function initEquivalentQuiz(rootId) {
                 tempoRisposta = formatElapsedTime(elapsed);
             }
 
-            // Tipo domanda
+            // Tipo domanda - se non è Ipotesi o Equivalenza, è Negazione
             let tipoDomanda = '';
             const qText = questionEl.textContent || '';
 
@@ -1426,7 +1443,7 @@ function initEquivalentQuiz(rootId) {
                 tipoDomanda = 'Ipotesi';
             } else if (/equivalente|equivalenza/i.test(qText)) {
                 tipoDomanda = 'Equivalenza';
-            } else if (/per ogni|esiste/i.test(qText)) {
+            } else {
                 tipoDomanda = 'Negazione';
             }
 
@@ -1547,7 +1564,7 @@ function initEquivalentQuiz(rootId) {
             const report = {
                 "Initial Data": {
                     "Scuola": scuola,
-                    "Tempo inizio esercitazione": quizStartTimestamp ? quizStartTimestamp : '',
+                    "Tempo inizio esercitazione": formatDateTime(quizStartTimestamp),
                     "Tempo totale": tempoTotale,
                     "Totale domande": reviewResults.length,
                     "Totale domande corrette": reviewResults.filter(e => e.isCorrect).length,
@@ -1655,6 +1672,8 @@ function initEquivalentQuiz(rootId) {
         quantifierNegationUsed = 0;
         // Inizializza l'array dei timestamp con la lunghezza corretta (indici da 1 a totalExercises)
         questionViewTimestamps = new Array(totalExercises + 1);
+        // Aggiorna il timestamp di inizio esercitazione
+        quizStartTimestamp = Date.now();
         if (questionCountInput) questionCountInput.value = String(totalExercises);
         if (timeMinutesInput) timeMinutesInput.value = String(standardTimeMinutes);
         state.showFormulas = Boolean(showFormulasInput && showFormulasInput.checked);
