@@ -1367,15 +1367,55 @@ function initEquivalentQuiz(rootId) {
 
         const selectedFormula = getOptionDisplayFormula(state.options[state.selectedIndex]);
         const correctFormula = getOptionDisplayFormula(state.options[state.correctIndex]);
+
+        // Calcola tempo impiegato per rispondere
+        let timeToAnswer = '';
+        if (questionViewTimestamps[currentExercise] != null) {
+            timeToAnswer = ((Date.now() - questionViewTimestamps[currentExercise]) / 1000).toFixed(2) + 's';
+        }
+
+        // Determina tipologia domanda
+        let tipoDomanda = '';
+        const qText = questionEl.textContent || '';
+        if (currentQuestionInfo && currentQuestionInfo.length > 0) {
+            tipoDomanda = 'Ipotesi';
+        } else if (/equivalente|equivalenza/i.test(qText)) {
+            tipoDomanda = 'Equivalenza';
+        } else if (/per ogni|esiste/i.test(qText)) {
+            tipoDomanda = 'Negazione';
+        }
+
+        // Opzioni attive
+        const opzioniAttive = getActiveOptions();
+
+        // Raccogli tutte le opzioni mostrate
+        let risposteMostrate = '';
+        if (state.options && Array.isArray(state.options) && state.options.length === 4) {
+            risposteMostrate = state.options.map(opt => {
+                if (typeof opt === 'object' && opt.text) return opt.text;
+                return String(opt);
+            }).join(' | ');
+        }
+
+        // Domanda con eventuali ipotesi
+        let domandaCompleta = qText;
+        if (tipoDomanda === 'Ipotesi' && currentQuestionInfo && currentQuestionInfo.length > 0) {
+            domandaCompleta = qText.replace(/\?$/, '') + ' (' + currentQuestionInfo.join(', ') + ')';
+        }
+
         reviewResults.push({
             number: currentExercise,
-            question: questionEl.textContent || '',
+            question: domandaCompleta,
             infoLines: state.spokenlanguage
                 ? currentQuestionInfo.map(formatSpokenInfoLine)
                 : currentQuestionInfo.slice(),
             selectedAnswer: state.spokenlanguage ? applySpokenTransform(selectedFormula) : selectedFormula,
             correctAnswer: state.spokenlanguage ? applySpokenTransform(correctFormula) : correctFormula,
-            isCorrect: isCorrect
+            isCorrect: isCorrect,
+            tipoDomanda: tipoDomanda,
+            tempoRisposta: timeToAnswer,
+            opzioniAttive: opzioniAttive,
+            risposteMostrate: risposteMostrate
         });
 
         setStatus('Usa il mouse o premi invio per continuare');
@@ -1393,12 +1433,13 @@ function initEquivalentQuiz(rootId) {
             if (!scuola) return;
             localStorage.setItem('logDataSchool', scuola);
         }
-        const now = new Date();
+        const now = Date.now();
+        const tempoTotale = quizStartTimestamp ? ((now - quizStartTimestamp) / 1000).toFixed(2) + 's' : '';
         const report = {
             "Initial Data": {
                 "Scuola": scuola,
-                "Tempo inizio esercitazione": '',
-                "Tempo totale": '',
+                "Tempo inizio esercitazione": quizStartTimestamp ? quizStartTimestamp : '',
+                "Tempo totale": tempoTotale,
                 "Totale domande": reviewResults.length,
                 "Totale domande corrette": reviewResults.filter(e => e.isCorrect).length,
                 "Totale domande errate": reviewResults.filter(e => !e.isCorrect).length
@@ -1406,12 +1447,12 @@ function initEquivalentQuiz(rootId) {
             "Domande": reviewResults.map(function(entry, idx) {
                 return {
                     ["Domanda nº " + (idx+1)]: {
-                        "Tipologia": '',
-                        "Tempo impiegato per rispondere": '',
-                        "Opzioni attive": '',
+                        "Tipologia": entry.tipoDomanda || '',
+                        "Tempo impiegato per rispondere": entry.tempoRisposta || '',
+                        "Opzioni attive": entry.opzioniAttive || '',
                         "Risposta è corretta": entry.isCorrect ? 'Sì' : 'No',
                         "Domanda": entry.question,
-                        "Risposte": '',
+                        "Risposte": entry.risposteMostrate || '',
                         "Riposta utente": entry.selectedAnswer,
                         "Riposta corretta": entry.correctAnswer
                     }
