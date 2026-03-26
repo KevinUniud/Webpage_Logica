@@ -10,6 +10,16 @@
  * @post Event listener e stato interno vengono inizializzati; il quiz entra in intro o in caricamento diretto.
  */
 function initEquivalentQuiz(rootId) {
+        /**
+         * Restituisce le opzioni attive (testi) mostrate all'utente per la domanda corrente.
+         * @returns {string[]} Array dei testi delle opzioni attuali.
+         */
+        function getActiveOptions() {
+            if (state.options && Array.isArray(state.options)) {
+                return state.options.map(opt => (typeof opt === 'object' && opt.text ? opt.text : String(opt)));
+            }
+            return [];
+        }
     const root = document.getElementById(rootId);
     if (!root) return;
 
@@ -1367,80 +1377,62 @@ function initEquivalentQuiz(rootId) {
 
         const selectedFormula = getOptionDisplayFormula(state.options[state.selectedIndex]);
         const correctFormula = getOptionDisplayFormula(state.options[state.correctIndex]);
+
+
+        // Calcola tempo impiegato per rispondere
+        let timeToAnswer = '';
+        if (questionViewTimestamps[currentExercise] != null) {
+            timeToAnswer = ((Date.now() - questionViewTimestamps[currentExercise]) / 1000).toFixed(2) + 's';
+        }
+
+        // Determina tipologia domanda
+        let tipoDomanda = '';
+        const qText = questionEl.textContent || '';
+        if (currentQuestionInfo && currentQuestionInfo.length > 0) {
+            tipoDomanda = 'Ipotesi';
+        } else if (/equivalente|equivalenza/i.test(qText)) {
+            tipoDomanda = 'Equivalenza';
+        } else if (/per ogni|esiste/i.test(qText)) {
+            tipoDomanda = 'Negazione';
+        }
+
+        // Opzioni attive
+        const opzioniAttive = getActiveOptions();
+
+        // Raccogli tutte le opzioni mostrate
+        let risposteMostrate = '';
+        if (state.options && Array.isArray(state.options) && state.options.length === 4) {
+            risposteMostrate = state.options.map(opt => {
+                if (typeof opt === 'object' && opt.text) return opt.text;
+                return String(opt);
+            }).join(' | ');
+        }
+
+        // Domanda con eventuali ipotesi
+        let domandaCompleta = qText;
+        if (tipoDomanda === 'Ipotesi' && currentQuestionInfo && currentQuestionInfo.length > 0) {
+            domandaCompleta = qText.replace(/\?$/, '') + ' (' + currentQuestionInfo.join(', ') + ')';
+        }
+
+
         reviewResults.push({
             number: currentExercise,
-            question: questionEl.textContent || '',
+            question: domandaCompleta,
             infoLines: state.spokenlanguage
                 ? currentQuestionInfo.map(formatSpokenInfoLine)
                 : currentQuestionInfo.slice(),
             selectedAnswer: state.spokenlanguage ? applySpokenTransform(selectedFormula) : selectedFormula,
             correctAnswer: state.spokenlanguage ? applySpokenTransform(correctFormula) : correctFormula,
-            isCorrect: isCorrect
+            isCorrect: isCorrect,
+            tipoDomanda: tipoDomanda,
+            tempoRisposta: timeToAnswer,
+            opzioniAttive: opzioniAttive,
+            risposteMostrate: risposteMostrate
         });
 
         setStatus('Usa il mouse o premi invio per continuare');
         actionButton.textContent = currentExercise >= totalExercises ? 'Termina' : 'Prossimo';
         state.mode = 'next';
-    }
-
-    // Render del riepilogo finale con risultati e risposte date.
-    function autoExportQuizResults() {
-        const logDataMode = localStorage.getItem('logDataMode') || 'none';
-        if (logDataMode === 'none') return;
-        let scuola = localStorage.getItem('logDataSchool') || '';
-        if (!scuola) {
-            scuola = prompt('Inserisci il nome della scuola:', '');
-            if (!scuola) return;
-            localStorage.setItem('logDataSchool', scuola);
-        }
-        const now = new Date();
-        const report = {
-            "Initial Data": {
-                "Scuola": scuola,
-                "Tempo inizio esercitazione": '',
-                "Tempo totale": '',
-                "Totale domande": reviewResults.length,
-                "Totale domande corrette": reviewResults.filter(e => e.isCorrect).length,
-                "Totale domande errate": reviewResults.filter(e => !e.isCorrect).length
-            },
-            "Domande": reviewResults.map(function(entry, idx) {
-                return {
-                    ["Domanda nº " + (idx+1)]: {
-                        "Tipologia": '',
-                        "Tempo impiegato per rispondere": '',
-                        "Opzioni attive": '',
-                        "Risposta è corretta": entry.isCorrect ? 'Sì' : 'No',
-                        "Domanda": entry.question,
-                        "Risposte": '',
-                        "Riposta utente": entry.selectedAnswer,
-                        "Riposta corretta": entry.correctAnswer
-                    }
-                };
-            }),
-            "Feedback": {
-                "Feedback lezioni": '',
-                "Feedback esercitazione": '',
-                "Feedback opzioni": '',
-                "Feedback difficoltà test": ''
-            }
-        };
-        const json = JSON.stringify(report, null, 2);
-        // Salva in locale (in futuro: invio API)
-        const blob = new Blob([json], {type: "application/json"});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "Report_Quiz.json";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        // FUTURO: invio API
-        // fetch('https://api.example.com/quiz-report', {
-        //     method: 'POST',
-        //     headers: { 'Content-Type': 'application/json' },
-        //     body: json
-        // });
     }
 
     function renderReview() {
@@ -1504,11 +1496,13 @@ function initEquivalentQuiz(rootId) {
             const logDataMode = localStorage.getItem('logDataMode') || 'none';
             if (logDataMode === 'none') return;
             const scuola = localStorage.getItem('logDataSchool') || '';
+            const now = Date.now();
+            const tempoTotale = quizStartTimestamp ? ((now - quizStartTimestamp) / 1000).toFixed(2) + 's' : '';
             const report = {
                 "Initial Data": {
                     "Scuola": scuola,
-                    "Tempo inizio esercitazione": '',
-                    "Tempo totale": '',
+                    "Tempo inizio esercitazione": quizStartTimestamp ? quizStartTimestamp : '',
+                    "Tempo totale": tempoTotale,
                     "Totale domande": reviewResults.length,
                     "Totale domande corrette": reviewResults.filter(e => e.isCorrect).length,
                     "Totale domande errate": reviewResults.filter(e => !e.isCorrect).length
@@ -1516,12 +1510,12 @@ function initEquivalentQuiz(rootId) {
                 "Domande": reviewResults.map(function(entry, idx) {
                     return {
                         ["Domanda nº " + (idx+1)]: {
-                            "Tipologia": '',
-                            "Tempo impiegato per rispondere": '',
-                            "Opzioni attive": '',
+                            "Tipologia": entry.tipoDomanda || '',
+                            "Tempo impiegato per rispondere": entry.tempoRisposta || '',
+                            "Opzioni attive": entry.opzioniAttive || '',
                             "Risposta è corretta": entry.isCorrect ? 'Sì' : 'No',
                             "Domanda": entry.question,
-                            "Risposte": '',
+                            "Risposte": entry.risposteMostrate || '',
                             "Riposta utente": entry.selectedAnswer,
                             "Riposta corretta": entry.correctAnswer
                         }
