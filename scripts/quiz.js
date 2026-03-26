@@ -37,6 +37,12 @@ function initEquivalentQuiz(rootId) {
         return localStorage.getItem(key) === '1';
     }
 
+    // Format elapsed time in seconds with two decimals and 's' suffix, or '' if invalid
+    function formatElapsedTime(ms) {
+        if (typeof ms !== 'number' || isNaN(ms) || ms < 0) return '';
+        return (ms / 1000).toFixed(2) + 's';
+    }
+
     // Crea/recupera il display timer condiviso fissato a viewport.
     function ensureTimerDisplay() {
         let el = document.getElementById('quizTimerDisplay');
@@ -1358,11 +1364,6 @@ function initEquivalentQuiz(rootId) {
      * @pre state.options contiene esattamente 4 opzioni e state.correctIndex e valido.
      * @post Blocca la domanda corrente, aggiorna feedback visuale/testuale e registra il risultato nel recap.
      */
-    // Format elapsed time in seconds with two decimals and 's' suffix, or '' if invalid
-    function formatElapsedTime(ms) {
-        if (typeof ms !== 'number' || isNaN(ms) || ms < 0) return '';
-        return (ms / 1000).toFixed(2) + 's';
-    }
 
     function checkAnswer() {
         if (!Array.isArray(state.options) || state.options.length !== 4) {
