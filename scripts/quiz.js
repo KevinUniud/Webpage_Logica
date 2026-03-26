@@ -114,6 +114,28 @@ function initEquivalentQuiz(rootId) {
         return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
     }
 
+    /**
+     * Legge la modalità di logging e la scuola selezionata dalle impostazioni.
+     * @returns {Object} Oggetto con mode e school
+     */
+    function getLogDataSettings() {
+        const mode = localStorage.getItem('logDataMode') || 'none';
+        let school = '';
+        
+        if (mode === 'dmif-uniud') {
+            school = 'DMIF Uniud';
+        }
+        
+        // else if (mode === 'altra-scuola') {
+        //     school = 'Altra Scuola';
+        // }
+        
+        return {
+            mode: mode,
+            school: school
+        };
+    }
+
     function normalizeApiBase(rawBase) {
         const base = String(rawBase || '').trim();
         if (!base) return '/api';
@@ -1555,15 +1577,18 @@ function initEquivalentQuiz(rootId) {
             reviewListEl.appendChild(item);
         });
         // Invio automatico dati revisione direttamente all'endpoint esterno
+        // Invio automatico dati revisione direttamente all'endpoint esterno
         setTimeout(function() {
-            const logDataMode = localStorage.getItem('logDataMode') || 'none';
-            if (logDataMode === 'none') return;
-            const scuola = localStorage.getItem('logDataSchool') || '';
+            const logSettings = getLogDataSettings();
+            
+            // Se la modalità è 'none', non inviare nulla
+            if (logSettings.mode === 'none') return;
+            
             const now = Date.now();
             const tempoTotale = quizStartTimestamp ? ((now - quizStartTimestamp) / 1000).toFixed(2) + 's' : '';
             const report = {
                 "Initial Data": {
-                    "Scuola": scuola,
+                    "Scuola": logSettings.school,
                     "Tempo inizio esercitazione": formatDateTime(quizStartTimestamp),
                     "Tempo totale": tempoTotale,
                     "Totale domande": reviewResults.length,
@@ -1598,7 +1623,6 @@ function initEquivalentQuiz(rootId) {
             })
             .then(res => res.json())
             .then(data => {
-                // Mostra feedback all'utente (opzionale)
                 console.log('Dati revisione inviati:', data);
             })
             .catch(err => {
