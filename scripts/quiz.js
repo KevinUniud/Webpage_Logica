@@ -78,6 +78,9 @@ function initEquivalentQuiz(rootId) {
     let currentImageFormulaSteps = { question: [], correct: [], wrongByFormula: {} };
     let quantifierNegationTarget = 0;
     let quantifierNegationUsed = 0;
+    // Tracciamento tempo avvio test e visualizzazione domande (scope globale a tutta la funzione)
+    var quizStartTimestamp = null;
+    var questionViewTimestamps = [];
 
     function normalizeApiBase(rawBase) {
         const base = String(rawBase || '').trim();
@@ -1476,12 +1479,6 @@ function initEquivalentQuiz(rootId) {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        // FUTURO: invio API
-        // fetch('https://api.example.com/quiz-report', {
-        //     method: 'POST',
-        //     headers: { 'Content-Type': 'application/json' },
-        //     body: json
-        // });
     }
 
     function renderReview() {
@@ -1661,9 +1658,9 @@ function initEquivalentQuiz(rootId) {
         let currentImageFormulaSteps = { question: [], correct: [], wrongByFormula: {} };
         let quantifierNegationTarget = 0;
         let quantifierNegationUsed = 0;
-        // Tracciamento tempo avvio test e visualizzazione domande
-        let quizStartTimestamp = null;
-        var questionViewTimestamps = [];
+        // Reset variabili globali di tracciamento tempo
+        quizStartTimestamp = null;
+        questionViewTimestamps = [];
         if (introTitleEl) introTitleEl.hidden = true;
         if (reviewTitleEl) reviewTitleEl.hidden = true;
         if (introEl) introEl.hidden = true;
