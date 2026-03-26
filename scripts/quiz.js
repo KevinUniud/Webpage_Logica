@@ -845,7 +845,7 @@ function initEquivalentQuiz(rootId) {
 
     function updateTestTitle() {
         if (!testTitleEl) return;
-        testTitleEl.textContent = 'Esercizio nº' + String(currentExercise);
+        testTitleEl.textContent = 'Esercizio nº' + String(currentExercise + 1);
     }
 
     /**
@@ -1501,7 +1501,7 @@ function initEquivalentQuiz(rootId) {
 
             const title = document.createElement('p');
             title.className = 'quiz-review-title';
-            title.textContent = 'Domanda ' + String(entry.number);
+            title.textContent = 'Domanda ' + String(entry.number + 1);
 
             const questionLine = document.createElement('p');
             questionLine.className = 'quiz-review-line';
