@@ -37,12 +37,6 @@ function initEquivalentQuiz(rootId) {
         return localStorage.getItem(key) === '1';
     }
 
-    // Format elapsed time in seconds with two decimals and 's' suffix, or '' if invalid
-    function formatElapsedTime(ms) {
-        if (typeof ms !== 'number' || isNaN(ms) || ms < 0) return '';
-        return (ms / 1000).toFixed(2) + 's';
-    }
-
     // Crea/recupera il display timer condiviso fissato a viewport.
     function ensureTimerDisplay() {
         let el = document.getElementById('quizTimerDisplay');
@@ -1321,6 +1315,11 @@ function initEquivalentQuiz(rootId) {
             clearWrongActionImages();
             setStatus('Usa il mouse o le frecce per selezionare.');
             optionsEl.focus();
+            
+            // Registra il timestamp di quando l'utente vede la domanda
+            if (currentExercise > 0 && currentExercise <= totalExercises) {
+                questionViewTimestamps[currentExercise] = Date.now();
+            }
         } catch (err) {
             setStatus('Errore nel caricamento esercizio: ' + err.message);
             questionEl.textContent = 'Impossibile caricare l\'esercizio.';
@@ -1364,6 +1363,11 @@ function initEquivalentQuiz(rootId) {
      * @pre state.options contiene esattamente 4 opzioni e state.correctIndex e valido.
      * @post Blocca la domanda corrente, aggiorna feedback visuale/testuale e registra il risultato nel recap.
      */
+    // Format elapsed time in seconds with two decimals and 's' suffix, or '' if invalid
+    function formatElapsedTime(ms) {
+        if (typeof ms !== 'number' || isNaN(ms) || ms < 0) return '';
+        return (ms / 1000).toFixed(2) + 's';
+    }
 
     function checkAnswer() {
         if (!Array.isArray(state.options) || state.options.length !== 4) {
@@ -1407,11 +1411,11 @@ function initEquivalentQuiz(rootId) {
             const selectedFormula = getOptionDisplayFormula(selectedRaw);
             const correctFormula = getOptionDisplayFormula(correctRaw);
 
-            // Tempo risposta
-            let timeToAnswer = '';
+            // CALCOLA IL TEMPO DI RISPOSTA UNA VOLTA SOLA
+            let tempoRisposta = '';
             if (questionViewTimestamps[currentExercise] != null) {
                 const elapsed = Date.now() - questionViewTimestamps[currentExercise];
-                timeToAnswer = formatElapsedTime(elapsed);
+                tempoRisposta = formatElapsedTime(elapsed);
             }
 
             // Tipo domanda
@@ -1461,11 +1465,7 @@ function initEquivalentQuiz(rootId) {
                 correctAnswer: state.spokenlanguage ? applySpokenTransform(correctFormula) : correctFormula,
                 isCorrect: isCorrect,
                 tipoDomanda: tipoDomanda,
-                tempoRisposta: formatElapsedTime(
-                    (questionViewTimestamps[currentExercise] != null)
-                        ? (Date.now() - questionViewTimestamps[currentExercise])
-                        : NaN
-                ),
+                tempoRisposta: tempoRisposta,
                 opzioniAttive: opzioniAttive,
                 risposteMostrate: risposteMostrate
             });
@@ -1653,6 +1653,8 @@ function initEquivalentQuiz(rootId) {
         standardTimeMinutes = parsePositiveInt(timeMinutesInput && timeMinutesInput.value, DEFAULT_TIME_MINUTES);
         quantifierNegationTarget = pickQuantifierNegationTarget(totalExercises);
         quantifierNegationUsed = 0;
+        // Inizializza l'array dei timestamp con la lunghezza corretta (indici da 1 a totalExercises)
+        questionViewTimestamps = new Array(totalExercises + 1);
         if (questionCountInput) questionCountInput.value = String(totalExercises);
         if (timeMinutesInput) timeMinutesInput.value = String(standardTimeMinutes);
         state.showFormulas = Boolean(showFormulasInput && showFormulasInput.checked);
