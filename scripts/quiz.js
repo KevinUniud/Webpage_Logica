@@ -10,16 +10,6 @@
  * @post Event listener e stato interno vengono inizializzati; il quiz entra in intro o in caricamento diretto.
  */
 function initEquivalentQuiz(rootId) {
-        /**
-         * Restituisce le opzioni attive (testi) mostrate all'utente per la domanda corrente.
-         * @returns {string[]} Array dei testi delle opzioni attuali.
-         */
-        function getActiveOptions() {
-            if (state.options && Array.isArray(state.options)) {
-                return state.options.map(opt => (typeof opt === 'object' && opt.text ? opt.text : String(opt)));
-            }
-            return [];
-        }
     const root = document.getElementById(rootId);
     if (!root) return;
 
@@ -88,9 +78,6 @@ function initEquivalentQuiz(rootId) {
     let currentImageFormulaSteps = { question: [], correct: [], wrongByFormula: {} };
     let quantifierNegationTarget = 0;
     let quantifierNegationUsed = 0;
-    // Tracciamento tempo avvio test e visualizzazione domande (scope globale a tutta la funzione)
-    var quizStartTimestamp = null;
-    var questionViewTimestamps = [];
 
     function normalizeApiBase(rawBase) {
         const base = String(rawBase || '').trim();
@@ -845,7 +832,7 @@ function initEquivalentQuiz(rootId) {
 
     function updateTestTitle() {
         if (!testTitleEl) return;
-        testTitleEl.textContent = 'Esercizio nº' + String(currentExercise + 1);
+        testTitleEl.textContent = 'Esercizio nº' + String(currentExercise);
     }
 
     /**
@@ -1380,55 +1367,15 @@ function initEquivalentQuiz(rootId) {
 
         const selectedFormula = getOptionDisplayFormula(state.options[state.selectedIndex]);
         const correctFormula = getOptionDisplayFormula(state.options[state.correctIndex]);
-
-        // Calcola tempo impiegato per rispondere
-        let timeToAnswer = '';
-        if (questionViewTimestamps[currentExercise] != null) {
-            timeToAnswer = ((Date.now() - questionViewTimestamps[currentExercise]) / 1000).toFixed(2) + 's';
-        }
-
-        // Determina tipologia domanda
-        let tipoDomanda = '';
-        const qText = questionEl.textContent || '';
-        if (currentQuestionInfo && currentQuestionInfo.length > 0) {
-            tipoDomanda = 'Ipotesi';
-        } else if (/equivalente|equivalenza/i.test(qText)) {
-            tipoDomanda = 'Equivalenza';
-        } else if (/per ogni|esiste/i.test(qText)) {
-            tipoDomanda = 'Negazione';
-        }
-
-        // Opzioni attive
-        const opzioniAttive = getActiveOptions();
-
-        // Raccogli tutte le opzioni mostrate
-        let risposteMostrate = '';
-        if (state.options && Array.isArray(state.options) && state.options.length === 4) {
-            risposteMostrate = state.options.map(opt => {
-                if (typeof opt === 'object' && opt.text) return opt.text;
-                return String(opt);
-            }).join(' | ');
-        }
-
-        // Domanda con eventuali ipotesi
-        let domandaCompleta = qText;
-        if (tipoDomanda === 'Ipotesi' && currentQuestionInfo && currentQuestionInfo.length > 0) {
-            domandaCompleta = qText.replace(/\?$/, '') + ' (' + currentQuestionInfo.join(', ') + ')';
-        }
-
         reviewResults.push({
             number: currentExercise,
-            question: domandaCompleta,
+            question: questionEl.textContent || '',
             infoLines: state.spokenlanguage
                 ? currentQuestionInfo.map(formatSpokenInfoLine)
                 : currentQuestionInfo.slice(),
             selectedAnswer: state.spokenlanguage ? applySpokenTransform(selectedFormula) : selectedFormula,
             correctAnswer: state.spokenlanguage ? applySpokenTransform(correctFormula) : correctFormula,
-            isCorrect: isCorrect,
-            tipoDomanda: tipoDomanda,
-            tempoRisposta: timeToAnswer,
-            opzioniAttive: opzioniAttive,
-            risposteMostrate: risposteMostrate
+            isCorrect: isCorrect
         });
 
         setStatus('Usa il mouse o premi invio per continuare');
@@ -1446,13 +1393,12 @@ function initEquivalentQuiz(rootId) {
             if (!scuola) return;
             localStorage.setItem('logDataSchool', scuola);
         }
-        const now = Date.now();
-        const tempoTotale = quizStartTimestamp ? ((now - quizStartTimestamp) / 1000).toFixed(2) + 's' : '';
+        const now = new Date();
         const report = {
             "Initial Data": {
                 "Scuola": scuola,
-                "Tempo inizio esercitazione": quizStartTimestamp ? quizStartTimestamp : '',
-                "Tempo totale": tempoTotale,
+                "Tempo inizio esercitazione": '',
+                "Tempo totale": '',
                 "Totale domande": reviewResults.length,
                 "Totale domande corrette": reviewResults.filter(e => e.isCorrect).length,
                 "Totale domande errate": reviewResults.filter(e => !e.isCorrect).length
@@ -1460,12 +1406,12 @@ function initEquivalentQuiz(rootId) {
             "Domande": reviewResults.map(function(entry, idx) {
                 return {
                     ["Domanda nº " + (idx+1)]: {
-                        "Tipologia": entry.tipoDomanda || '',
-                        "Tempo impiegato per rispondere": entry.tempoRisposta || '',
-                        "Opzioni attive": entry.opzioniAttive || '',
+                        "Tipologia": '',
+                        "Tempo impiegato per rispondere": '',
+                        "Opzioni attive": '',
                         "Risposta è corretta": entry.isCorrect ? 'Sì' : 'No',
                         "Domanda": entry.question,
-                        "Risposte": entry.risposteMostrate || '',
+                        "Risposte": '',
                         "Riposta utente": entry.selectedAnswer,
                         "Riposta corretta": entry.correctAnswer
                     }
@@ -1489,6 +1435,12 @@ function initEquivalentQuiz(rootId) {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+        // FUTURO: invio API
+        // fetch('https://api.example.com/quiz-report', {
+        //     method: 'POST',
+        //     headers: { 'Content-Type': 'application/json' },
+        //     body: json
+        // });
     }
 
     function renderReview() {
@@ -1501,7 +1453,7 @@ function initEquivalentQuiz(rootId) {
 
             const title = document.createElement('p');
             title.className = 'quiz-review-title';
-            title.textContent = 'Domanda ' + String(entry.number + 1);
+            title.textContent = 'Domanda ' + String(entry.number);
 
             const questionLine = document.createElement('p');
             questionLine.className = 'quiz-review-line';
@@ -1655,22 +1607,22 @@ function initEquivalentQuiz(rootId) {
      * @post Timer avviato, stato azzerato e prima domanda in caricamento.
      */
     function startTest() {
-        let currentExercise = 0;
-        let totalExercises = DEFAULT_EXERCISES;
-        let standardTimeMinutes = DEFAULT_TIME_MINUTES;
-        let timerSecondsRemaining = DEFAULT_TIME_MINUTES * 60;
-        let timerIntervalId = null;
-        const reviewResults = [];
-        let currentQuestionInfo = [];
-        let currentTruthAssignments = {};
-        let atomSpokenMap = {};
-        let currentQuestionText = '';
-        let currentImageFormulaSteps = { question: [], correct: [], wrongByFormula: {} };
-        let quantifierNegationTarget = 0;
-        let quantifierNegationUsed = 0;
-        // Reset variabili globali di tracciamento tempo
-        quizStartTimestamp = null;
-        questionViewTimestamps = [];
+        currentExercise = 1;
+        reviewResults.length = 0;
+        totalExercises = parsePositiveInt(questionCountInput && questionCountInput.value, DEFAULT_EXERCISES);
+        standardTimeMinutes = parsePositiveInt(timeMinutesInput && timeMinutesInput.value, DEFAULT_TIME_MINUTES);
+        quantifierNegationTarget = pickQuantifierNegationTarget(totalExercises);
+        quantifierNegationUsed = 0;
+        if (questionCountInput) questionCountInput.value = String(totalExercises);
+        if (timeMinutesInput) timeMinutesInput.value = String(standardTimeMinutes);
+        state.showFormulas = Boolean(showFormulasInput && showFormulasInput.checked);
+        state.colorAtoms = Boolean(colorAtomsInput && colorAtomsInput.checked);
+        state.spokenlanguage = Boolean(spokenLanguageInput && spokenLanguageInput.checked);
+        state.showWrongActionImages = Boolean(showWrongActionImagesInput && showWrongActionImagesInput.checked);
+        syncWrongImagesAvailability();
+        applyFormulasLayout();
+        updateTestTitle();
+        if (testTitleEl) testTitleEl.hidden = false;
         if (introTitleEl) introTitleEl.hidden = true;
         if (reviewTitleEl) reviewTitleEl.hidden = true;
         if (introEl) introEl.hidden = true;
