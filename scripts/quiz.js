@@ -94,7 +94,7 @@ function initEquivalentQuiz(rootId) {
     let currentImageFormulaSteps = { question: [], correct: [], wrongByFormula: {} };
     let quantifierNegationTarget = 0;
     let quantifierNegationUsed = 0;
-    var quizStartTimestamp = null;
+    var quizStartTimestamp = Date.now();
     var questionViewTimestamps = [];
 
     function normalizeApiBase(rawBase) {
@@ -1358,6 +1358,12 @@ function initEquivalentQuiz(rootId) {
      * @pre state.options contiene esattamente 4 opzioni e state.correctIndex e valido.
      * @post Blocca la domanda corrente, aggiorna feedback visuale/testuale e registra il risultato nel recap.
      */
+    // Format elapsed time in seconds with two decimals and 's' suffix, or '' if invalid
+    function formatElapsedTime(ms) {
+        if (typeof ms !== 'number' || isNaN(ms) || ms < 0) return '';
+        return (ms / 1000).toFixed(2) + 's';
+    }
+
     function checkAnswer() {
         if (!Array.isArray(state.options) || state.options.length !== 4) {
             setStatus('Nessun esercizio disponibile.');
@@ -1403,7 +1409,8 @@ function initEquivalentQuiz(rootId) {
             // Tempo risposta
             let timeToAnswer = '';
             if (questionViewTimestamps[currentExercise] != null) {
-                timeToAnswer = ((Date.now() - questionViewTimestamps[currentExercise]) / 1000).toFixed(2) + 's';
+                const elapsed = Date.now() - questionViewTimestamps[currentExercise];
+                timeToAnswer = formatElapsedTime(elapsed);
             }
 
             // Tipo domanda
@@ -1545,7 +1552,7 @@ function initEquivalentQuiz(rootId) {
                     return {
                         ["Domanda nº " + (idx+1)]: {
                             "Tipologia": entry.tipoDomanda || '',
-                            "Tempo impiegato per rispondere": entry.tempoRisposta || '',
+                            "Tempo impiegato per rispondere": typeof entry.tempoRisposta === 'string' ? entry.tempoRisposta : '',
                             "Opzioni attive": entry.opzioniAttive || '',
                             "Risposta è corretta": entry.isCorrect ? 'Sì' : 'No',
                             "Domanda": entry.question,
