@@ -11,23 +11,20 @@
  */
 function initEquivalentQuiz(rootId) {
         /**
-         * Restituisce le opzioni attive (testi) mostrate all'utente per la domanda corrente.
+         * Restituisce le opzioni attive (testi) mostrate all'utente per le domande.
          * @returns {string[]} Array dei testi delle opzioni attuali.
          */
-        function getActiveOptions() {
-            if (!Array.isArray(state.options)) return [];
-
-            return state.options.map(opt => {
-                try {
-                    if (!opt) return '';
-                    if (typeof opt === 'object' && opt !== null && 'text' in opt) {
-                        return String(opt.text ?? '');
-                    }
-                    return String(opt);
-                } catch (e) {
-                    return '';
-                }
-            });
+        function getActiveOptions() { 
+            const showFormulas = document.getElementById('quizShowFormulas')?.checked || false;
+            const colorAtoms = document.getElementById('quizColorAtoms')?.checked || false;
+            const spokenLanguage = document.getElementById('quizSpokenLanguage')?.checked || false;
+            const showWrongActionImages = document.getElementById('quizShowWrongActionImages')?.checked || false;
+            return {
+                showFormulas,
+                colorAtoms,
+                spokenLanguage,
+                showWrongActionImages
+            };
         }
         const root = document.getElementById(rootId);
     if (!root) return;
