@@ -1648,22 +1648,22 @@ function initEquivalentQuiz(rootId) {
      * @post Timer avviato, stato azzerato e prima domanda in caricamento.
      */
     function startTest() {
-        currentExercise = 1;
-        reviewResults.length = 0;
-        totalExercises = parsePositiveInt(questionCountInput && questionCountInput.value, DEFAULT_EXERCISES);
-        standardTimeMinutes = parsePositiveInt(timeMinutesInput && timeMinutesInput.value, DEFAULT_TIME_MINUTES);
-        quantifierNegationTarget = pickQuantifierNegationTarget(totalExercises);
-        quantifierNegationUsed = 0;
-        if (questionCountInput) questionCountInput.value = String(totalExercises);
-        if (timeMinutesInput) timeMinutesInput.value = String(standardTimeMinutes);
-        state.showFormulas = Boolean(showFormulasInput && showFormulasInput.checked);
-        state.colorAtoms = Boolean(colorAtomsInput && colorAtomsInput.checked);
-        state.spokenlanguage = Boolean(spokenLanguageInput && spokenLanguageInput.checked);
-        state.showWrongActionImages = Boolean(showWrongActionImagesInput && showWrongActionImagesInput.checked);
-        syncWrongImagesAvailability();
-        applyFormulasLayout();
-        updateTestTitle();
-        if (testTitleEl) testTitleEl.hidden = false;
+        let currentExercise = 0;
+        let totalExercises = DEFAULT_EXERCISES;
+        let standardTimeMinutes = DEFAULT_TIME_MINUTES;
+        let timerSecondsRemaining = DEFAULT_TIME_MINUTES * 60;
+        let timerIntervalId = null;
+        const reviewResults = [];
+        let currentQuestionInfo = [];
+        let currentTruthAssignments = {};
+        let atomSpokenMap = {};
+        let currentQuestionText = '';
+        let currentImageFormulaSteps = { question: [], correct: [], wrongByFormula: {} };
+        let quantifierNegationTarget = 0;
+        let quantifierNegationUsed = 0;
+        // Tracciamento tempo avvio test e visualizzazione domande
+        let quizStartTimestamp = null;
+        var questionViewTimestamps = [];
         if (introTitleEl) introTitleEl.hidden = true;
         if (reviewTitleEl) reviewTitleEl.hidden = true;
         if (introEl) introEl.hidden = true;
