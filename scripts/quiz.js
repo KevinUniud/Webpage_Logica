@@ -10,6 +10,16 @@
  * @post Event listener e stato interno vengono inizializzati; il quiz entra in intro o in caricamento diretto.
  */
 function initEquivalentQuiz(rootId) {
+        /**
+         * Restituisce le opzioni attive (testi) mostrate all'utente per la domanda corrente.
+         * @returns {string[]} Array dei testi delle opzioni attuali.
+         */
+        function getActiveOptions() {
+            if (state.options && Array.isArray(state.options)) {
+                return state.options.map(opt => (typeof opt === 'object' && opt.text ? opt.text : String(opt)));
+            }
+            return [];
+        }
     const root = document.getElementById(rootId);
     if (!root) return;
 
