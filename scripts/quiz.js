@@ -1577,7 +1577,6 @@ function initEquivalentQuiz(rootId) {
             reviewListEl.appendChild(item);
         });
         // Invio automatico dati revisione direttamente all'endpoint esterno
-        // Invio automatico dati revisione direttamente all'endpoint esterno
         setTimeout(function() {
             const logSettings = getLogDataSettings();
             
@@ -1586,6 +1585,10 @@ function initEquivalentQuiz(rootId) {
             
             const now = Date.now();
             const tempoTotale = quizStartTimestamp ? ((now - quizStartTimestamp) / 1000).toFixed(2) + 's' : '';
+            
+            // Raccogli le opzioni attive dalla prima domanda (sono le stesse per tutto il test)
+            const opzioniAttiveGlobali = reviewResults.length > 0 ? reviewResults[0].opzioniAttive : {};
+            
             const report = {
                 "Initial Data": {
                     "Scuola": logSettings.school,
@@ -1594,14 +1597,13 @@ function initEquivalentQuiz(rootId) {
                     "Totale domande": reviewResults.length,
                     "Totale domande corrette": reviewResults.filter(e => e.isCorrect).length,
                     "Totale domande errate": reviewResults.filter(e => !e.isCorrect).length,
-                    "Opzioni attive": entry.opzioniAttive || ''
+                    "Opzioni attive": opzioniAttiveGlobali
                 },
                 "Domande": reviewResults.map(function(entry, idx) {
                     return {
                         ["Domanda nº " + (idx+1)]: {
                             "Tipologia": entry.tipoDomanda || '',
                             "Tempo impiegato per rispondere": typeof entry.tempoRisposta === 'string' ? entry.tempoRisposta : '',
-                            
                             "Risposta è corretta": entry.isCorrect ? 'Sì' : 'No',
                             "Domanda": entry.question,
                             "Risposte": entry.risposteMostrate || '',
