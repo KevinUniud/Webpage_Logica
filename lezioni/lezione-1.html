@@ -53,18 +53,17 @@
                         <td>non</td>
                         <td>P</td>
                         <td>Q</td>
-                        <td>V</td>
+                        <td>N</td>
                     </tr>
                 </thead>
             </table>
             </div>
-            Nota: qui la lettera V indica una proposizione (per esempio "nuota"), non il valore di verita "vero".<br>
         </p>
 
         <div class="rounded-box"> <!-- Array 1. -->
         <form id="quiz1_1">
             <p>
-                1. Se (Anna) salta allora non corre <br><br>
+                1. Se Anna salta allora non corre <br><br>
                 Salta = P<br>
                 Corre = Q
             </p> <!-- P allora non Q -->
@@ -88,10 +87,10 @@
         <div class="rounded-box"> <!-- Array 2. -->
         <form id="quiz1_1">
             <p>
-                2. Se (Anna) non nuota allora salta<br><br>
-                Nuota = V<br>
+                2. Se Anna non nuota allora salta<br><br>
+                Nuota = N<br>
                 Salta = P
-            </p> <!-- non V allora P -->
+            </p> <!-- non N allora P -->
             <label>
                 <input class="expressionInput" name="expr" type="text" readonly aria-label="Expression builder" placeholder="Clicca i bottoni per costruire l'espressione">
 
@@ -101,7 +100,7 @@
                     <button data-val=" o " class="btn-wide">o</button>
                     <button data-val=" non " class="btn-wide">non</button>
                     <button data-val=" P " class="btn-wide">P</button>
-                    <button data-val=" V " class="btn-wide">V</button>
+                    <button data-val=" N " class="btn-wide">N</button>
                     <button class="deleteBtn" title="Delete">Delete</button>
                 </div>
             </label>
@@ -110,7 +109,7 @@
         </div><br>
 
         <p>
-            Si riesce a vedere anche un'altra cosa molto interessante su questa frase, si possono unire le due frasi in una singola mantenendo lo stesso significato, "Se Anna non nuota allora salta, e se salta allora non corre", cioè abbiamo appena dedotto: (non V -> P) e (P -> non Q).<br>
+            Si riesce a vedere anche un'altra cosa molto interessante su questa frase, si possono unire le due frasi in una singola mantenendo lo stesso significato, "Se Anna non nuota allora salta, e se salta allora non corre", cioè abbiamo appena dedotto: (¬N -> P) ∧ (P -> ¬Q).<br>
             <br>
             Iniziamo così a porci domande più complesse, se io so che Anna sta saltando e sta correndo la frase che abbiamo appena dedotto è vera o falsa? Naturalmente è falsa, Anna non può fare entrambe le cose contemporaneamente.<br>
             <br>
@@ -121,7 +120,7 @@
                 <li>Se Bob gioca allora non scrive</li>
                 <li>Se Bob non legge allora scrive</li>
             </ol>
-            Otteniamo le stesse implicazioni precedenti: (non V -> P) e (P -> non Q). Questa struttura non dipende dal nome o dall'azione e ci permette di non confonderci a causa della lingua.<br>
+            Otteniamo le stesse implicazioni precedenti: (¬N -> P) ∧ (P -> ¬Q). Questa struttura non dipende dal nome o dall'azione e ci permette di non confonderci a causa della lingua.<br>
             <br>
             Si prenda la frase "Se Carlo salta allora Carlo nuota", questa frase in italiano può sembrare strana ma riscrivendola si perde questa confusione:<br>
             <ul>

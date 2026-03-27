@@ -1143,7 +1143,7 @@ function initEquivalentQuiz(rootId) {
             ];
 
         return {
-            question: 'Qual è la negazione di "' + original + '"?',
+            question: 'Qual\'è la negazione di "' + original + '"?',
             options: shuffle([
                 { text: correct, correct: true },
                 { text: wrongs[0], correct: false },

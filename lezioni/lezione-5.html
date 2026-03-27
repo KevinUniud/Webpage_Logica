@@ -31,66 +31,127 @@
         </details>
 
         <h1>Introduzione</h1>
-        <section id="lezione-5">
-            <h2>Lezione 5: Se e solo se</h2>
+        <section id="lezione-4">
+            <h2>Lezione 5: Equivalenze proposizionali</h2>
 
-            <p>
-                Introduciamo ora il se e solo se (<code>↔</code>): questo operatore logico deriva
-                dall'unione di due implicazioni (<code>→</code>) in versi opposti.
-            </p>
-
-            <div class="table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>P → Q</th>
-                            <th>Q → P</th>
-                            <th>P ↔ Q</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>T</td>
-                            <td>T</td>
-                            <td>T</td>
-                        </tr>
-                        <tr>
-                            <td>T</td>
-                            <td>F</td>
-                            <td>F</td>
-                        </tr>
-                        <tr>
-                            <td>F</td>
-                            <td>T</td>
-                            <td>F</td>
-                        </tr>
-                        <tr>
-                            <td>F</td>
-                            <td>F</td>
-                            <td>T</td>
-                        </tr>
-                    </tbody>
-                </table>
+        <p>
+            Si notano ora cinque equivalenze, in cui i due membri di ognuna sono interscambiabili, in quanto forniscono gli stessi valori di verità:<br>
+            
+            <div class="table_inv">
+            <table>
+                <thead>
+                    <tr>
+                        <td>P → Q</td> 
+                        <td> ↔ </td> 
+                        <td>¬P ∨ Q</td>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>P → Q</td> 
+                        <td> ↔ </td> 
+                        <td>¬Q → ¬P</td>
+                    </tr>
+                    <tr>
+                        <td>P ∨ Q</td> 
+                        <td> ↔ </td> 
+                        <td>¬P → Q</td>
+                    </tr>
+                    <tr>
+                        <td>P ∧ Q</td> 
+                        <td> ↔ </td> 
+                        <td>¬(P → ¬Q)</td>
+                    </tr>
+                    <tr>
+                        <td>¬(P → Q)</td> 
+                        <td> ↔ </td> 
+                        <td>P ∧ ¬Q</td>
+                    </tr>
+                </tbody>
+            </table>           
             </div>
+            
+            <br>
+            Tramite la tabella e queste formule si risolvano le seguenti domande:
+        </p>
 
-            <p>
-                Dalla tabella risulta che entrambe le affermazioni devono avere lo stesso valore
-                di verita affinche la relazione sia vera.
-            </p>
+        <div class="rounded-box">
+        <form id="quiz5_1"> <!-- True, False -->
+            <p>1) Quale formula è equivalente a P → (Q ∨ V):<br></p>
+            <label>
+                <input type="radio" name="q12" value="F"> P → ¬(Q → ¬V)<br> <!-- F -->
+                <input type="radio" name="q12" value="F"> (P → ¬Q) → V<br> <!-- F -->
+                <input type="radio" name="q12" value="T"> ¬P ∨ Q ∨ V<br> <!-- V -->
+                <input type="radio" name="q12" value="F"> (¬Q → V) → ¬P<br> <!-- F -->
+            </label>
+        </form><br>
+        <button onclick="check()">Controlla risposta</button>
+        </div><br>
 
-            <div class="important">
-                <p>
-                    <b>Importante</b><br>
-                    Una deduzione immediata e che i due predicati sono interscambiabili:
-                    <br>
-                    <code>P ↔ Q</code> e identico a <code>Q ↔ P</code>.
-                </p>
-            </div>
+        <div class="rounded-box">
+        <form id="quiz5_2"> <!-- True, False -->
+            <p>2) "Anna salta e corre" è equivalente a dire che:<br></p>
+            <label>
+                <input type="radio" name="q13" value="T"> ¬(P → ¬Q)<br> <!-- V -->
+                <input type="radio" name="q13" value="F"> ¬P ∧ ¬Q<br> <!-- F -->
+                <input type="radio" name="q13" value="F"> ¬P ∨ ¬Q<br> <!-- F -->
+                <input type="radio" name="q13" value="F"> ¬P → Q<br> <!-- F -->
+            </label>
+        </form><br>
+        <button onclick="check()">Controlla risposta</button>
+        </div><br>
+
+        <div class="rounded-box">
+        <form id="quiz5_2"> <!-- True, False -->
+            <p>3) "Se Bob suona il flauto allora balla" è equivalente a dire che:<br></p>
+            <label>
+                <input type="radio" name="q14" value="F"> Q → P (se balla allora suona)<br> <!-- F -->
+                <input type="radio" name="q14" value="T"> ¬Q → ¬P (se non balla allora non suona)<br> <!-- V -->
+                <input type="radio" name="q14" value="F"> ¬P → ¬Q (se non suona allora non balla)<br> <!-- F -->
+                <input type="radio" name="q14" value="F"> P ∨ ¬Q (suona o non balla)<br> <!-- F -->
+            </label>
+        </form><br>
+        <button onclick="check()">Controlla risposta</button>
+        </div><br>
+
+        <div class="important">
+        <p>
+            <b>Importante</b>
+            <br>
+            Q può accadere anche da solo ma se P accade deve seguire Q, ergo se Q non è accaduto non è accaduto neanche P<br>
+            <br>
+            Oppure:<br>
+            Q può essere sia vero che falso ma se P è vera allora deve esserlo anche Q, perciò se Q è falsa vuol dire che anche P è falsa altrimenti se P fosse vera ne conseguirebbe la verità di Q
+        </p>
+        </div><br>
+
+        <div class="rounded-box">
+        <form id="quiz5_2"> <!-- True, False -->
+            <p>4) "Se Carlo non è felice allora Daniele lo è" equivale a dire:<br></p>
+            <label>
+                <input type="radio" name="q15" value="T"> Carlo è felice o Daniele è felice<br> <!-- V -->
+                <input type="radio" name="q15" value="F"> Carlo è felice e Daniele è felice<br> <!-- F -->
+                <input type="radio" name="q15" value="F"> Se Carlo è felice allora Daniele non è felice<br> <!-- F -->
+                <input type="radio" name="q15" value="F"> Se Daniele è felice allora Carlo non è felice<br> <!-- F -->
+            </label>
+        </form><br>
+        <button onclick="check()">Controlla risposta</button>
+        </div><br>
+
+        <div class="important">
+        <p>
+            <b>Importante</b>
+            <br>
+            Si ricorda che "o" non impedisce che Carlo e Daniele siano entrambi felici
+        </p>
+        </div><br>
+
         </section>
 
         <div class="rounded-box lesson-nav">
             <a class="lesson-nav-btn" href="lezione-4.html">Previous</a>
             <a class="lesson-nav-btn" href="lezione-6.html">Next</a>
         </div>
+
     </body>
 </html>
