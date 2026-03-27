@@ -1,243 +1,181 @@
 <!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Esercitazione - Quiz Logica</title>
-    <meta name="description" content="Quiz di logica proposizionale con formule di riferimento e ordine di precedenza">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- Stylesheet links (preserved as original) -->
-    <link rel="stylesheet" href="../styles/base.css">
-    <link rel="stylesheet" href="../styles/components.css">
-    <link rel="stylesheet" href="../styles/quiz.css">
-    <link rel="stylesheet" href="../styles/themes.css">
-    <style>
-        /* Additional inline styles to ensure precedence table looks clean and matches existing design */
-        .quiz-formulas-pane .table {
-            margin-bottom: 1.5rem;
-        }
-        .precedence-list {
-            list-style: none;
-            margin: 0;
-            padding-left: 1rem;
-        }
-        .precedence-list li {
-            margin-bottom: 0.4rem;
-            font-family: 'Courier New', monospace;
-            font-weight: 500;
-        }
-        .precedence-list .operator-symbol {
-            font-weight: bold;
-            background: #f0f0f0;
-            padding: 0.1rem 0.3rem;
-            border-radius: 6px;
-            display: inline-block;
-            min-width: 2rem;
-            text-align: center;
-        }
-        .quiz-formulas-pane h2 {
-            font-size: 1.3rem;
-            margin-top: 0.5rem;
-            border-left: 4px solid #2c7da0;
-            padding-left: 12px;
-        }
-        .quiz-formulas-pane .table th, 
-        .quiz-formulas-pane .table td {
-            text-align: center;
-            padding: 6px 8px;
-        }
-    </style>
-</head>
-<body>
-    <!-- scripts (preserved exactly as original, no changes) -->
-    <script src="../scripts/settings.js"></script>
-    <script src="../scripts/quiz-images-question.js"></script>
-    <script src="../scripts/quiz-images-correct.js"></script>
-    <script src="../scripts/quiz-images-wrong.js"></script>
-    <script src="../scripts/quiz-shared.js"></script>
-    <script src="../scripts/quiz.js"></script>
-    <script src="../scripts/app.js"></script>
 
-    <h1 id="quizTestTitle" hidden>Esercizio nº1</h1>
-    <h1 id="quizReviewTitle" hidden>Revisione Test</h1>
-    <h1 id="quizIntroTitle">Impostazioni</h1>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Esercitazione</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="../styles/base.css">
+        <link rel="stylesheet" href="../styles/components.css">
+        <link rel="stylesheet" href="../styles/quiz.css">
+        <link rel="stylesheet" href="../styles/themes.css">
+    </head>
+    <body>
+        <script src="../scripts/settings.js"></script>
+        <script src="../scripts/quiz-images-question.js"></script>
+        <script src="../scripts/quiz-images-correct.js"></script>
+        <script src="../scripts/quiz-images-wrong.js"></script>
+        <script src="../scripts/quiz-shared.js"></script>
+        <script src="../scripts/quiz.js"></script>
+        <script src="../scripts/app.js"></script>
 
-    <div id="quizTestLayout" class="quiz-test-layout">
-        <div class="rounded-box quiz-box" id="equivalenceQuiz">
-            <div id="quizIntro">
-                <p>
-                    <label>
-                        Numero domande:
-                        <input id="quizQuestionCount" type="number" min="1" step="1" value="10">
-                    </label>
-                </p>
-                <p>
-                    <label>
-                        Tempo:
-                        <input id="quizTimeMinutes" type="number" min="1" step="1" value="20">
-                        minuti
-                    </label>
-                </p>
-                <p>
-                    <label>
-                        <input id="quizShowFormulas" type="checkbox">
-                        Mostra formule
-                    </label>
-                </p>
-                <p>
-                    <label>
-                        <input id="quizColorAtoms" type="checkbox">
-                        Colora atomi con valore di verita
-                    </label>
-                </p>
-                <p>
-                    <label>
-                        <input id="quizSpokenLanguage" type="checkbox">
-                        Forma parlata
-                    </label>
-                </p>
-                <p>
-                    <label>
-                        <input id="quizShowWrongActionImages" type="checkbox" disabled>
-                        Mostra immagini
-                    </label>
-                </p>
-                <button id="quizStartButton" class="btn-wide" type="button">Inizia Test</button>
+        <h1 id="quizTestTitle" hidden>Esercizio nº1</h1>
+        <h1 id="quizReviewTitle" hidden>Revisione Test</h1>
+        <h1 id="quizIntroTitle">Impostazioni</h1>
+
+        <div id="quizTestLayout" class="quiz-test-layout">
+            <div class="rounded-box quiz-box" id="equivalenceQuiz">
+                <div id="quizIntro">
+                    <p>
+                        <label>
+                            Numero domande:
+                            <input id="quizQuestionCount" type="number" min="1" step="1" value="10">
+                        </label>
+                    </p>
+                    <p>
+                        <label>
+                            Tempo:
+                            <input id="quizTimeMinutes" type="number" min="1" step="1" value="20">
+                            minuti
+                        </label>
+                    </p>
+                    <p>
+                        <label>
+                            <input id="quizShowFormulas" type="checkbox">
+                            Mostra formule
+                        </label>
+                    </p>
+                    <p>
+                        <label>
+                            <input id="quizColorAtoms" type="checkbox">
+                            Colora atomi con valore di verita
+                        </label>
+                    </p>
+                    <p>
+                        <label>
+                            <input id="quizSpokenLanguage" type="checkbox">
+                            Forma parlata
+                        </label>
+                    </p>
+                    <p>
+                        <label>
+                            <input id="quizShowWrongActionImages" type="checkbox" disabled>
+                            Mostra immagini
+                        </label>
+                    </p>
+                    <button id="quizStartButton" class="btn-wide" type="button">Inizia Test</button>
+                </div>
+
+                <div id="quizTest" hidden>
+                    <p id="quizQuestion">Quale formula e equivalente a "chiamata":</p>
+                    <div id="quizInfo" class="quiz-info" hidden></div>
+                    <div id="quizOptions" class="quiz-options" role="radiogroup" aria-label="Opzioni risposta" tabindex="0"></div>
+                    <button id="quizActionButton" class="btn-wide" type="button">Controlla</button>
+                    <p id="quizStatus" class="quiz-status" aria-live="polite"></p>
+                    <div id="quizWrongActionImages" class="quiz-wrong-images" hidden></div>
+                </div>
+
+                <div id="quizReview" hidden>
+                    <div id="quizReviewList" class="quiz-review-list"></div>
+                </div>
             </div>
 
-            <div id="quizTest" hidden>
-                <p id="quizQuestion">Quale formula e equivalente a "chiamata":</p>
-                <div id="quizInfo" class="quiz-info" hidden></div>
-                <div id="quizOptions" class="quiz-options" role="radiogroup" aria-label="Opzioni risposta" tabindex="0"></div>
-                <button id="quizActionButton" class="btn-wide" type="button">Controlla</button>
-                <p id="quizStatus" class="quiz-status" aria-live="polite"></p>
-                <div id="quizWrongActionImages" class="quiz-wrong-images" hidden></div>
-            </div>
+            <aside id="quizFormulasPane" class="quiz-formulas-pane" hidden>
+                <h2>Formule Di Riferimento</h2>
 
-            <div id="quizReview" hidden>
-                <div id="quizReviewList" class="quiz-review-list"></div>
-            </div>
+                <div class="table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Simbolo</th>
+                                <th>Significato</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>-></td><td>Allora / Implica</td></tr>
+                            <tr><td>↔</td><td>Se e solo se</td></tr>
+                            <tr><td>∧</td><td>E</td></tr>
+                            <tr><td>∨</td><td>O</td></tr>
+                            <tr><td>¬</td><td>Non / Negazione</td></tr>
+                            <tr><td>∀</td><td>Per ogni</td></tr>
+                            <tr><td>∃</td><td>Esiste</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>P</th>
+                                <th>Q</th>
+                                <th>P ∧ Q</th>
+                                <th>P ∨ Q</th>
+                                <th>P -> Q</th>
+                                <th>¬P</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>F</td><td>F</td><td>F</td><td>F</td><td>V</td><td>V</td></tr>
+                            <tr><td>V</td><td>F</td><td>F</td><td>V</td><td>F</td><td>F</td></tr>
+                            <tr><td>F</td><td>V</td><td>F</td><td>V</td><td>V</td><td>V</td></tr>
+                            <tr><td>V</td><td>V</td><td>V</td><td>V</td><td>V</td><td>F</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Equivalenze</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>P -> Q ↔ ¬P ∨ Q</td></tr>
+                            <tr><td>P -> Q ↔ ¬Q -> ¬P</td></tr>
+                            <tr><td>P ∨ Q ↔ ¬P -> Q</td></tr>
+                            <tr><td>P ∧ Q ↔ ¬(P -> ¬Q)</td></tr>
+                            <tr><td>¬(P -> Q) ↔ P ∧ ¬Q</td></tr>
+                            <tr><td>¬∀x P ↔ ∃x ¬P</td></tr>
+                            <tr><td>¬∃x P ↔ ∀x ¬P</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Ordine di precedenza</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr> <td> 1º ( ) </td> </tr>
+                            <tr> <td> 2º ¬ </td> </tr>
+                            <tr> <td> 3º ∧ </td> </tr>
+                            <tr> <td> 4º ∨ </td> </tr>
+                            <tr> <td> 5º → </td> </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </aside>
         </div>
 
-        <aside id="quizFormulasPane" class="quiz-formulas-pane" hidden>
-            <h2>Formule Di Riferimento</h2>
+        <div id="quizReviewNav" class="rounded-box lesson-nav" hidden>
+            <button id="quizReviewRestart" class="lesson-nav-btn" type="button">Ricomincia</button>
+            <a class="lesson-nav-btn" href="../index.html">Index</a>
+        </div>
 
-            <div class="table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Simbolo</th>
-                            <th>Significato</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td>-></td><td>Allora / Implica</td></tr>
-                        <tr><td>↔</td><td>Se e solo se</td></tr>
-                        <tr><td>∧</td><td>E</td></tr>
-                        <tr><td>∨</td><td>O</td></tr>
-                        <tr><td>¬</td><td>Non / Negazione</td></tr>
-                        <tr><td>∀</td><td>Per ogni</td></tr>
-                        <tr><td>∃</td><td>Esiste</td></tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>P</th>
-                            <th>Q</th>
-                            <th>P ∧ Q</th>
-                            <th>P ∨ Q</th>
-                            <th>P -> Q</th>
-                            <th>¬P</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td>F</td><td>F</td><td>F</td><td>F</td><td>V</td><td>V</td></tr>
-                        <tr><td>V</td><td>F</td><td>F</td><td>V</td><td>F</td><td>F</td></tr>
-                        <tr><td>F</td><td>V</td><td>F</td><td>V</td><td>V</td><td>V</td></tr>
-                        <tr><td>V</td><td>V</td><td>V</td><td>V</td><td>V</td><td>F</td></tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Equivalenze</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td>P -> Q ↔ ¬P ∨ Q</td></tr>
-                        <tr><td>P -> Q ↔ ¬Q -> ¬P</td></tr>
-                        <tr><td>P ∨ Q ↔ ¬P -> Q</td></tr>
-                        <tr><td>P ∧ Q ↔ ¬(P -> ¬Q)</td></tr>
-                        <tr><td>¬(P -> Q) ↔ P ∧ ¬Q</td></tr>
-                        <tr><td>¬∀x P ↔ ∃x ¬P</td></tr>
-                        <tr><td>¬∃x P ↔ ∀x ¬P</td></tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- NUOVA SEZIONE: Ordine di precedenza degli operatori logici -->
-            <div class="table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Ordine di precedenza</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td style="text-align: left; padding: 8px 12px;">
-                                <ol class="precedence-list" style="margin: 0; padding-left: 1.2rem;">
-                                    <li>1. <span class="operator-symbol">( )</span> &nbsp; parentesi</li>
-                                    <li>2. <span class="operator-symbol">¬</span> &nbsp; negazione</li>
-                                    <li>3. <span class="operator-symbol">∧</span> &nbsp; congiunzione (E)</li>
-                                    <li>4. <span class="operator-symbol">∨</span> &nbsp; disgiunzione (O)</li>
-                                    <li>5. <span class="operator-symbol">→</span> &nbsp; implicazione</li>
-                                </ol>
-                                <div style="font-size: 0.85rem; margin-top: 8px; color: #2c3e50;">
-                                    ⓘ Gli operatori con precedenza più alta vengono valutati per primi.<br>
-                                    Esempio: ¬P ∧ Q → R equivale a ((¬P) ∧ Q) → R.
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </aside>
-    </div>
-
-    <div id="quizReviewNav" class="rounded-box lesson-nav" hidden>
-        <button id="quizReviewRestart" class="lesson-nav-btn" type="button">Ricomincia</button>
-        <a class="lesson-nav-btn" href="../index.html">Index</a>
-    </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize quiz only if the global function exists (preserves original behavior)
-            if (typeof initEquivalentQuiz === 'function') {
-                initEquivalentQuiz('equivalenceQuiz');
-            }
-
-            const formulasCheckbox = document.getElementById('quizShowFormulas');
-            const formulasPane = document.getElementById('quizFormulasPane');
-            if (formulasCheckbox && formulasPane) {
-                // ensure initial state based on checkbox (original logic might set it later, but safe sync)
-                const updatePaneVisibility = () => {
-                    if (formulasPane) {
-                        formulasPane.hidden = !formulasCheckbox.checked;
-                    }
-                };
-                // Small delay to let original settings load if needed, but no conflict
-                setTimeout(updatePaneVisibility, 10);
-                formulasCheckbox.addEventListener('change', updatePaneVisibility);
-            }
-        });
-    </script>
-</body>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                if (typeof initEquivalentQuiz === 'function') {
+                    initEquivalentQuiz('equivalenceQuiz');
+                }
+            });
+        </script>
+    
+    </body>
 </html>
