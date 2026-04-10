@@ -236,6 +236,12 @@
     color: var(--muted);
 }
 
+.quiz-feedback-continue {
+    width: auto;
+    display: inline-block;
+    align-self: flex-start;
+}
+
 .quiz-feedback-continue[disabled] {
     opacity: 0.6;
     cursor: not-allowed;

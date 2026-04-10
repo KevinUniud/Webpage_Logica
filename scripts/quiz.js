@@ -97,11 +97,11 @@ function initEquivalentQuiz(rootId) {
     var quizStartTimestamp = Date.now();
     var questionViewTimestamps = [];
     const FEEDBACK_FIELDS = [
-        { id: 'expectation', payloadKey: 'Aspettative test', label: 'Il test è andato bene' },
-        { id: 'aidsUtility', payloadKey: 'Utilità ausili', label: 'Gli ausili mi hanno aiutato a svolgere il test' },
-        { id: 'lessonsUtility', payloadKey: 'Utilità lezioni', label: 'Le lezioni di introduzione sono state utili per affrontare il test' },
-        { id: 'testDifficulty', payloadKey: 'Difficoltà test', label: 'I test sono stati difficili' },
-        { id: 'control', payloadKey: 'Controllo', label: 'Gli ausili non sono stati utili durante il test' }
+        { id: 'expectation', payloadKey: 'Aspettative test', label: 'Il test è andato bene:' },
+        { id: 'aidsUtility', payloadKey: 'Utilità ausili', label: 'Gli ausili mi hanno aiutato a svolgere il test:' },
+        { id: 'lessonsUtility', payloadKey: 'Utilità lezioni', label: 'Le lezioni di introduzione sono state utili per affrontare il test:' },
+        { id: 'testDifficulty', payloadKey: 'Difficoltà test', label: 'I test sono stati difficili:' },
+        { id: 'control', payloadKey: 'Controllo', label: 'Gli ausili non sono stati utili durante il test:' }
     ];
     let feedbackValues = createEmptyFeedbackValues();
     const reviewSubmissionState = {
