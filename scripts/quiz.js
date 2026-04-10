@@ -773,6 +773,11 @@ function initEquivalentQuiz(rootId) {
 
     function normalizeFormulaAtoms(text) {
         let out = String(text || '');
+        if (out.indexOf('"') !== -1) {
+            return out.replace(/"([^"]*)"/g, function(_, inner) {
+                return '"' + normalizeFormulaAtoms(inner) + '"';
+            });
+        }
         out = out.replace(/^\s*([a-z])\s+((?:e|è|=|:)\s*(?:vero|falso)\s*)$/i, function(_, atom, rest) {
             return atom.toUpperCase() + ' ' + rest;
         });
@@ -903,7 +908,7 @@ function initEquivalentQuiz(rootId) {
             .replace(/∀\s*[A-Za-z][A-Za-z0-9_]*/g, 'per ogni persona tale che')
             .replace(/∃\s*[A-Za-z][A-Za-z0-9_]*/g, 'esiste una persona tale che')
             .replace(/↔/g, ' se e solo se ')
-            .replace(/→/g, ' implica ')
+            .replace(/→/g, ' implica che ')
             .replace(/∧/g, ' e ')
             .replace(/∨/g, ' o ')
             .replace(/¬\s*/g, 'non ');
