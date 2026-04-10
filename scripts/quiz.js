@@ -317,7 +317,7 @@ function initEquivalentQuiz(rootId) {
 
         const caption = document.createElement('span');
         caption.className = 'quiz-wrong-images-caption';
-        const captionSubject = state.spokenlanguage ? 'persona' : item.nome;
+        const captionSubject = state.spokenlanguage ? 'la persona' : item.nome;
         const captionAction = state.spokenlanguage
             ? formatSpokenAction(item.azione, false)
             : item.azione;
@@ -773,20 +773,56 @@ function initEquivalentQuiz(rootId) {
 
     function normalizeFormulaAtoms(text) {
         let out = String(text || '');
+        out = out.replace(/^\s*([a-z])\s+((?:e|è|=|:)\s*(?:vero|falso)\s*)$/i, function(_, atom, rest) {
+            return atom.toUpperCase() + ' ' + rest;
+        });
         out = out.replace(/\b([a-z])(?=\s*\()/g, function(_, atom) {
             return atom.toUpperCase();
         });
+
+        function previousNonSpaceChar(source, index) {
+            for (let i = index - 1; i >= 0; i -= 1) {
+                const ch = source[i];
+                if (!/\s/.test(ch)) return ch;
+            }
+            return '';
+        }
+
+        function nextNonSpaceChar(source, index) {
+            for (let i = index; i < source.length; i += 1) {
+                const ch = source[i];
+                if (!/\s/.test(ch)) return ch;
+            }
+            return '';
+        }
+
+        function isFormulaBoundaryChar(ch) {
+            return !ch || /[\(\)\[\]\{\}¬∧∨→↔,:;]/.test(ch);
+        }
 
         const quantifiedVariables = extractQuantifiedVariables(out);
         const quantifiedSet = new Set(quantifiedVariables.map(function(v) {
             return String(v).toLowerCase();
         }));
-        const quantifiedVariable = quantifiedVariables.length > 0 ? quantifiedVariables[0] : null;
+        const quantifiedVariable = quantifiedVariables.length > 0
+            ? String(quantifiedVariables[0] || '').toLowerCase()
+            : null;
+
+        if (quantifiedVariables.length > 0) {
+            out = out.replace(/([∀∃]\s*)([A-Za-z][A-Za-z0-9_]*)/g, function(_, prefix, variable) {
+                return prefix + String(variable || '').toLowerCase();
+            });
+        }
 
         if (quantifiedVariable) {
-            out = out.replace(/\b([A-Za-z])\b(?!\s*\()/g, function(_, atom) {
+            out = out.replace(/\b([A-Za-z])\b(?!\s*\()/g, function(_, atom, offset, source) {
                 const lower = String(atom).toLowerCase();
                 if (quantifiedSet.has(lower)) {
+                    return lower;
+                }
+                const prev = previousNonSpaceChar(source, offset);
+                const next = nextNonSpaceChar(source, offset + String(atom).length);
+                if (!isFormulaBoundaryChar(prev) || !isFormulaBoundaryChar(next)) {
                     return atom;
                 }
                 return String(atom).toUpperCase() + '(' + quantifiedVariable + ')';
@@ -794,7 +830,12 @@ function initEquivalentQuiz(rootId) {
             return out;
         }
 
-        return out.replace(/\b([a-z])\b(?!\s*\()/g, function(_, atom) {
+        return out.replace(/\b([a-z])\b(?!\s*\()/g, function(_, atom, offset, source) {
+            const prev = previousNonSpaceChar(source, offset);
+            const next = nextNonSpaceChar(source, offset + String(atom).length);
+            if (!isFormulaBoundaryChar(prev) || !isFormulaBoundaryChar(next)) {
+                return atom;
+            }
             return atom.toUpperCase();
         });
     }
@@ -841,7 +882,7 @@ function initEquivalentQuiz(rootId) {
             const key = normalizeAtomLookupKey(atom);
             const entry = atomSpokenMap[key] || atomSpokenMap[String(key).toLowerCase()];
             if (entry) {
-                return stashSpoken('persona ' + formatSpokenAction(entry.azione, true));
+                return stashSpoken('la persona ' + formatSpokenAction(entry.azione, true));
             }
             return 'non ' + atom;
         });
@@ -853,14 +894,14 @@ function initEquivalentQuiz(rootId) {
             const key = normalizeAtomLookupKey(variable ? atom + '(' + variable + ')' : atom);
             const entry = atomSpokenMap[key] || atomSpokenMap[String(key).toLowerCase()];
             if (entry) {
-                return stashSpoken('persona ' + formatSpokenAction(entry.azione, false));
+                return stashSpoken('la persona ' + formatSpokenAction(entry.azione, false));
             }
             return match;
         });
 
         out = out
-            .replace(/∀\s*([A-Za-z][A-Za-z0-9_]*)/g, 'per ogni $1')
-            .replace(/∃\s*([A-Za-z][A-Za-z0-9_]*)/g, 'esiste $1')
+            .replace(/∀\s*[A-Za-z][A-Za-z0-9_]*/g, 'per ogni persona tale che')
+            .replace(/∃\s*[A-Za-z][A-Za-z0-9_]*/g, 'esiste una persona tale che')
             .replace(/↔/g, ' se e solo se ')
             .replace(/→/g, ' implica ')
             .replace(/∧/g, ' e ')
@@ -887,7 +928,7 @@ function initEquivalentQuiz(rootId) {
         const key = normalizeAtomLookupKey(atom);
         const entry = atomSpokenMap[key] || atomSpokenMap[String(key).toLowerCase()];
         if (!entry) return line;
-        return 'persona ' + formatSpokenAction(entry.azione, !isTrue);
+        return 'la persona ' + formatSpokenAction(entry.azione, !isTrue);
     }
 
     /**
@@ -1009,8 +1050,11 @@ function initEquivalentQuiz(rootId) {
      */
     function pickQuantifierNegationTarget(totalQuestions) {
         if (!Number.isFinite(totalQuestions) || totalQuestions < 1) return 0;
-        if (totalQuestions < 10) {
+        if (totalQuestions < 5) {
             return Math.random() < 0.5 ? 1 : 0;
+        }
+        if (totalQuestions < 10) {
+            return 1;
         }
         return Math.max(1, Math.round(totalQuestions * 0.1));
     }
@@ -1205,10 +1249,10 @@ function initEquivalentQuiz(rootId) {
         let question = '';
         if (trueCount === 1 && falseCount === 3) {
             targetTruthValue = true;
-            question = 'Quale formula è vera tra le false?';
+            question = 'Quale formula è vera tra le seguenti?';
         } else if (trueCount === 3 && falseCount === 1) {
             targetTruthValue = false;
-            question = 'Quale formula è falsa tra le giuste?';
+            question = 'Quale formula è falsa tra le seguenti?';
         } else {
             return null;
         }
