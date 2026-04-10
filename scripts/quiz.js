@@ -317,7 +317,11 @@ function initEquivalentQuiz(rootId) {
 
         const caption = document.createElement('span');
         caption.className = 'quiz-wrong-images-caption';
-        caption.textContent = item.nome + ' ' + item.azione;
+        const captionSubject = state.spokenlanguage ? 'persona' : item.nome;
+        const captionAction = state.spokenlanguage
+            ? formatSpokenAction(item.azione, false)
+            : item.azione;
+        caption.textContent = captionSubject + ' ' + captionAction;
 
         node.appendChild(img);
         node.appendChild(caption);
@@ -458,6 +462,7 @@ function initEquivalentQuiz(rootId) {
         if (!text) {
             text = displayFormulaText(source);
         }
+        text = normalizeFormulaAtoms(text);
         if (state.differentiateParens) {
             text = differentiateParentheses(text);
         }
@@ -724,15 +729,95 @@ function initEquivalentQuiz(rootId) {
         if (Array.isArray(parsed.options)) {
             parsed.options.forEach(function(opt) {
                 const formula = getOptionDisplayFormula(opt);
-                const letters = formula.match(/\b[a-z]\b/g);
+                const quantifiedVars = new Set();
+                String(formula).replace(/[∀∃]\s*([A-Za-z][A-Za-z0-9_]*)/g, function(_, variable) {
+                    quantifiedVars.add(String(variable).toLowerCase());
+                    return _;
+                });
+
+                const predicateMatches = String(formula).match(/\b([A-Za-z][A-Za-z0-9_]*)\s*\(\s*[A-Za-z][A-Za-z0-9_]*\s*\)/g);
+                if (predicateMatches) {
+                    predicateMatches.forEach(function(predicate) {
+                        const baseMatch = predicate.match(/^\s*([A-Za-z][A-Za-z0-9_]*)\s*\(/);
+                        if (baseMatch) atomSet.add(baseMatch[1].toLowerCase());
+                    });
+                }
+
+                const letters = String(formula).match(/\b[A-Za-z]\b(?!\s*\()/g);
                 if (letters) {
                     letters.forEach(function(letter) {
-                        atomSet.add(letter);
+                        const lower = String(letter).toLowerCase();
+                        if (!quantifiedVars.has(lower)) {
+                            atomSet.add(lower);
+                        }
                     });
                 }
             });
         }
         return Array.from(atomSet).sort();
+    }
+
+    function extractQuantifiedVariables(text) {
+        const variables = [];
+        const seen = new Set();
+        String(text || '').replace(/[∀∃]\s*([A-Za-z][A-Za-z0-9_]*)/g, function(_, variable) {
+            const normalized = String(variable || '').toLowerCase();
+            if (!seen.has(normalized)) {
+                seen.add(normalized);
+                variables.push(String(variable || ''));
+            }
+            return _;
+        });
+        return variables;
+    }
+
+    function normalizeFormulaAtoms(text) {
+        let out = String(text || '');
+        out = out.replace(/\b([a-z])(?=\s*\()/g, function(_, atom) {
+            return atom.toUpperCase();
+        });
+
+        const quantifiedVariables = extractQuantifiedVariables(out);
+        const quantifiedSet = new Set(quantifiedVariables.map(function(v) {
+            return String(v).toLowerCase();
+        }));
+        const quantifiedVariable = quantifiedVariables.length > 0 ? quantifiedVariables[0] : null;
+
+        if (quantifiedVariable) {
+            out = out.replace(/\b([A-Za-z])\b(?!\s*\()/g, function(_, atom) {
+                const lower = String(atom).toLowerCase();
+                if (quantifiedSet.has(lower)) {
+                    return atom;
+                }
+                return String(atom).toUpperCase() + '(' + quantifiedVariable + ')';
+            });
+            return out;
+        }
+
+        return out.replace(/\b([a-z])\b(?!\s*\()/g, function(_, atom) {
+            return atom.toUpperCase();
+        });
+    }
+
+    function normalizeAtomLookupKey(token) {
+        const source = String(token || '').trim();
+        const predicateMatch = source.match(/^([A-Za-z][A-Za-z0-9_]*)\s*\(\s*[A-Za-z][A-Za-z0-9_]*\s*\)$/);
+        if (predicateMatch) {
+            return predicateMatch[1].toLowerCase();
+        }
+        return source.toLowerCase();
+    }
+
+    function formatSpokenAction(action, negated) {
+        const normalizedAction = String(action || '').trim();
+        let actionText = normalizedAction;
+        if (normalizedAction === 'apre' || normalizedAction === 'chiude') {
+            actionText = normalizedAction + ' la porta';
+        }
+        if (negated) {
+            return 'non ' + actionText;
+        }
+        return actionText;
     }
 
     /**
@@ -742,7 +827,37 @@ function initEquivalentQuiz(rootId) {
      */
     function applySpokenTransform(text) {
         if (!state.spokenlanguage || Object.keys(atomSpokenMap).length === 0) return String(text || '');
-        let out = String(text || '');
+        let out = normalizeFormulaAtoms(text);
+        const quantifiedSet = new Set(extractQuantifiedVariables(out).map(function(v) {
+            return String(v).toLowerCase();
+        }));
+        const spokenTokens = [];
+        function stashSpoken(textChunk) {
+            spokenTokens.push(textChunk);
+            return '%%' + String(spokenTokens.length - 1) + '%%';
+        }
+
+        out = out.replace(/¬\s*([A-Za-z][A-Za-z0-9_]*(?:\s*\(\s*[A-Za-z][A-Za-z0-9_]*\s*\))?)/g, function(_, atom) {
+            const key = normalizeAtomLookupKey(atom);
+            const entry = atomSpokenMap[key] || atomSpokenMap[String(key).toLowerCase()];
+            if (entry) {
+                return stashSpoken('persona ' + formatSpokenAction(entry.azione, true));
+            }
+            return 'non ' + atom;
+        });
+
+        out = out.replace(/\b([A-Za-z][A-Za-z0-9_]*)(?:\s*\(\s*([A-Za-z][A-Za-z0-9_]*)\s*\))?/g, function(match, atom, variable) {
+            if (!variable && quantifiedSet.has(String(atom).toLowerCase())) {
+                return match;
+            }
+            const key = normalizeAtomLookupKey(variable ? atom + '(' + variable + ')' : atom);
+            const entry = atomSpokenMap[key] || atomSpokenMap[String(key).toLowerCase()];
+            if (entry) {
+                return stashSpoken('persona ' + formatSpokenAction(entry.azione, false));
+            }
+            return match;
+        });
+
         out = out
             .replace(/∀\s*([A-Za-z][A-Za-z0-9_]*)/g, 'per ogni $1')
             .replace(/∃\s*([A-Za-z][A-Za-z0-9_]*)/g, 'esiste $1')
@@ -750,17 +865,11 @@ function initEquivalentQuiz(rootId) {
             .replace(/→/g, ' implica ')
             .replace(/∧/g, ' e ')
             .replace(/∨/g, ' o ')
-            .replace(/¬\s*([A-Za-z][A-Za-z0-9_]*)/g, '__NEG_ATOM_$1__')
             .replace(/¬\s*/g, 'non ');
-        out = out.replace(/\b([A-Za-z][A-Za-z0-9_]*)\b/g, function(match) {
-            const entry = atomSpokenMap[match] || atomSpokenMap[match.toLowerCase()];
-            if (entry) return entry.nome + ' ' + entry.azione;
-            return match;
-        });
-        out = out.replace(/__NEG_ATOM_([A-Za-z][A-Za-z0-9_]*)__/g, function(_, atom) {
-            const entry = atomSpokenMap[atom] || atomSpokenMap[String(atom).toLowerCase()];
-            if (entry) return entry.nome + ' non ' + entry.azione;
-            return 'non ' + atom;
+
+        out = out.replace(/%%(\d+)%%/g, function(_, idx) {
+            const numericIndex = Number(idx);
+            return spokenTokens[numericIndex] || '';
         });
         return out.replace(/\s{2,}/g, ' ').trim();
     }
@@ -775,9 +884,10 @@ function initEquivalentQuiz(rootId) {
         if (!match) return applySpokenTransform(String(line));
         const atom = match[1];
         const isTrue = match[2].toLowerCase() === 'vero';
-        const entry = atomSpokenMap[atom] || atomSpokenMap[atom.toLowerCase()];
+        const key = normalizeAtomLookupKey(atom);
+        const entry = atomSpokenMap[key] || atomSpokenMap[String(key).toLowerCase()];
         if (!entry) return line;
-        return entry.nome + (isTrue ? ' ' : ' non ') + entry.azione;
+        return 'persona ' + formatSpokenAction(entry.azione, !isTrue);
     }
 
     /**
@@ -848,7 +958,7 @@ function initEquivalentQuiz(rootId) {
      * @post Restituisce testo trasformato (parentesi differenziate e/o parlato).
      */
     function applyFormulaTransforms(text) {
-        let out = String(text || '');
+        let out = normalizeFormulaAtoms(text);
         if (state.differentiateParens) {
             out = differentiateParentheses(out);
         }
@@ -964,8 +1074,10 @@ function initEquivalentQuiz(rootId) {
      * @post Restituisce una stringa pronta per l'interfaccia utente.
      */
     function displayFormulaText(formula) {
-        if (shouldKeepRawFormula(formula)) return String(formula || '');
-        return prologToLogical(formula);
+        if (shouldKeepRawFormula(formula)) {
+            return normalizeFormulaAtoms(String(formula || ''));
+        }
+        return normalizeFormulaAtoms(prologToLogical(formula));
     }
 
     /**
@@ -1500,8 +1612,8 @@ function initEquivalentQuiz(rootId) {
                 infoLines: state.spokenlanguage
                     ? currentQuestionInfo.map(formatSpokenInfoLine)
                     : currentQuestionInfo.slice(),
-                selectedAnswer: state.spokenlanguage ? applySpokenTransform(selectedFormula) : selectedFormula,
-                correctAnswer: state.spokenlanguage ? applySpokenTransform(correctFormula) : correctFormula,
+                selectedAnswer: state.spokenlanguage ? applySpokenTransform(selectedFormula) : applyFormulaTransforms(selectedFormula),
+                correctAnswer: state.spokenlanguage ? applySpokenTransform(correctFormula) : applyFormulaTransforms(correctFormula),
                 isCorrect: isCorrect,
                 tipoDomanda: tipoDomanda,
                 tempoRisposta: tempoRisposta,
