@@ -264,9 +264,7 @@ function initEquivalentQuiz(rootId) {
     function renderFeedbackPage() {
         if (!reviewListEl) return;
         reviewListEl.innerHTML = '';
-
-        const wrapper = document.createElement('div');
-        wrapper.className = 'quiz-review-item quiz-feedback-panel';
+        reviewListEl.classList.add('quiz-feedback-panel');
 
         const radioNodes = [];
         FEEDBACK_FIELDS.forEach(function(field) {
@@ -320,12 +318,12 @@ function initEquivalentQuiz(rootId) {
             endpoints.appendChild(right);
             row.appendChild(endpoints);
 
-            wrapper.appendChild(row);
+            reviewListEl.appendChild(row);
         });
 
         const statusLine = document.createElement('p');
         statusLine.className = 'quiz-review-line';
-        wrapper.appendChild(statusLine);
+        reviewListEl.appendChild(statusLine);
 
         const continueButton = document.createElement('button');
         continueButton.type = 'button';
@@ -335,15 +333,15 @@ function initEquivalentQuiz(rootId) {
         continueButton.addEventListener('click', function() {
             maybeAutoSubmitFeedback(statusLine, continueButton, radioNodes, true);
         });
-        wrapper.appendChild(continueButton);
+        reviewListEl.appendChild(continueButton);
 
-        reviewListEl.appendChild(wrapper);
         maybeAutoSubmitFeedback(statusLine, continueButton, radioNodes, false);
     }
 
     function renderReviewList() {
         if (!reviewListEl) return;
         reviewListEl.innerHTML = '';
+        reviewListEl.classList.remove('quiz-feedback-panel');
 
         reviewResults.forEach(function(entry) {
             const item = document.createElement('div');
