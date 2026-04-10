@@ -228,22 +228,26 @@ function initEquivalentQuiz(rootId) {
         });
     }
 
-    function maybeAutoSubmitFeedback(statusNode, radioNodes) {
+    function maybeAutoSubmitFeedback(statusNode, continueButton, radioNodes, submitNow) {
         if (reviewSubmissionState.sent) return;
         if (!isFeedbackComplete()) {
             statusNode.textContent = 'Completa tutte le risposte (1-5) per inviare il feedback.';
             statusNode.className = 'quiz-review-line';
+            if (continueButton) continueButton.disabled = true;
             return;
         }
-        if (reviewSubmissionState.inFlight) return;
+        if (continueButton) continueButton.disabled = false;
+        if (!submitNow || reviewSubmissionState.inFlight) return;
 
         statusNode.textContent = 'Invio feedback in corso...';
         statusNode.className = 'quiz-review-line';
+        if (continueButton) continueButton.disabled = true;
 
         submitReviewReport(buildReviewReport(feedbackValues)).then(function(ok) {
             if (!ok) {
                 statusNode.textContent = 'Errore invio feedback. Modifica una risposta per riprovare.';
                 statusNode.className = 'quiz-review-line quiz-review-answer is-wrong';
+                if (continueButton) continueButton.disabled = false;
                 return;
             }
             statusNode.textContent = 'Feedback inviato correttamente.';
@@ -263,35 +267,6 @@ function initEquivalentQuiz(rootId) {
 
         const wrapper = document.createElement('div');
         wrapper.className = 'quiz-review-item quiz-feedback-panel';
-
-        const title = document.createElement('p');
-        title.className = 'quiz-review-title';
-        title.textContent = 'Feedback:';
-        wrapper.appendChild(title);
-
-        const scaleGuide = document.createElement('div');
-        scaleGuide.className = 'quiz-feedback-scale-guide';
-
-        const scaleNumbers = document.createElement('div');
-        scaleNumbers.className = 'quiz-feedback-scale-numbers';
-        for (let value = 1; value <= 5; value += 1) {
-            const n = document.createElement('span');
-            n.textContent = String(value);
-            scaleNumbers.appendChild(n);
-        }
-        scaleGuide.appendChild(scaleNumbers);
-
-        const scaleLabels = document.createElement('div');
-        scaleLabels.className = 'quiz-feedback-scale-labels';
-        const leftLabel = document.createElement('span');
-        leftLabel.textContent = 'Per niente d\'accordo';
-        const rightLabel = document.createElement('span');
-        rightLabel.textContent = 'Totalmente d\'accordo';
-        scaleLabels.appendChild(leftLabel);
-        scaleLabels.appendChild(rightLabel);
-        scaleGuide.appendChild(scaleLabels);
-
-        wrapper.appendChild(scaleGuide);
 
         const radioNodes = [];
         FEEDBACK_FIELDS.forEach(function(field) {
@@ -321,7 +296,7 @@ function initEquivalentQuiz(rootId) {
                 radio.addEventListener('change', function() {
                     if (!radio.checked) return;
                     feedbackValues[field.id] = String(radio.value || '');
-                    maybeAutoSubmitFeedback(statusLine, radioNodes);
+                    maybeAutoSubmitFeedback(statusLine, continueButton, radioNodes, false);
                 });
 
                 const valueText = document.createElement('span');
@@ -334,6 +309,17 @@ function initEquivalentQuiz(rootId) {
             }
 
             row.appendChild(radioGroup);
+
+            const endpoints = document.createElement('div');
+            endpoints.className = 'quiz-feedback-endpoints';
+            const left = document.createElement('span');
+            left.textContent = '1 Per niente d\'accordo';
+            const right = document.createElement('span');
+            right.textContent = '5 Totalmente d\'accordo';
+            endpoints.appendChild(left);
+            endpoints.appendChild(right);
+            row.appendChild(endpoints);
+
             wrapper.appendChild(row);
         });
 
@@ -341,8 +327,18 @@ function initEquivalentQuiz(rootId) {
         statusLine.className = 'quiz-review-line';
         wrapper.appendChild(statusLine);
 
+        const continueButton = document.createElement('button');
+        continueButton.type = 'button';
+        continueButton.className = 'btn-wide quiz-feedback-continue';
+        continueButton.textContent = 'Continua';
+        continueButton.disabled = true;
+        continueButton.addEventListener('click', function() {
+            maybeAutoSubmitFeedback(statusLine, continueButton, radioNodes, true);
+        });
+        wrapper.appendChild(continueButton);
+
         reviewListEl.appendChild(wrapper);
-        maybeAutoSubmitFeedback(statusLine, radioNodes);
+        maybeAutoSubmitFeedback(statusLine, continueButton, radioNodes, false);
     }
 
     function renderReviewList() {
