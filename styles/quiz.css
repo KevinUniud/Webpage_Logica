@@ -197,6 +197,57 @@
     color: var(--error-text);
 }
 
+.quiz-feedback-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.quiz-feedback-scale-guide {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.quiz-feedback-scale-numbers {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(32px, 1fr));
+    text-align: center;
+    font-weight: 700;
+}
+
+.quiz-feedback-scale-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9em;
+    color: var(--muted);
+}
+
+.quiz-feedback-row {
+    padding: 8px;
+    border: 1px solid var(--border-mid);
+    border-radius: 8px;
+    background: var(--surface-2);
+}
+
+.quiz-feedback-radio-group {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(32px, 1fr));
+    gap: 4px;
+    margin-top: 6px;
+}
+
+.quiz-feedback-radio-choice {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.quiz-feedback-radio-choice input[type='radio'] {
+    margin: 0;
+}
+
 /* Colorazione atomi logici e enfasi visuale. */
 .quiz-atom-true {
     color: var(--atom-true);

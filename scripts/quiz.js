@@ -228,7 +228,7 @@ function initEquivalentQuiz(rootId) {
         });
     }
 
-    function maybeAutoSubmitFeedback(statusNode, selectNodes) {
+    function maybeAutoSubmitFeedback(statusNode, radioNodes) {
         if (reviewSubmissionState.sent) return;
         if (!isFeedbackComplete()) {
             statusNode.textContent = 'Completa tutte le risposte (1-5) per inviare il feedback.';
@@ -248,60 +248,93 @@ function initEquivalentQuiz(rootId) {
             }
             statusNode.textContent = 'Feedback inviato correttamente.';
             statusNode.className = 'quiz-review-line quiz-review-answer is-correct';
-            selectNodes.forEach(function(select) {
-                select.disabled = true;
+            radioNodes.forEach(function(radio) {
+                radio.disabled = true;
             });
-            if (reviewNavEl) reviewNavEl.hidden = false;
+            setTimeout(function() {
+                showReviewPage();
+            }, 250);
         });
     }
 
-    function appendFeedbackSection() {
+    function renderFeedbackPage() {
         if (!reviewListEl) return;
+        reviewListEl.innerHTML = '';
 
         const wrapper = document.createElement('div');
-        wrapper.className = 'quiz-review-item';
+        wrapper.className = 'quiz-review-item quiz-feedback-panel';
 
         const title = document.createElement('p');
         title.className = 'quiz-review-title';
         title.textContent = 'Feedback:';
         wrapper.appendChild(title);
 
-        const scaleLine = document.createElement('p');
-        scaleLine.className = 'quiz-review-line';
-        scaleLine.textContent = '1 = Per niente d\'accordo | 5 = Totalmente d\'accordo';
-        wrapper.appendChild(scaleLine);
+        const scaleGuide = document.createElement('div');
+        scaleGuide.className = 'quiz-feedback-scale-guide';
 
-        const selectNodes = [];
+        const scaleNumbers = document.createElement('div');
+        scaleNumbers.className = 'quiz-feedback-scale-numbers';
+        for (let value = 1; value <= 5; value += 1) {
+            const n = document.createElement('span');
+            n.textContent = String(value);
+            scaleNumbers.appendChild(n);
+        }
+        scaleGuide.appendChild(scaleNumbers);
+
+        const scaleLabels = document.createElement('div');
+        scaleLabels.className = 'quiz-feedback-scale-labels';
+        const leftLabel = document.createElement('span');
+        leftLabel.textContent = 'Per niente d\'accordo';
+        const rightLabel = document.createElement('span');
+        rightLabel.textContent = 'Totalmente d\'accordo';
+        scaleLabels.appendChild(leftLabel);
+        scaleLabels.appendChild(rightLabel);
+        scaleGuide.appendChild(scaleLabels);
+
+        wrapper.appendChild(scaleGuide);
+
+        const radioNodes = [];
         FEEDBACK_FIELDS.forEach(function(field) {
-            const row = document.createElement('p');
-            row.className = 'quiz-review-line';
+            const row = document.createElement('div');
+            row.className = 'quiz-feedback-row';
 
-            const label = document.createElement('label');
-            label.textContent = field.label + ': ';
+            const rowLabel = document.createElement('p');
+            rowLabel.className = 'quiz-review-line';
+            rowLabel.textContent = field.label;
+            row.appendChild(rowLabel);
 
-            const select = document.createElement('select');
-            select.setAttribute('aria-label', field.label);
-            const emptyOption = document.createElement('option');
-            emptyOption.value = '';
-            emptyOption.textContent = '-';
-            select.appendChild(emptyOption);
+            const radioGroup = document.createElement('div');
+            radioGroup.className = 'quiz-feedback-radio-group';
+
             for (let value = 1; value <= 5; value += 1) {
-                const option = document.createElement('option');
-                option.value = String(value);
-                option.textContent = String(value);
-                select.appendChild(option);
+                const choice = document.createElement('label');
+                choice.className = 'quiz-feedback-radio-choice';
+
+                const radio = document.createElement('input');
+                radio.type = 'radio';
+                radio.name = 'feedback-' + field.id;
+                radio.value = String(value);
+                radio.setAttribute('aria-label', field.label + ' ' + String(value));
+                if (String(feedbackValues[field.id] || '') === String(value)) {
+                    radio.checked = true;
+                }
+                radio.addEventListener('change', function() {
+                    if (!radio.checked) return;
+                    feedbackValues[field.id] = String(radio.value || '');
+                    maybeAutoSubmitFeedback(statusLine, radioNodes);
+                });
+
+                const valueText = document.createElement('span');
+                valueText.textContent = String(value);
+
+                choice.appendChild(radio);
+                choice.appendChild(valueText);
+                radioGroup.appendChild(choice);
+                radioNodes.push(radio);
             }
 
-            select.value = String(feedbackValues[field.id] || '');
-            select.addEventListener('change', function() {
-                feedbackValues[field.id] = String(select.value || '');
-                maybeAutoSubmitFeedback(statusLine, selectNodes);
-            });
-
-            label.appendChild(select);
-            row.appendChild(label);
+            row.appendChild(radioGroup);
             wrapper.appendChild(row);
-            selectNodes.push(select);
         });
 
         const statusLine = document.createElement('p');
@@ -309,7 +342,74 @@ function initEquivalentQuiz(rootId) {
         wrapper.appendChild(statusLine);
 
         reviewListEl.appendChild(wrapper);
-        maybeAutoSubmitFeedback(statusLine, selectNodes);
+        maybeAutoSubmitFeedback(statusLine, radioNodes);
+    }
+
+    function renderReviewList() {
+        if (!reviewListEl) return;
+        reviewListEl.innerHTML = '';
+
+        reviewResults.forEach(function(entry) {
+            const item = document.createElement('div');
+            item.className = 'quiz-review-item';
+
+            const title = document.createElement('p');
+            title.className = 'quiz-review-title';
+            title.textContent = 'Domanda ' + String(entry.number);
+
+            const questionLine = document.createElement('p');
+            questionLine.className = 'quiz-review-line';
+            questionLine.textContent = 'Testo domanda: ' + entry.question;
+
+            let infoBlock = null;
+            if (Array.isArray(entry.infoLines) && entry.infoLines.length > 0) {
+                infoBlock = document.createElement('div');
+                infoBlock.className = 'quiz-review-hypotheses';
+
+                const infoTitle = document.createElement('p');
+                infoTitle.className = 'quiz-review-line';
+                infoTitle.textContent = 'Ipotesi:';
+
+                const infoList = document.createElement('ul');
+                entry.infoLines.forEach(function(line) {
+                    const li = document.createElement('li');
+                    li.textContent = line;
+                    infoList.appendChild(li);
+                });
+
+                infoBlock.appendChild(infoTitle);
+                infoBlock.appendChild(infoList);
+            }
+
+            const userLine = document.createElement('p');
+            userLine.className = 'quiz-review-line';
+            userLine.appendChild(document.createTextNode('Risposta data: '));
+
+            const userAnswer = document.createElement('span');
+            userAnswer.className = 'quiz-review-answer ' + (entry.isCorrect ? 'is-correct' : 'is-wrong');
+            userAnswer.textContent = entry.selectedAnswer;
+            userLine.appendChild(userAnswer);
+
+            const correctLine = document.createElement('p');
+            correctLine.className = 'quiz-review-line';
+            correctLine.textContent = 'Risposta corretta: ' + entry.correctAnswer;
+
+            item.appendChild(title);
+            item.appendChild(questionLine);
+            if (infoBlock) item.appendChild(infoBlock);
+            item.appendChild(userLine);
+            item.appendChild(correctLine);
+            reviewListEl.appendChild(item);
+        });
+    }
+
+    function showReviewPage() {
+        if (reviewTitleEl) {
+            reviewTitleEl.hidden = false;
+            reviewTitleEl.textContent = 'Revisione Test';
+        }
+        renderReviewList();
+        if (reviewNavEl) reviewNavEl.hidden = false;
     }
 
     function normalizeApiBase(rawBase) {
@@ -1858,66 +1958,18 @@ function initEquivalentQuiz(rootId) {
     }
 
     function renderReview() {
-        if (!reviewListEl) return;
-        reviewListEl.innerHTML = '';
-
-        reviewResults.forEach(function(entry) {
-            const item = document.createElement('div');
-            item.className = 'quiz-review-item';
-
-            const title = document.createElement('p');
-            title.className = 'quiz-review-title';
-            title.textContent = 'Domanda ' + String(entry.number);
-
-            const questionLine = document.createElement('p');
-            questionLine.className = 'quiz-review-line';
-            questionLine.textContent = 'Testo domanda: ' + entry.question;
-
-            let infoBlock = null;
-            if (Array.isArray(entry.infoLines) && entry.infoLines.length > 0) {
-                infoBlock = document.createElement('div');
-                infoBlock.className = 'quiz-review-hypotheses';
-
-                const infoTitle = document.createElement('p');
-                infoTitle.className = 'quiz-review-line';
-                infoTitle.textContent = 'Ipotesi:';
-
-                const infoList = document.createElement('ul');
-                entry.infoLines.forEach(function(line) {
-                    const li = document.createElement('li');
-                    li.textContent = line;
-                    infoList.appendChild(li);
-                });
-
-                infoBlock.appendChild(infoTitle);
-                infoBlock.appendChild(infoList);
-            }
-
-            const userLine = document.createElement('p');
-            userLine.className = 'quiz-review-line';
-            userLine.appendChild(document.createTextNode('Risposta data: '));
-
-            const userAnswer = document.createElement('span');
-            userAnswer.className = 'quiz-review-answer ' + (entry.isCorrect ? 'is-correct' : 'is-wrong');
-            userAnswer.textContent = entry.selectedAnswer;
-            userLine.appendChild(userAnswer);
-
-            const correctLine = document.createElement('p');
-            correctLine.className = 'quiz-review-line';
-            correctLine.textContent = 'Risposta corretta: ' + entry.correctAnswer;
-
-            item.appendChild(title);
-            item.appendChild(questionLine);
-            if (infoBlock) item.appendChild(infoBlock);
-            item.appendChild(userLine);
-            item.appendChild(correctLine);
-            reviewListEl.appendChild(item);
-        });
-
         const logSettings = getLogDataSettings();
-        if (logSettings.mode !== 'none') {
-            appendFeedbackSection();
+        if (logSettings.mode === 'none') {
+            showReviewPage();
+            return;
         }
+
+        if (reviewTitleEl) {
+            reviewTitleEl.hidden = false;
+            reviewTitleEl.textContent = 'Feedback';
+        }
+        if (reviewNavEl) reviewNavEl.hidden = true;
+        renderFeedbackPage();
     }
 
     // Passa alla schermata finale e interrompe il timer.
@@ -1934,9 +1986,7 @@ function initEquivalentQuiz(rootId) {
         if (reviewTitleEl) reviewTitleEl.hidden = false;
         if (testEl) testEl.hidden = true;
         if (reviewEl) reviewEl.hidden = false;
-        if (reviewNavEl) {
-            reviewNavEl.hidden = getLogDataSettings().mode !== 'none';
-        }
+        if (reviewNavEl) reviewNavEl.hidden = true;
         state.mode = 'completed';
     }
 
@@ -1970,6 +2020,7 @@ function initEquivalentQuiz(rootId) {
         if (testTitleEl) testTitleEl.hidden = true;
         if (introTitleEl) introTitleEl.hidden = false;
         if (reviewTitleEl) reviewTitleEl.hidden = true;
+        if (reviewTitleEl) reviewTitleEl.textContent = 'Revisione Test';
         if (reviewEl) reviewEl.hidden = true;
         if (reviewNavEl) reviewNavEl.hidden = true;
         if (testEl) testEl.hidden = true;
