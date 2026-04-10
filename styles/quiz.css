@@ -239,7 +239,7 @@
 .quiz-feedback-continue {
     width: auto;
     display: inline-block;
-    align-self: flex-start;
+    align-self: center;
 }
 
 .quiz-feedback-continue[disabled] {
