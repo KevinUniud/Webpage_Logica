@@ -96,6 +96,18 @@ function initEquivalentQuiz(rootId) {
     let quantifierNegationUsed = 0;
     var quizStartTimestamp = Date.now();
     var questionViewTimestamps = [];
+    const FEEDBACK_FIELDS = [
+        { id: 'expectation', payloadKey: 'Aspettative test', label: 'Il test è andato bene' },
+        { id: 'aidsUtility', payloadKey: 'Utilità ausili', label: 'Gli ausili mi hanno aiutato a svolgere il test' },
+        { id: 'lessonsUtility', payloadKey: 'Utilità lezioni', label: 'Le lezioni di introduzione sono state utili per affrontare il test' },
+        { id: 'testDifficulty', payloadKey: 'Difficoltà test', label: 'I test sono stati difficili' },
+        { id: 'control', payloadKey: 'Controllo', label: 'Gli ausili non sono stati utili durante il test' }
+    ];
+    let feedbackValues = createEmptyFeedbackValues();
+    const reviewSubmissionState = {
+        inFlight: false,
+        sent: false
+    };
 
     /**
      * Converte un timestamp in formato leggibile: anno/mese/giorno ore:minuti:secondi
@@ -134,6 +146,170 @@ function initEquivalentQuiz(rootId) {
             mode: mode,
             school: school
         };
+    }
+
+    function createEmptyFeedbackValues() {
+        return {
+            expectation: '',
+            aidsUtility: '',
+            lessonsUtility: '',
+            testDifficulty: '',
+            control: ''
+        };
+    }
+
+    function isFeedbackComplete() {
+        return FEEDBACK_FIELDS.every(function(field) {
+            return /^[1-5]$/.test(String(feedbackValues[field.id] || ''));
+        });
+    }
+
+    function buildReviewReport(feedbackMap) {
+        const logSettings = getLogDataSettings();
+        const now = Date.now();
+        const tempoTotale = quizStartTimestamp ? ((now - quizStartTimestamp) / 1000).toFixed(2) + 's' : '';
+        const opzioniAttiveGlobali = reviewResults.length > 0 ? reviewResults[0].opzioniAttive : {};
+
+        const feedbackPayload = {};
+        FEEDBACK_FIELDS.forEach(function(field) {
+            feedbackPayload[field.payloadKey] = String(feedbackMap[field.id] || '');
+        });
+
+        return {
+            "Initial Data": {
+                "Scuola": logSettings.school,
+                "Tempo inizio esercitazione": formatDateTime(quizStartTimestamp),
+                "Tempo totale": tempoTotale,
+                "Totale domande": reviewResults.length,
+                "Totale domande corrette": reviewResults.filter(function(e) { return e.isCorrect; }).length,
+                "Totale domande errate": reviewResults.filter(function(e) { return !e.isCorrect; }).length,
+                "Opzioni attive": opzioniAttiveGlobali
+            },
+            "Domande": reviewResults.map(function(entry, idx) {
+                return {
+                    ["Domanda nº " + (idx + 1)]: {
+                        "Tipologia": entry.tipoDomanda || '',
+                        "Tempo impiegato per rispondere": typeof entry.tempoRisposta === 'string' ? entry.tempoRisposta : '',
+                        "Risposta è corretta": entry.isCorrect ? 'Sì' : 'No',
+                        "Domanda": entry.question,
+                        "Risposte": entry.risposteMostrate || '',
+                        "Riposta utente": entry.selectedAnswer,
+                        "Riposta corretta": entry.correctAnswer
+                    }
+                };
+            }),
+            "Feedback": feedbackPayload
+        };
+    }
+
+    function submitReviewReport(report) {
+        if (reviewSubmissionState.inFlight || reviewSubmissionState.sent) {
+            return Promise.resolve(reviewSubmissionState.sent);
+        }
+
+        reviewSubmissionState.inFlight = true;
+        return fetch('/api/revisione', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(report)
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            reviewSubmissionState.sent = true;
+            console.log('Dati revisione inviati:', data);
+            return true;
+        })
+        .catch(function(err) {
+            console.error('Errore invio revisione:', err);
+            return false;
+        })
+        .finally(function() {
+            reviewSubmissionState.inFlight = false;
+        });
+    }
+
+    function maybeAutoSubmitFeedback(statusNode, selectNodes) {
+        if (reviewSubmissionState.sent) return;
+        if (!isFeedbackComplete()) {
+            statusNode.textContent = 'Completa tutte le risposte (1-5) per inviare il feedback.';
+            statusNode.className = 'quiz-review-line';
+            return;
+        }
+        if (reviewSubmissionState.inFlight) return;
+
+        statusNode.textContent = 'Invio feedback in corso...';
+        statusNode.className = 'quiz-review-line';
+
+        submitReviewReport(buildReviewReport(feedbackValues)).then(function(ok) {
+            if (!ok) {
+                statusNode.textContent = 'Errore invio feedback. Modifica una risposta per riprovare.';
+                statusNode.className = 'quiz-review-line quiz-review-answer is-wrong';
+                return;
+            }
+            statusNode.textContent = 'Feedback inviato correttamente.';
+            statusNode.className = 'quiz-review-line quiz-review-answer is-correct';
+            selectNodes.forEach(function(select) {
+                select.disabled = true;
+            });
+            if (reviewNavEl) reviewNavEl.hidden = false;
+        });
+    }
+
+    function appendFeedbackSection() {
+        if (!reviewListEl) return;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'quiz-review-item';
+
+        const title = document.createElement('p');
+        title.className = 'quiz-review-title';
+        title.textContent = 'Feedback:';
+        wrapper.appendChild(title);
+
+        const scaleLine = document.createElement('p');
+        scaleLine.className = 'quiz-review-line';
+        scaleLine.textContent = '1 = Per niente d\'accordo | 5 = Totalmente d\'accordo';
+        wrapper.appendChild(scaleLine);
+
+        const selectNodes = [];
+        FEEDBACK_FIELDS.forEach(function(field) {
+            const row = document.createElement('p');
+            row.className = 'quiz-review-line';
+
+            const label = document.createElement('label');
+            label.textContent = field.label + ': ';
+
+            const select = document.createElement('select');
+            select.setAttribute('aria-label', field.label);
+            const emptyOption = document.createElement('option');
+            emptyOption.value = '';
+            emptyOption.textContent = '-';
+            select.appendChild(emptyOption);
+            for (let value = 1; value <= 5; value += 1) {
+                const option = document.createElement('option');
+                option.value = String(value);
+                option.textContent = String(value);
+                select.appendChild(option);
+            }
+
+            select.value = String(feedbackValues[field.id] || '');
+            select.addEventListener('change', function() {
+                feedbackValues[field.id] = String(select.value || '');
+                maybeAutoSubmitFeedback(statusLine, selectNodes);
+            });
+
+            label.appendChild(select);
+            row.appendChild(label);
+            wrapper.appendChild(row);
+            selectNodes.push(select);
+        });
+
+        const statusLine = document.createElement('p');
+        statusLine.className = 'quiz-review-line';
+        wrapper.appendChild(statusLine);
+
+        reviewListEl.appendChild(wrapper);
+        maybeAutoSubmitFeedback(statusLine, selectNodes);
     }
 
     function normalizeApiBase(rawBase) {
@@ -1737,62 +1913,11 @@ function initEquivalentQuiz(rootId) {
             item.appendChild(correctLine);
             reviewListEl.appendChild(item);
         });
-        // Invio automatico dati revisione direttamente all'endpoint esterno
-        setTimeout(function() {
-            const logSettings = getLogDataSettings();
-            
-            // Se la modalità è 'none', non inviare nulla
-            if (logSettings.mode === 'none') return;
-            
-            const now = Date.now();
-            const tempoTotale = quizStartTimestamp ? ((now - quizStartTimestamp) / 1000).toFixed(2) + 's' : '';
-            
-            // Raccogli le opzioni attive dalla prima domanda (sono le stesse per tutto il test)
-            const opzioniAttiveGlobali = reviewResults.length > 0 ? reviewResults[0].opzioniAttive : {};
-            
-            const report = {
-                "Initial Data": {
-                    "Scuola": logSettings.school,
-                    "Tempo inizio esercitazione": formatDateTime(quizStartTimestamp),
-                    "Tempo totale": tempoTotale,
-                    "Totale domande": reviewResults.length,
-                    "Totale domande corrette": reviewResults.filter(e => e.isCorrect).length,
-                    "Totale domande errate": reviewResults.filter(e => !e.isCorrect).length,
-                    "Opzioni attive": opzioniAttiveGlobali
-                },
-                "Domande": reviewResults.map(function(entry, idx) {
-                    return {
-                        ["Domanda nº " + (idx+1)]: {
-                            "Tipologia": entry.tipoDomanda || '',
-                            "Tempo impiegato per rispondere": typeof entry.tempoRisposta === 'string' ? entry.tempoRisposta : '',
-                            "Risposta è corretta": entry.isCorrect ? 'Sì' : 'No',
-                            "Domanda": entry.question,
-                            "Risposte": entry.risposteMostrate || '',
-                            "Riposta utente": entry.selectedAnswer,
-                            "Riposta corretta": entry.correctAnswer
-                        }
-                    };
-                }),
-                "Feedback": {
-                    "Feedback lezioni": '',
-                    "Feedback esercitazione": '',
-                    "Feedback opzioni": '',
-                    "Feedback difficoltà test": ''
-                }
-            };
-            fetch('/api/revisione', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(report)
-            })
-            .then(res => res.json())
-            .then(data => {
-                console.log('Dati revisione inviati:', data);
-            })
-            .catch(err => {
-                console.error('Errore invio revisione:', err);
-            });
-        }, 500);
+
+        const logSettings = getLogDataSettings();
+        if (logSettings.mode !== 'none') {
+            appendFeedbackSection();
+        }
     }
 
     // Passa alla schermata finale e interrompe il timer.
@@ -1809,7 +1934,9 @@ function initEquivalentQuiz(rootId) {
         if (reviewTitleEl) reviewTitleEl.hidden = false;
         if (testEl) testEl.hidden = true;
         if (reviewEl) reviewEl.hidden = false;
-        if (reviewNavEl) reviewNavEl.hidden = false;
+        if (reviewNavEl) {
+            reviewNavEl.hidden = getLogDataSettings().mode !== 'none';
+        }
         state.mode = 'completed';
     }
 
@@ -1824,6 +1951,9 @@ function initEquivalentQuiz(rootId) {
         currentImageFormulaSteps = { question: [], correct: [], wrongByFormula: {} };
         quantifierNegationTarget = 0;
         quantifierNegationUsed = 0;
+        feedbackValues = createEmptyFeedbackValues();
+        reviewSubmissionState.inFlight = false;
+        reviewSubmissionState.sent = false;
         clearWrongActionImages();
         stopTimer();
         timerSecondsRemaining = standardTimeMinutes * 60;
@@ -1858,6 +1988,9 @@ function initEquivalentQuiz(rootId) {
         standardTimeMinutes = parsePositiveInt(timeMinutesInput && timeMinutesInput.value, DEFAULT_TIME_MINUTES);
         quantifierNegationTarget = pickQuantifierNegationTarget(totalExercises);
         quantifierNegationUsed = 0;
+        feedbackValues = createEmptyFeedbackValues();
+        reviewSubmissionState.inFlight = false;
+        reviewSubmissionState.sent = false;
         // Inizializza l'array dei timestamp con la lunghezza corretta (indici da 1 a totalExercises)
         questionViewTimestamps = new Array(totalExercises + 1);
         // Aggiorna il timestamp di inizio esercitazione
