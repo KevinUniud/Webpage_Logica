@@ -552,30 +552,6 @@ function initEquivalentQuiz(rootId) {
         return normalized.match(/\(|\)|\[|\]|\{|\}|¬|↔|→|∧|∨|∀\s*[A-Za-z][A-Za-z0-9_]*|∃\s*[A-Za-z][A-Za-z0-9_]*|[A-Za-z][A-Za-z0-9_]*/g) || [];
     }
 
-    function isPredicateApplicationParenthesis(tokens, index) {
-        if (!Array.isArray(tokens)) return false;
-        const current = tokens[index];
-        if (current !== '(' && current !== ')') return false;
-
-        if (current === '(') {
-            const left = tokens[index - 1] || '';
-            const right = tokens[index + 1] || '';
-            const rightAfter = tokens[index + 2] || '';
-            return /^[A-Za-z][A-Za-z0-9_]*$/.test(left) && /^[A-Za-z][A-Za-z0-9_]*$/.test(right) && rightAfter === ')';
-        }
-
-        const left = tokens[index - 1] || '';
-        const open = tokens[index - 2] || '';
-        const predicate = tokens[index - 3] || '';
-        return open === '(' && /^[A-Za-z][A-Za-z0-9_]*$/.test(left) && /^[A-Za-z][A-Za-z0-9_]*$/.test(predicate);
-    }
-
-    function removePredicateApplicationParentheses(text) {
-        return String(text || '').replace(/\b([A-Za-z][A-Za-z0-9_]*)\s*\(\s*([A-Za-z][A-Za-z0-9_]*)\s*\)/g, function(_, predicate, variable) {
-            return predicate + ' ' + variable;
-        });
-    }
-
     // Trasforma una formula in sequenza di token renderizzabili come immagini/connettivi.
     function buildImageSequenceFromFormula(formula, mode) {
         const tokens = tokenizeFormulaForImages(formula);
@@ -583,7 +559,7 @@ function initEquivalentQuiz(rootId) {
 
         const sequence = [];
 
-        tokens.forEach(function(token, index) {
+        tokens.forEach(function(token) {
             const t = String(token || '').trim();
             if (!t) return;
 
@@ -598,9 +574,6 @@ function initEquivalentQuiz(rootId) {
             }
 
             if (t === '(' || t === ')' || t === '[' || t === ']' || t === '{' || t === '}') {
-                if (isPredicateApplicationParenthesis(tokens, index)) {
-                    return;
-                }
                 sequence.push({ type: 'parenthesis', text: t, logicKey: 'PAREN:' + t });
                 return;
             }
@@ -864,7 +837,7 @@ function initEquivalentQuiz(rootId) {
             const empty = document.createElement('span');
             empty.className = 'quiz-wrong-images-empty';
             const fallbackFormula = formatStepFormulaText(descriptor.formulaText);
-            empty.textContent = removePredicateApplicationParentheses(fallbackFormula) || 'Nessuna formula disponibile.';
+            empty.textContent = fallbackFormula || 'Nessuna formula disponibile.';
             row.appendChild(empty);
         } else {
             sequence.forEach(function(item, index) {
@@ -1196,7 +1169,7 @@ function initEquivalentQuiz(rootId) {
                 if (!isFormulaBoundaryChar(prev) || !isFormulaBoundaryChar(next)) {
                     return atom;
                 }
-                return String(atom).toUpperCase() + '(' + quantifiedVariable + ')';
+                return String(atom).toUpperCase();
             });
             return out;
         }
