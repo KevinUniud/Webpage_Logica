@@ -603,7 +603,7 @@ function initEquivalentQuiz(rootId) {
 
         const caption = document.createElement('span');
         caption.className = 'quiz-wrong-images-caption';
-        const captionSubject = state.spokenlanguage ? 'la persona' : item.nome;
+        const captionSubject = item.nome;
         const captionAction = state.spokenlanguage
             ? formatSpokenAction(item.azione, false)
             : item.azione;
@@ -1198,7 +1198,7 @@ function initEquivalentQuiz(rootId) {
             const key = normalizeAtomLookupKey(atom);
             const entry = atomSpokenMap[key] || atomSpokenMap[String(key).toLowerCase()];
             if (entry) {
-                return stashSpoken('la persona ' + formatSpokenAction(entry.azione, true));
+                return stashSpoken(entry.nome + ' ' + formatSpokenAction(entry.azione, true));
             }
             return 'non ' + atom;
         });
@@ -1210,7 +1210,7 @@ function initEquivalentQuiz(rootId) {
             const key = normalizeAtomLookupKey(variable ? atom + '(' + variable + ')' : atom);
             const entry = atomSpokenMap[key] || atomSpokenMap[String(key).toLowerCase()];
             if (entry) {
-                return stashSpoken('la persona ' + formatSpokenAction(entry.azione, false));
+                return stashSpoken(entry.nome + ' ' + formatSpokenAction(entry.azione, false));
             }
             return match;
         });
@@ -1244,7 +1244,7 @@ function initEquivalentQuiz(rootId) {
         const key = normalizeAtomLookupKey(atom);
         const entry = atomSpokenMap[key] || atomSpokenMap[String(key).toLowerCase()];
         if (!entry) return line;
-        return 'la persona ' + formatSpokenAction(entry.azione, !isTrue);
+        return entry.nome + ' ' + formatSpokenAction(entry.azione, !isTrue);
     }
 
     /**
