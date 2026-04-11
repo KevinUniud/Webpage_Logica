@@ -35,19 +35,20 @@
             <h2>Lezione 6: Quantificatori e negazioni</h2>
 
         <p>
-            Si introduce ora:<br>
+            Si introduce ora la notazione P(x), che rappresenta una proprietà o proposizione dipendente da una variabile x, cioè, P(x) è una frase il cui valore di verità dipende dallo specifico valore assegnato a x.<br><br>
+            Sapendo questo, possiamo ora introdurre anche:<br>
             <div class="table_inv"> <!-- per ogni x P per ogni x vale la proprietà P dove x è un segnaposto per un qualcosa che compare scritto nella proprietà P -->
             <table>
                 <thead>
                     <tr>
-                        <td>∀x P</td>
-                        <td>Per ogni x vale P</td>
+                        <td>∀x P(x)</td>
+                        <td>Per ogni x vale P(x)</td>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td>∃x P</td>
-                        <td>Esiste x tale che P</td>
+                        <td>∃x P(x)</td>
+                        <td>Esiste x tale che P(x)</td>
                     </tr>
                 </tbody>
             </table>
@@ -55,8 +56,8 @@
             <br>
             La loro comprensione è molto intuitiva ma è da notare che la loro negazione può essere meno chiara:
             <ul>
-                <li> ¬∀x P ↔ ∃x ¬P, per negare che tutti abbiano una certa proprietà, basta che qualcuno non ce l'abbia</li>
-                <li> ¬∃x P ↔ ∀x ¬P, per negare che esista qualcuno che ha una certa proprietà bisogna dire che nessuno ce l'ha</li>
+                <li> ¬∀x P(x) ↔ ∃x ¬P(x), per negare che tutti abbiano una certa proprietà, basta che qualcuno non ce l'abbia</li>
+                <li> ¬∃x P(x) ↔ ∀x ¬P(x), per negare che esista qualcuno che ha una certa proprietà bisogna dire che nessuno ce l'ha</li>
             </ul>
         </p><br>
 
@@ -66,8 +67,8 @@
                 Si neghi dunque la seguente frase:<br><br> <!-- ∃ x ¬(f(x) → r(x)) -->
                 Ogni persona felice ride<br>
                 x = persona generica<br>
-                f(x) = "x è felice", r(x) = "x ride"<br>
-                ∀ x (f(x) → r(x))<br>
+                F(x) = "x è felice", R(x) = "x ride"<br>
+                ∀ x (F(x) → R(x))<br>
             </p>
             <label>
                 <input class="expressionInput" name="expr" type="text" readonly aria-label="Expression builder" placeholder="Clicca i bottoni per costruire l'espressione">
@@ -91,12 +92,6 @@
         </div><br>
 
         <p>
-            Nelle nostre equivalenze possiamo considerare anche blocchi più grandi purché si rispettino le parentesi e l'ordine delle operazione:
-            <ul>
-                <li>¬(¬A → B) ↔ ¬A ∧ ¬B</li>
-            </ul>
-            Si noti come ¬A è stata considerata come la nostra P nell'equivalenza ¬(P → Q) ↔ P ∧ ¬Q<br>
-            <br>
             Si risolva quindi il seguente esercizio:
         </p>
 
@@ -117,7 +112,7 @@
         <p>
             <b>Importante</b>
             <br>
-            ∀ x (s ∨ a) si nega così: ¬∀ x (s ∨ a) ↔ ∃ x ¬(s ∨ a) ↔ ∃ x (¬s ∧ ¬a)
+            ∀ x (S ∨ A) si nega così: ¬∀ x (S ∨ A) ↔ ∃ x ¬(S ∨ A) ↔ ∃ x (¬S ∧ ¬A)
         </p>
         </div><br>
 

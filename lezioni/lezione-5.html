@@ -35,7 +35,7 @@
             <h2>Lezione 5: Equivalenze proposizionali</h2>
 
         <p>
-            Si notano ora cinque equivalenze, in cui i due membri di ognuna sono interscambiabili, in quanto forniscono gli stessi valori di verità:<br>
+            Si notano ora cinque equivalenze, in cui i due membri di ognuna sono interscambiabili, poiché producono gli stessi valori di verità per ogni possibile assegnazione delle variabili:<br>
             
             <div class="table_inv">
             <table>
@@ -72,7 +72,7 @@
             </div>
             
             <br>
-            Tramite la tabella e queste formule si risolvano le seguenti domande:
+            Tramite le tavole di verità, che permettono di individuare le equivalenze tra le formule, e utilizzando le seguenti proprietà, si risolvano le seguenti domande:
         </p>
 
         <div class="rounded-box">
@@ -90,7 +90,12 @@
 
         <div class="rounded-box">
         <form id="quiz5_2"> <!-- True, False -->
-            <p>2) "Anna salta e corre" è equivalente a dire che:<br></p>
+            <p>
+                2) Sapendo che:<br><br>
+                Anna salta = P<br>
+                Anna corre = Q<br><br>
+                "Anna salta e corre" è equivalente a dire che:<br>
+            </p>
             <label>
                 <input type="radio" name="q13" value="T"> ¬(P → ¬Q)<br> <!-- V -->
                 <input type="radio" name="q13" value="F"> ¬P ∧ ¬Q<br> <!-- F -->
@@ -103,12 +108,16 @@
 
         <div class="rounded-box">
         <form id="quiz5_2"> <!-- True, False -->
-            <p>3) "Se Bob suona il flauto allora balla" è equivalente a dire che:<br></p>
+            <p>
+                3) Sapendo che:<br><br>
+                Bob suona il flauto = P<br>
+                Bob balla = Q<br><br>
+                "Se Bob suona il flauto allora balla" è equivalente a dire che:<br></p>
             <label>
-                <input type="radio" name="q14" value="F"> Q → P (se balla allora suona)<br> <!-- F -->
-                <input type="radio" name="q14" value="T"> ¬Q → ¬P (se non balla allora non suona)<br> <!-- V -->
-                <input type="radio" name="q14" value="F"> ¬P → ¬Q (se non suona allora non balla)<br> <!-- F -->
-                <input type="radio" name="q14" value="F"> P ∨ ¬Q (suona o non balla)<br> <!-- F -->
+                <input type="radio" name="q14" value="F"> Q → P <br> <!-- F -->
+                <input type="radio" name="q14" value="T"> ¬Q → ¬P <br> <!-- V -->
+                <input type="radio" name="q14" value="F"> ¬P → ¬Q <br> <!-- F -->
+                <input type="radio" name="q14" value="F"> P ∨ ¬Q <br> <!-- F -->
             </label>
         </form><br>
         <button onclick="check()">Controlla risposta</button>
@@ -118,11 +127,7 @@
         <p>
             <b>Importante</b>
             <br>
-            Q può accadere anche da solo ma se P accade deve seguire Q, ergo se Q non è accaduto non è accaduto neanche P<br>
-            <br>
-            Oppure:<br>
-            Q, da sola, come sappiamo può essere sia vera che falsa. Però, assumendo che la frase intera (composta sia da P che da Q) sia vera, se P è vera deve esserlo per forza anche Q.
-            Perciò se la frase intera è vera e Q è falsa, anche P deve essere falsa. Infatti, se P fosse stata vera lo sarebbe stata anche Q per quanto detto sopra, ma noi ci troviamo nel caso in cui Q è falsa.
+            Si ricorda che come detto nella lezione 2 nel caso di P → Q, se Q non è accaduto non è accaduto neanche P.<br>
         </p>
         </div><br>
 
@@ -143,9 +148,17 @@
         <p>
             <b>Importante</b>
             <br>
-            Infatti la “o” logica non è esclusiva come spesso la intendiamo in linguaggio naturale, ma permette la verità di entrambe le proposizioni allo stesso tempo.
+            Notate che la “o” logica non è esclusiva come spesso la intendiamo in linguaggio naturale, ma permette la verità di entrambe le proposizioni allo stesso tempo.
         </p>
         </div><br>
+
+        <p>
+        Come ultima cosa, nelle equivalenze logiche è possibile considerare anche sottoespressioni più ampie, a condizione che vengano rispettate le parentesi e la precedenza delle operazioni. Ad esempio:
+        <ul>
+        <li>¬(¬A → B) ↔ ¬A ∧ ¬B</li>
+        </ul>
+        In questo caso, l'espressione ¬A viene trattata come la proposizione P nell'equivalenza generale ¬(P → Q) ↔ P ∧ ¬Q.
+        </p>
 
         </section>
 
