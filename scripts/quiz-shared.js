@@ -201,6 +201,53 @@
         return arr[Math.floor(Math.random() * arr.length)];
     }
 
+    /**
+     * Normalizza un nome per ottenere una chiave stabile indipendente da maiuscole/spazi.
+     * @pre value e una stringa o un valore convertibile a stringa.
+     * @post Restituisce una chiave in lowercase, trim e normalizzazione Unicode.
+     */
+    function normalizeNameKey(value) {
+        return String(value || '')
+            .normalize('NFKC')
+            .trim()
+            .toLowerCase();
+    }
+
+    /**
+     * Verifica se un'etichetta rappresenta un riferimento generico a persona.
+     * @pre value e una stringa o un valore convertibile a stringa.
+     * @post Restituisce true per label generiche come "persona" o "la persona".
+     */
+    function isGenericPersonLabel(value) {
+        const key = normalizeNameKey(value).replace(/\s+/g, ' ');
+        return key === 'persona' || key === 'la persona';
+    }
+
+    /**
+     * Hash deterministico non crittografico per mappare stringhe a interi.
+     * @pre input e una stringa.
+     * @post Restituisce un intero senza segno stabile tra esecuzioni.
+     */
+    function stableStringHash(input) {
+        let hash = 5381;
+        for (let i = 0; i < input.length; i += 1) {
+            hash = ((hash << 5) + hash) ^ input.charCodeAt(i);
+        }
+        return hash >>> 0;
+    }
+
+    /**
+     * Restituisce un colore deterministico per un nome.
+     * @pre palette e un array non vuoto di colori CSS validi.
+     * @post Stesso nome normalizzato produce sempre lo stesso colore della palette.
+     */
+    function getDeterministicNameColor(name, palette) {
+        const key = normalizeNameKey(name);
+        if (!key || !Array.isArray(palette) || palette.length === 0) return '';
+        const index = stableStringHash(key) % palette.length;
+        return palette[index];
+    }
+
     window.quizShared = {
         differentiateParentheses: differentiateParentheses,
         parsePositiveInt: parsePositiveInt,
@@ -209,6 +256,9 @@
         formatAst: formatAst,
         prologToLogical: prologToLogical,
         shuffle: shuffle,
-        pickRandom: pickRandom
+        pickRandom: pickRandom,
+        normalizeNameKey: normalizeNameKey,
+        isGenericPersonLabel: isGenericPersonLabel,
+        getDeterministicNameColor: getDeterministicNameColor
     };
 })();

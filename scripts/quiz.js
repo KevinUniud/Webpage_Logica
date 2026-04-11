@@ -462,6 +462,17 @@ function initEquivalentQuiz(rootId) {
     const prologToLogical = quizShared.prologToLogical;
     const shuffle = quizShared.shuffle;
     const pickRandom = quizShared.pickRandom;
+    const isGenericPersonLabel = quizShared.isGenericPersonLabel;
+    const getDeterministicNameColor = quizShared.getDeterministicNameColor;
+
+    const NAME_COLOR_PALETTE_DAY = [
+        '#0057B8', '#B54708', '#0B6E4F', '#7B2CBF', '#C2410C',
+        '#1D4ED8', '#166534', '#BE123C', '#0369A1', '#6D28D9'
+    ];
+    const NAME_COLOR_PALETTE_NIGHT = [
+        '#7DD3FC', '#FDBA74', '#86EFAC', '#C4B5FD', '#FCA5A5',
+        '#93C5FD', '#FCD34D', '#67E8F9', '#F9A8D4', '#A7F3D0'
+    ];
 
     function isDayMode() {
         return document.documentElement.classList.contains('day-mode') || document.body.classList.contains('day-mode');
@@ -481,6 +492,11 @@ function initEquivalentQuiz(rootId) {
         if (Array.isArray(raw)) return raw;
         if (typeof raw === 'string') return [raw];
         return [];
+    }
+
+    function resolveNameCaptionColor(name) {
+        const palette = isDayMode() ? NAME_COLOR_PALETTE_DAY : NAME_COLOR_PALETTE_NIGHT;
+        return getDeterministicNameColor(name, palette);
     }
 
     function connectorText(symbol) {
@@ -591,7 +607,32 @@ function initEquivalentQuiz(rootId) {
         const captionAction = state.spokenlanguage
             ? formatSpokenAction(item.azione, false)
             : item.azione;
-        caption.textContent = captionSubject + ' ' + captionAction;
+
+        const subjectText = String(captionSubject || '').trim();
+        const actionText = String(captionAction || '').trim();
+
+        const subjectNode = document.createElement('span');
+        subjectNode.className = 'quiz-wrong-images-caption-subject';
+        subjectNode.textContent = subjectText;
+
+        if (subjectText && !isGenericPersonLabel(subjectText)) {
+            const subjectColor = resolveNameCaptionColor(subjectText);
+            if (subjectColor) subjectNode.style.color = subjectColor;
+        }
+
+        const actionNode = document.createElement('span');
+        actionNode.className = 'quiz-wrong-images-caption-action';
+        actionNode.textContent = actionText;
+
+        if (subjectText) {
+            caption.appendChild(subjectNode);
+        }
+        if (subjectText && actionText) {
+            caption.appendChild(document.createTextNode(' '));
+        }
+        if (actionText) {
+            caption.appendChild(actionNode);
+        }
 
         node.appendChild(img);
         node.appendChild(caption);

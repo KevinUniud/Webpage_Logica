@@ -62,6 +62,11 @@
     text-align: center;
 }
 
+.quiz-wrong-images-caption-subject,
+.quiz-wrong-images-caption-action {
+    color: inherit;
+}
+
 /* Evidenziazione differenze step: cambiamento o errore. */
 .quiz-wrong-images-item.is-step-changed {
     border: 1px solid var(--success-accent-border);
