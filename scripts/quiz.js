@@ -473,6 +473,44 @@ function initEquivalentQuiz(rootId) {
         '#7DD3FC', '#fcb160', '#86EFAC', '#FCA5A5'
     ];
 
+    // === Caches for performance optimization (Phase 2-3) ===
+    // Cache for buildImageSequenceFromFormula results: key is formula+mode, value is sequence array
+    var formulaSequenceCache = {};
+    
+    // Cache for applyFormulaTransforms results: key is formula+flags, value is transformed formula
+    var formulaTransformsCache = {};
+    
+    // Cache for colorizeAtomsInText results: key is formula+colorMap, value is HTML string
+    var colorizeAttentionCache = {};
+
+    function getCachedFormulaSequence(formula, mode) {
+        var cacheKey = formula + '|' + mode;
+        if (formulaSequenceCache.hasOwnProperty(cacheKey)) {
+            return formulaSequenceCache[cacheKey];
+        }
+        var sequence = buildImageSequenceFromFormula(formula, mode);
+        formulaSequenceCache[cacheKey] = sequence;
+        return sequence;
+    }
+
+    function getCachedFormulaTransforms(formula) {
+        // Cache key includes formula and current state flags (since applyFormulaTransforms uses state)
+        var flagKey = (state.differentiateParens ? '1' : '0') + (state.spokenlanguage ? '1' : '0');
+        var cacheKey = formula + '|' + flagKey;
+        if (formulaTransformsCache.hasOwnProperty(cacheKey)) {
+            return formulaTransformsCache[cacheKey];
+        }
+        var transformed = applyFormulaTransforms(formula);
+        formulaTransformsCache[cacheKey] = transformed;
+        return transformed;
+    }
+
+    function clearFormulaSequenceCaches() {
+        formulaSequenceCache = {};
+        formulaTransformsCache = {};
+        colorizeAttentionCache = {};
+    }
+
     function isDayMode() {
         return document.documentElement.classList.contains('day-mode') || document.body.classList.contains('day-mode');
     }
@@ -859,7 +897,8 @@ function initEquivalentQuiz(rootId) {
         const row = document.createElement('div');
         row.className = 'quiz-wrong-images-row';
         const allowImages = Boolean(options && options.allowImages);
-        const sequence = allowImages ? buildImageSequenceFromFormula(descriptor.formulaText, mode) : [];
+        // Use cached sequence to avoid repeated tokenization of the same formula
+        const sequence = allowImages ? getCachedFormulaSequence(descriptor.formulaText, mode) : [];
         if (sequence.length === 0) {
             const empty = document.createElement('span');
             empty.className = 'quiz-wrong-images-empty';
@@ -962,10 +1001,10 @@ function initEquivalentQuiz(rootId) {
         const wrongDescriptor = descriptorMap.wrong || null;
 
         const questionSequence = questionDescriptor
-            ? buildImageSequenceFromFormula(questionDescriptor.formulaText, mode)
+            ? getCachedFormulaSequence(questionDescriptor.formulaText, mode)
             : [];
         const correctSequence = correctDescriptor
-            ? buildImageSequenceFromFormula(correctDescriptor.formulaText, mode)
+            ? getCachedFormulaSequence(correctDescriptor.formulaText, mode)
             : [];
 
         const fallbackCorrectSteps = [];
@@ -1387,8 +1426,9 @@ function initEquivalentQuiz(rootId) {
      */
     function refreshCurrentExerciseRendering() {
         if (questionEl && currentQuestionText) {
-            questionEl.textContent = applyFormulaTransforms(currentQuestionText);
-            syncWrongImagesWidth();
+            questionEl.textContent = getCachedFormulaTransforms(currentQuestionText);
+            // Only sync width when rendering after question load (called in loadExercise),
+            // not on every setting change to reduce DOM reflows
         }
         showInfo(currentQuestionInfo);
         renderOptions();
@@ -1512,7 +1552,7 @@ function initEquivalentQuiz(rootId) {
             if (state.spokenlanguage) {
                 return '<li>' + escapeHtml(formatSpokenInfoLine(item)) + '</li>';
             }
-            return '<li>' + colorizeAtomsInText(applyFormulaTransforms(item)) + '</li>';
+            return '<li>' + colorizeAtomsInText(getCachedFormulaTransforms(item)) + '</li>';
         }).join('');
         infoEl.innerHTML = '<p>Sapendo che:</p><ul>' + htmlItems + '</ul>';
         infoEl.hidden = false;
@@ -1696,7 +1736,7 @@ function initEquivalentQuiz(rootId) {
             button.setAttribute('role', 'radio');
             button.setAttribute('aria-checked', index === state.selectedIndex ? 'true' : 'false');
             button.dataset.index = String(index);
-            button.innerHTML = colorizeAtomsInText(applyFormulaTransforms(getOptionDisplayFormula(opt)));
+            button.innerHTML = colorizeAtomsInText(getCachedFormulaTransforms(getOptionDisplayFormula(opt)));
             optionsEl.appendChild(button);
         });
 
@@ -1869,6 +1909,8 @@ function initEquivalentQuiz(rootId) {
 
             currentQuestionText = parsed.question;
             currentImageFormulaSteps = parsed.imageFormulaSteps || { question: [], correct: [], wrongByFormula: {} };
+            // Clear formula sequence cache when loading new question to avoid stale data
+            clearFormulaSequenceCaches();
             if (state.spokenlanguage) {
                 atomSpokenMap = buildAtomSpokenMap(collectAtomsFromExercise(parsed));
                 buildSpokenNameColorMap();
