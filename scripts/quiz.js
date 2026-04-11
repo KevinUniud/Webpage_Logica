@@ -484,13 +484,6 @@ function initEquivalentQuiz(rootId) {
         wrongActionImagesEl.hidden = true;
     }
 
-    function syncWrongImagesWidth() {
-        if (!wrongActionImagesEl || !questionEl) return;
-        const questionLength = String(questionEl.textContent || '').trim().length;
-        const widthCh = Math.max(40, Math.min(questionLength || 40, 80));
-        wrongActionImagesEl.style.setProperty('--quiz-wrong-images-max-ch', String(widthCh));
-    }
-
     function resolveImageCandidates(action, mode) {
         const item = ACTION_IMAGE_FILES[action];
         if (!item) return [];
@@ -1361,7 +1354,6 @@ function initEquivalentQuiz(rootId) {
     function refreshCurrentExerciseRendering() {
         if (questionEl && currentQuestionText) {
             questionEl.textContent = applyFormulaTransforms(currentQuestionText);
-            syncWrongImagesWidth();
         }
         showInfo(currentQuestionInfo);
         renderOptions();
@@ -1850,7 +1842,6 @@ function initEquivalentQuiz(rootId) {
                 resetSpokenNameColors();
             }
             questionEl.textContent = applyFormulaTransforms(parsed.question);
-            syncWrongImagesWidth();
             currentQuestionInfo = Array.isArray(parsed.info) ? parsed.info.slice() : [];
             currentTruthAssignments = extractTruthAssignments(currentQuestionInfo);
             showInfo(parsed.info);
