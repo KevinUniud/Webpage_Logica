@@ -6,6 +6,9 @@
     display: flex;
     flex-direction: column;
     gap: 14px;
+    align-self: flex-start;
+    width: min(100%, calc(var(--quiz-wrong-images-max-ch, 80) * 1ch));
+    max-width: 100%;
 }
 
 /* Blocchi file e badge informativi. */
@@ -41,6 +44,7 @@
     flex-wrap: wrap;
     gap: 10px;
     align-items: center;
+    width: 100%;
 }
 
 .quiz-wrong-images-item {
