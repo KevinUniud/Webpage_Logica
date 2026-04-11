@@ -90,6 +90,7 @@ function initEquivalentQuiz(rootId) {
     let currentQuestionInfo = [];
     let currentTruthAssignments = {};
     let atomSpokenMap = {};
+    let currentSpokenNameColors = {};
     let currentQuestionText = '';
     let currentImageFormulaSteps = { question: [], correct: [], wrongByFormula: {} };
     let quantifierNegationTarget = 0;
@@ -462,8 +463,8 @@ function initEquivalentQuiz(rootId) {
     const prologToLogical = quizShared.prologToLogical;
     const shuffle = quizShared.shuffle;
     const pickRandom = quizShared.pickRandom;
+    const normalizeNameKey = quizShared.normalizeNameKey;
     const isGenericPersonLabel = quizShared.isGenericPersonLabel;
-    const getDeterministicNameColor = quizShared.getDeterministicNameColor;
 
     const NAME_COLOR_PALETTE_DAY = [
         '#0057B8', '#ca6c1e', '#0B6E4F', '#B91C1C'
@@ -492,9 +493,31 @@ function initEquivalentQuiz(rootId) {
         return [];
     }
 
-    function resolveNameCaptionColor(name) {
+    function resetSpokenNameColors() {
+        currentSpokenNameColors = {};
+    }
+
+    function buildSpokenNameColorMap() {
         const palette = isDayMode() ? NAME_COLOR_PALETTE_DAY : NAME_COLOR_PALETTE_NIGHT;
-        return getDeterministicNameColor(name, palette);
+        const assigned = {};
+
+        Object.keys(atomSpokenMap || {}).forEach(function(atom) {
+            const entry = atomSpokenMap[atom];
+            if (!entry || !entry.nome) return;
+            const nameKey = normalizeNameKey(entry.nome);
+            if (!nameKey || Object.prototype.hasOwnProperty.call(assigned, nameKey)) return;
+
+            const colorIndex = Object.keys(assigned).length % palette.length;
+            assigned[nameKey] = palette[colorIndex];
+        });
+
+        currentSpokenNameColors = assigned;
+    }
+
+    function resolveNameCaptionColor(name) {
+        const nameKey = normalizeNameKey(name);
+        if (!nameKey) return '';
+        return currentSpokenNameColors[nameKey] || '';
     }
 
     function connectorText(symbol) {
@@ -1813,8 +1836,10 @@ function initEquivalentQuiz(rootId) {
             currentImageFormulaSteps = parsed.imageFormulaSteps || { question: [], correct: [], wrongByFormula: {} };
             if (state.spokenlanguage) {
                 atomSpokenMap = buildAtomSpokenMap(collectAtomsFromExercise(parsed));
+                buildSpokenNameColorMap();
             } else {
                 atomSpokenMap = {};
+                resetSpokenNameColors();
             }
             questionEl.textContent = applyFormulaTransforms(parsed.question);
             currentQuestionInfo = Array.isArray(parsed.info) ? parsed.info.slice() : [];
@@ -1834,6 +1859,7 @@ function initEquivalentQuiz(rootId) {
             questionEl.textContent = 'Impossibile caricare l\'esercizio.';
             currentQuestionText = '';
             atomSpokenMap = {};
+            resetSpokenNameColors();
             currentQuestionInfo = [];
             currentTruthAssignments = {};
             currentImageFormulaSteps = { question: [], correct: [], wrongByFormula: {} };
@@ -2029,6 +2055,7 @@ function initEquivalentQuiz(rootId) {
         currentQuestionInfo = [];
         currentTruthAssignments = {};
         atomSpokenMap = {};
+        resetSpokenNameColors();
         currentQuestionText = '';
         currentImageFormulaSteps = { question: [], correct: [], wrongByFormula: {} };
         quantifierNegationTarget = 0;
@@ -2182,8 +2209,10 @@ function initEquivalentQuiz(rootId) {
                         info: currentQuestionInfo,
                         options: state.options
                     }));
+                    buildSpokenNameColorMap();
                 } else {
                     atomSpokenMap = {};
+                    resetSpokenNameColors();
                 }
                 refreshCurrentExerciseRendering();
             });
