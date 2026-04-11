@@ -466,12 +466,10 @@ function initEquivalentQuiz(rootId) {
     const getDeterministicNameColor = quizShared.getDeterministicNameColor;
 
     const NAME_COLOR_PALETTE_DAY = [
-        '#0057B8', '#B54708', '#0B6E4F', '#7B2CBF', '#C2410C',
-        '#1D4ED8', '#166534', '#BE123C', '#0369A1', '#6D28D9'
+        '#0057B8', '#ca6c1e', '#0B6E4F', '#B91C1C'
     ];
     const NAME_COLOR_PALETTE_NIGHT = [
-        '#7DD3FC', '#FDBA74', '#86EFAC', '#C4B5FD', '#FCA5A5',
-        '#93C5FD', '#FCD34D', '#67E8F9', '#F9A8D4', '#A7F3D0'
+        '#7DD3FC', '#fcb160', '#86EFAC', '#FCA5A5'
     ];
 
     function isDayMode() {
