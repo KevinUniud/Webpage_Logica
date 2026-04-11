@@ -1162,7 +1162,7 @@ function initEquivalentQuiz(rootId) {
                 if (!isFormulaBoundaryChar(prev) || !isFormulaBoundaryChar(next)) {
                     return atom;
                 }
-                return String(atom).toUpperCase() + '(' + quantifiedVariable + ')';
+                return String(atom).toUpperCase();
             });
             return out;
         }
