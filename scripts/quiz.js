@@ -2019,7 +2019,6 @@ function initEquivalentQuiz(rootId) {
         if (reviewTitleEl) reviewTitleEl.hidden = false;
         if (testEl) testEl.hidden = true;
         if (reviewEl) reviewEl.hidden = false;
-        if (reviewNavEl) reviewNavEl.hidden = true;
         state.mode = 'completed';
     }
 
