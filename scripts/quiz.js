@@ -1687,7 +1687,7 @@ function initEquivalentQuiz(rootId) {
     /**
      * Genera opzioni multiple-choice per negazione di formule quantificate.
      * @pre quantifier e '∀' o '∃'; baseFormula e una formula testuale.
-     * @post Restituisce domanda e 4 opzioni con esattamente una risposta corretta.
+     * @post Restituisce domanda e 3 opzioni con esattamente una risposta corretta.
      */
     function buildQuantifiedNegationOptions(quantifier, baseFormula) {
         const normalizedFormula = String(baseFormula || '').trim() || 'p';
@@ -1701,12 +1701,10 @@ function initEquivalentQuiz(rootId) {
         const wrongs = isUniversal
             ? [
                 '∀x ¬' + wrappedFormula,
-                '¬∀x ' + wrappedFormula,
                 '∃x ' + wrappedFormula
             ]
             : [
                 '∃x ¬' + wrappedFormula,
-                '¬∃x ' + wrappedFormula,
                 '∀x ' + wrappedFormula
             ];
 
@@ -1715,8 +1713,7 @@ function initEquivalentQuiz(rootId) {
             options: shuffle([
                 { text: correct, correct: true },
                 { text: wrongs[0], correct: false },
-                { text: wrongs[1], correct: false },
-                { text: wrongs[2], correct: false }
+                { text: wrongs[1], correct: false }
             ])
         };
     }
@@ -1973,7 +1970,7 @@ function initEquivalentQuiz(rootId) {
 
     /**
      * Valuta la risposta selezionata e prepara il passaggio alla domanda successiva.
-     * @pre state.options contiene esattamente 4 opzioni e state.correctIndex e valido.
+        * @pre state.options contiene almeno 2 opzioni e state.correctIndex e valido.
      * @post Blocca la domanda corrente, aggiorna feedback visuale/testuale e registra il risultato nel recap.
      */
     // Format elapsed time in seconds with two decimals and 's' suffix, or '' if invalid
@@ -1983,7 +1980,7 @@ function initEquivalentQuiz(rootId) {
     }
 
     function checkAnswer() {
-        if (!Array.isArray(state.options) || state.options.length !== 4) {
+        if (!Array.isArray(state.options) || state.options.length < 2) {
             setStatus('Nessun esercizio disponibile.');
             return;
         }
