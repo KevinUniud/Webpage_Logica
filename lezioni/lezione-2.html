@@ -35,7 +35,7 @@
             <h2>Lezione 2: Operatori logici</h2>
 
         <p>
-            Tramite la tabella fornita si riscrivano le frasi per allenarsi a riconoscere le parti importanti del testo:<br>
+            Tramite la tabella fornita si riscrivano ora le frasi per allenarci a riconoscere le parti importanti del testo:<br>
             <br>
         </p>
 
@@ -66,7 +66,13 @@
 
         <div class="rounded-box"> <!-- Array 3. -->
         <form id="quiz2_1">
-            <p>1. Luca mangia e non beve e salta e ride.</p> <!-- M ∧ ¬B ∧ S ∧ R -->
+            <p>
+                1. Luca mangia e non beve e salta e ride.<br><br>
+                Luca mangia = M<br>
+                Luca beve = B<br>
+                Luca salta = S<br>
+                Luca ride = R
+            </p> <!-- M ∧ ¬B ∧ S ∧ R -->
             <label>
                 <input class="expressionInput" name="expr" type="text" readonly aria-label="Expression builder" placeholder="Clicca i bottoni per costruire l'espressione">
                 
@@ -88,7 +94,13 @@
 
         <div class="rounded-box"> <!-- Array 4. -->
         <form id="quiz2_2">
-            <p>2. Se (Laura danza) o (salta e canta), allora ride.</p> <!-- D ∨ S ∧ C → R -->
+            <p>
+                2. Se (Laura danza) o (salta e canta) allora ride.<br><br>
+                Laura danza = D<br>
+                Laura salta = S<br>
+                Laura canta = C<br>
+                Laura ride = R
+            </p> <!-- D ∨ S ∧ C → R -->
             <label> <!-- Spiegare o t-->
                 <input class="expressionInput" name="expr" type="text" readonly aria-label="Expression builder" placeholder="Clicca i bottoni per costruire l'espressione">
 
@@ -110,7 +122,15 @@
 
         <div class="rounded-box"> <!-- Array 5. -->
         <form id="quiz2_3">
-            <p>3. Se Paolo danza, allora (o non balla) o (non canta e ride e salta).</p> <!-- D → ¬B ∨ ¬C ∧ R ∧ S -->
+            <p>
+                3. Se Paolo danza allora (o non balla) o (non canta e ride e salta).
+                <br><br>
+                Paolo danza = D<br>
+                Paolo balla = S<br>
+                Paolo canta = C<br>
+                Paolo ride = R<br>
+                Paolo salta = S
+            </p> <!-- D → ¬B ∨ ¬C ∧ R ∧ S -->
             <label>
                 <input class="expressionInput" name="expr" type="text" readonly aria-label="Expression builder" placeholder="Clicca i bottoni per costruire l'espressione">
 
@@ -130,6 +150,14 @@
         </form><br>
         <button onclick="checkArray(5)">Controlla risposta</button>
         </div><br>
+
+        <p>
+        Si aggiunge che in P → Q, Q può accadere anche da solo ma se P accade deve seguire Q, ergo se Q non è accaduto non è accaduto neanche P<br>
+        <br>
+        Oppure:<br>
+        Q, da sola, come sappiamo può essere sia vera che falsa. Però, assumendo che la frase intera (composta sia da P che da Q) sia vera, se P è vera deve esserlo per forza anche Q.
+        Perciò se la frase intera è vera e Q è falsa, anche P deve essere falsa. Infatti, se P fosse stata vera lo sarebbe stata anche Q per quanto detto sopra, ma noi ci troviamo nel caso in cui Q è falsa.
+        </p>
 
         </section>
 

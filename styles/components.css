@@ -237,6 +237,19 @@
     cursor: pointer;
 }
 
+.controls:has(.deleteBtn)::after {
+    content: "";
+    flex-basis: 100%;
+    order: 1;
+}
+
+.controls .deleteBtn {
+    order: 2;
+    flex: 0 0 auto;
+    width: auto;
+    margin: 2px auto 0;
+}
+
 button[onclick="check()"],
 button[onclick^="checkArray"]{
     display: block;
