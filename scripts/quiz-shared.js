@@ -150,10 +150,35 @@
             iff: { symbol: '↔', prec: 0 }
         };
 
+        function isMixedAndOrChild(parentName, child) {
+            return Boolean(
+                child &&
+                child.type === 'call' &&
+                (parentName === 'and' || parentName === 'or') &&
+                (child.name === 'and' || child.name === 'or') &&
+                child.name !== parentName
+            );
+        }
+
+        function wrapIfMissing(text) {
+            const value = String(text || '').trim();
+            if (!value) return value;
+            if (value[0] === '(' && value[value.length - 1] === ')') return value;
+            return '(' + value + ')';
+        }
+
         const op = binaryMap[name];
         if (op && args.length === 2) {
-            const left = formatAst(args[0], op.prec);
-            const right = formatAst(args[1], op.prec + (name === 'imp' ? 1 : 0));
+            let left = formatAst(args[0], op.prec);
+            let right = formatAst(args[1], op.prec + (name === 'imp' ? 1 : 0));
+
+            if (isMixedAndOrChild(name, args[0])) {
+                left = wrapIfMissing(left);
+            }
+            if (isMixedAndOrChild(name, args[1])) {
+                right = wrapIfMissing(right);
+            }
+
             const text = left + ' ' + op.symbol + ' ' + right;
             return parentPrec > op.prec ? '(' + text + ')' : text;
         }
