@@ -1768,12 +1768,11 @@ function initEquivalentQuiz(rootId) {
      * @post Restituisce un oggetto normalizzato pronto per il rendering o solleva errore.
      */
     async function fetchEquivalenceExercise() {
-        const vars = pickRandom(variableSets);
         const response = await fetch(equivalenceApiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                variables: vars,
+                use_all: false,
                 wrong_answers_count: 3
             })
         });
@@ -1791,14 +1790,13 @@ function initEquivalentQuiz(rootId) {
      */
     async function fetchTruthValueExercise() {
         const predicateCount = 2 + Math.floor(Math.random() * 3);
-        const askTrue = Math.random() < 0.5;
         const response = await fetch(truthApiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 predicate_count: predicateCount,
-                true_options_count: askTrue ? 1 : 3,
-                false_options_count: askTrue ? 3 : 1
+                true_options_count: 1,
+                false_options_count: 3
             })
         });
         if (!response.ok) {
@@ -1809,12 +1807,11 @@ function initEquivalentQuiz(rootId) {
     }
 
     async function fetchQuantifierNegationExercise() {
-        const vars = pickRandom(variableSets);
         const response = await fetch(equivalenceApiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                variables: vars,
+                use_all: false,
                 wrong_answers_count: 3
             })
         });
