@@ -420,6 +420,8 @@ function initEquivalentQuiz(rootId) {
 
     const equivalenceApiUrl = buildApiUrl('generator/build-exercise-from-depth');
     const truthApiUrl = buildApiUrl('generator/build-truth-value-options-question');
+    const logicalConsequenceApiUrl = buildApiUrl('generator/build-logical-consequence-question');
+    const formulaByVariableCountApiUrl = buildApiUrl('generator/generate-formula-by-variable-count');
 
     const variableSets = [
         ['p', 'q', 'r'],
@@ -1703,6 +1705,59 @@ function initEquivalentQuiz(rootId) {
     }
 
     /**
+     * Normalizza il payload backend per esercizi di conseguenza logica.
+     * @pre payload segue il contratto API logical-consequence (question/options).
+     * @post Restituisce oggetto quiz standard o null se il payload e invalido.
+     */
+    function normalizeLogicalConsequenceResult(payload) {
+        const res = pickGeneratorResult(payload, 'build_logical_consequence_question');
+        if (!res || typeof res !== 'object') return null;
+
+        const question = String(res.question_prolog || '').trim();
+        const correctOptions = Array.isArray(res.correct_options_prolog)
+            ? res.correct_options_prolog.filter(Boolean)
+            : [];
+        const wrongOptions = Array.isArray(res.wrong_options_prolog)
+            ? res.wrong_options_prolog.filter(Boolean)
+            : [];
+        const allOptions = Array.isArray(res.options_prolog)
+            ? res.options_prolog.filter(Boolean)
+            : [];
+
+        if (!question || correctOptions.length < 1 || allOptions.length < 2) {
+            return null;
+        }
+
+        const correctSet = new Set(correctOptions);
+        const uniqueOptions = Array.from(new Set(allOptions));
+        const normalizedOptions = uniqueOptions.map(function(optionFormula) {
+            return {
+                text: optionFormula,
+                correct: correctSet.has(optionFormula)
+            };
+        });
+
+        if (!normalizedOptions.some(function(option) { return option.correct; })) {
+            return null;
+        }
+
+        const finalOptions = normalizedOptions.length >= 2
+            ? normalizedOptions
+            : normalizedOptions.concat(wrongOptions.map(function(optionFormula) {
+                return { text: optionFormula, correct: false };
+            }));
+
+        if (finalOptions.length < 2) return null;
+
+        return {
+            kind: 'logical-consequence',
+            question: 'Quale formula è una conseguenza logica di "' + prologToLogical(question) + '"?',
+            info: [],
+            options: shuffle(finalOptions)
+        };
+    }
+
+    /**
      * Genera opzioni multiple-choice per negazione di formule quantificate.
      * @pre quantifier e '∀' o '∃'; baseFormula e una formula testuale.
      * @post Restituisce domanda e 3 opzioni con esattamente una risposta corretta.
@@ -1824,13 +1879,38 @@ function initEquivalentQuiz(rootId) {
         return normalizeTruthValueResult(payload);
     }
 
-    async function fetchQuantifierNegationExercise() {
-        const response = await fetch(equivalenceApiUrl, {
+    /**
+     * Recupera un esercizio di conseguenza logica dal backend.
+     * @pre logicalConsequenceApiUrl raggiungibile e backend conforme al contratto atteso.
+     * @post Restituisce un oggetto normalizzato con domanda e opzioni.
+     */
+    async function fetchLogicalConsequenceExercise() {
+        const variableCount = 3 + Math.floor(Math.random() * 2);
+        const response = await fetch(logicalConsequenceApiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+                variable_count: variableCount,
+                correct_options_count: 1,
+                wrong_options_count: 3
+            })
+        });
+        if (!response.ok) {
+            throw new Error('HTTP ' + response.status);
+        }
+        const payload = await response.json();
+        return normalizeLogicalConsequenceResult(payload);
+    }
+
+    async function fetchQuantifierNegationExercise() {
+        const variableCount = 3 + Math.floor(Math.random() * 2);
+        const response = await fetch(formulaByVariableCountApiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                variable_count: variableCount,
                 use_all: false,
-                wrong_answers_count: 3
+                timeout: 10
             })
         });
         if (!response.ok) {
@@ -1838,22 +1918,14 @@ function initEquivalentQuiz(rootId) {
         }
 
         const payload = await response.json();
-        const normalized = normalizeEquivalenceResult(payload);
-        if (!normalized || !Array.isArray(normalized.options) || normalized.options.length === 0) {
+        const baseFormula = String((payload && payload.result) || '').trim();
+        if (!baseFormula) {
             return null;
         }
 
-        const baseFormulaOption = normalized.options.find(function(option) {
-            return option && option.correct;
-        }) || normalized.options[0];
-
-        if (!baseFormulaOption || !baseFormulaOption.text) {
-            return null;
-        }
-
-        const baseFormula = prologToLogical(baseFormulaOption.text);
+        const logicalBaseFormula = prologToLogical(baseFormula);
         const quantifier = Math.random() < 0.5 ? '∀' : '∃';
-        const quantified = buildQuantifiedNegationOptions(quantifier, baseFormula);
+        const quantified = buildQuantifiedNegationOptions(quantifier, logicalBaseFormula);
 
         return {
             kind: 'quantifier-negation',
@@ -1880,7 +1952,8 @@ function initEquivalentQuiz(rootId) {
         try {
             const standardLoaders = [
                 fetchEquivalenceExercise,
-                fetchTruthValueExercise
+                fetchTruthValueExercise,
+                fetchLogicalConsequenceExercise
             ];
             const pendingQuantifierNegation = Math.max(0, quantifierNegationTarget - quantifierNegationUsed);
             const questionsLeftIncludingCurrent = Math.max(0, totalExercises - currentExercise + 1);
@@ -1890,11 +1963,7 @@ function initEquivalentQuiz(rootId) {
             if (mustUseQuantifierNegation) {
                 loader = fetchQuantifierNegationExercise;
             } else if (pendingQuantifierNegation > 0) {
-                loader = pickRandom([
-                    fetchEquivalenceExercise,
-                    fetchTruthValueExercise,
-                    fetchQuantifierNegationExercise
-                ]);
+                loader = pickRandom(standardLoaders.concat([fetchQuantifierNegationExercise]));
             } else {
                 loader = pickRandom(standardLoaders);
             }
@@ -2043,17 +2112,23 @@ function initEquivalentQuiz(rootId) {
                 tempoRisposta = formatElapsedTime(elapsed);
             }
 
-            // Tipo domanda - se non è Ipotesi o Equivalenza, è Negazione
+            // Tipo domanda calcolato dal kind interno per evitare ambiguita nel testo domanda.
             let tipoDomanda = '';
-            const qText = questionEl.textContent || '';
-
-            if (currentQuestionInfo && currentQuestionInfo.length > 0) {
-                tipoDomanda = 'Ipotesi';
-            } else if (/equivalente|equivalenza/i.test(qText)) {
-                tipoDomanda = 'Equivalenza';
-            } else {
-                tipoDomanda = 'Negazione';
+            switch (state.exerciseKind) {
+                case 'truth-value':
+                    tipoDomanda = 'Ipotesi';
+                    break;
+                case 'equivalence':
+                    tipoDomanda = 'Equivalenza';
+                    break;
+                case 'logical-consequence':
+                    tipoDomanda = 'Conseguenza logica';
+                    break;
+                default:
+                    tipoDomanda = 'Negazione';
+                    break;
             }
+            const qText = questionEl.textContent || '';
 
             // Opzioni attive (usa funzione sicura)
             const opzioniAttive = getActiveOptions();
