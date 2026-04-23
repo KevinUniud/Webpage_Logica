@@ -1567,9 +1567,20 @@ function initEquivalentQuiz(rootId) {
         return name + ' è ' + value;
     }
 
+    function pickGeneratorResult(payload, nestedKey) {
+        if (!payload || typeof payload !== 'object') return payload;
+        if (payload.result && typeof payload.result === 'object') {
+            return payload.result;
+        }
+        if (nestedKey && payload[nestedKey] && typeof payload[nestedKey] === 'object') {
+            return payload[nestedKey];
+        }
+        return payload;
+    }
+
     // Normalizza il payload equivalenza in un formato uniforme per il renderer quiz.
     function normalizeEquivalenceResult(payload) {
-        const res = payload && payload.result ? payload.result : payload;
+        const res = pickGeneratorResult(payload, 'build_ex_depth');
         const question =
             (res && res.question_prolog) ||
             (res && res.original_formula && res.original_formula.formula_prolog) ||
@@ -1578,11 +1589,27 @@ function initEquivalentQuiz(rootId) {
             (res && res.correct_answer_prolog) ||
             (res && res.modified_formula && res.modified_formula.formula_prolog) ||
             '';
-        const wrongs =
+        const wrongsFromArray =
             (res && Array.isArray(res.wrong_answers_prolog) && res.wrong_answers_prolog) ||
             [];
+        const wrongsFromDistractions = res
+            ? Object.keys(res)
+                .filter(function(key) { return /^distraction_\d+$/i.test(key); })
+                .sort(function(a, b) {
+                    return Number(a.replace(/\D+/g, '')) - Number(b.replace(/\D+/g, ''));
+                })
+                .map(function(key) {
+                    const item = res[key];
+                    if (!item || typeof item !== 'object') return '';
+                    return String(item.formula_prolog || item.formula || '').trim();
+                })
+                .filter(function(formula) { return Boolean(formula); })
+            : [];
+        const wrongs = Array.from(new Set(wrongsFromArray.concat(wrongsFromDistractions))).filter(function(formula) {
+            return formula && formula !== correct;
+        });
 
-        if (!question || !correct || wrongs.length < 3) {
+        if (!question || !correct || wrongs.length < 1) {
             return null;
         }
 
@@ -1596,23 +1623,14 @@ function initEquivalentQuiz(rootId) {
         const wrongStepsMapRaw = extractWrongStepsMap(res, wrongs);
 
         const options = [
-            { text: correct, correct: true, formulaSteps: normalizeGenerationSteps(correctStepsRaw) },
-            {
-                text: wrongs[0],
+            { text: correct, correct: true, formulaSteps: normalizeGenerationSteps(correctStepsRaw) }
+        ].concat(wrongs.map(function(wrongFormula) {
+            return {
+                text: wrongFormula,
                 correct: false,
-                formulaSteps: normalizeGenerationSteps(wrongStepsMapRaw[wrongs[0]])
-            },
-            {
-                text: wrongs[1],
-                correct: false,
-                formulaSteps: normalizeGenerationSteps(wrongStepsMapRaw[wrongs[1]])
-            },
-            {
-                text: wrongs[2],
-                correct: false,
-                formulaSteps: normalizeGenerationSteps(wrongStepsMapRaw[wrongs[2]])
-            }
-        ];
+                formulaSteps: normalizeGenerationSteps(wrongStepsMapRaw[wrongFormula])
+            };
+        }));
 
         const imageFormulaSteps = {
             question: normalizeGenerationSteps(questionStepsRaw),
@@ -1647,7 +1665,7 @@ function initEquivalentQuiz(rootId) {
      * @post Restituisce oggetto quiz standard o null se il payload e invalido.
      */
     function normalizeTruthValueResult(payload) {
-        const res = payload && payload.result ? payload.result : payload;
+        const res = pickGeneratorResult(payload, 'build_tvq');
         const options = (res && Array.isArray(res.options) && res.options) || [];
         const info = (res && Array.isArray(res.information) && res.information) || [];
         const trueCount = Number(res && res.true_options_count);
