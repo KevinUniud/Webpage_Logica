@@ -1653,7 +1653,7 @@ function initEquivalentQuiz(rootId) {
         const trueCount = Number(res && res.true_options_count);
         const falseCount = Number(res && res.false_options_count);
 
-        if (options.length !== 4 || info.length < 2 || info.length > 4) {
+        if (options.length !== 4 || info.length < 4 || info.length > 5) {
             return null;
         }
 
