@@ -1789,7 +1789,7 @@ function initEquivalentQuiz(rootId) {
      * @post Restituisce un oggetto normalizzato con domanda, info e 4 opzioni.
      */
     async function fetchTruthValueExercise() {
-        const predicateCount = 2 + Math.floor(Math.random() * 3);
+        const predicateCount = 4 + Math.floor(Math.random() * 2);
         const response = await fetch(truthApiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
