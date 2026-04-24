@@ -1982,11 +1982,12 @@ function initEquivalentQuiz(rootId) {
                 timeout: 10
             })
         });
-        if (!response.ok) {
-            throw new Error('HTTP ' + response.status);
-        }
         const payload = await response.json();
-        return normalizeLogicalConsequenceResult(payload);
+        const parsed = normalizeLogicalConsequenceResult(payload);
+        if (parsed) {
+            return parsed;
+        }
+        throw new Error('HTTP ' + response.status);
     }
 
     async function fetchQuantifierNegationExercise() {
@@ -2037,11 +2038,12 @@ function initEquivalentQuiz(rootId) {
                 timeout_seconds: 10
             })
         });
-        if (!response.ok) {
-            throw new Error('HTTP ' + response.status);
-        }
         const payload = await response.json();
-        return normalizeTranslationResult(payload);
+        const parsed = normalizeTranslationResult(payload);
+        if (parsed) {
+            return parsed;
+        }
+        throw new Error('HTTP ' + response.status);
     }
 
     /**
