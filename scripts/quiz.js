@@ -422,6 +422,7 @@ function initEquivalentQuiz(rootId) {
     const equivalenceApiFallbackUrl = buildApiUrl('generator/build-exercise');
     const truthApiUrl = buildApiUrl('generator/build-truth-value-options-question');
     const logicalConsequenceApiUrl = buildApiUrl('generator/build-logical-consequence-question');
+    const translationApiUrl = buildApiUrl('generator/build-translation-question');
     const formulaByVariableCountApiUrl = buildApiUrl('generator/generate-formula-by-variable-count');
 
     const variableSets = [
@@ -1834,59 +1835,33 @@ function initEquivalentQuiz(rootId) {
         };
     }
 
-    function buildTranslationExercise() {
-        const useQuantifier = Math.random() < 0.5;
-        const useUniversal = Math.random() < 0.5;
-        const exercise = useQuantifier
-            ? (useUniversal
-                ? {
-                    question: 'Tradurre la seguente frase in linguaggio logico: "Ogni persona balla e canta"',
-                    info: [
-                        'P(x) = x è una persona',
-                        'B(x) = x balla',
-                        'C(x) = x canta'
-                    ],
-                    options: [
-                        { text: '∀x (P(x) → (B(x) ∧ C(x)))', correct: true },
-                        { text: '∃x (P(x) ∧ (B(x) ∧ C(x)))', correct: false },
-                        { text: '∀x (P(x) ∧ (B(x) ∧ C(x)))', correct: false },
-                        { text: '∀x ((B(x) ∧ C(x)) → P(x))', correct: false }
-                    ]
-                }
-                : {
-                    question: 'Tradurre la seguente frase in linguaggio logico: "Esiste una persona che balla e canta"',
-                    info: [
-                        'P(x) = x è una persona',
-                        'B(x) = x balla',
-                        'C(x) = x canta'
-                    ],
-                    options: [
-                        { text: '∃x (P(x) ∧ B(x) ∧ C(x))', correct: true },
-                        { text: '∀x (P(x) → (B(x) ∧ C(x)))', correct: false },
-                        { text: '∃x (P(x) → (B(x) ∧ C(x)))', correct: false },
-                        { text: '∃x (P(x) ∧ (B(x) ∨ C(x)))', correct: false }
-                    ]
-                })
-            : {
-                question: 'Tradurre la seguente frase in linguaggio logico: "Se Gino balla allora Pino balla"',
-                info: [
-                    'B(x) = x balla',
-                    'g = Gino',
-                    'p = Pino'
-                ],
-                options: [
-                    { text: 'imp(B(g), B(p))', correct: true },
-                    { text: 'imp(B(p), B(g))', correct: false },
-                    { text: 'and(B(g), B(p))', correct: false },
-                    { text: 'imp(not(B(g)), B(p))', correct: false }
-                ]
+    function normalizeTranslationResult(payload) {
+        const res = pickGeneratorResult(payload, 'build_translation_question');
+        if (!res || typeof res !== 'object') return null;
+
+        const question = String(res.question_text || res.question || '').trim();
+        const info = Array.isArray(res.info) ? res.info.map(function(entry) {
+            return String(entry || '').trim();
+        }).filter(Boolean) : [];
+        const allOptions = extractOptionsArray(res);
+        const normalizedOptions = allOptions.map(function(optionFormula) {
+            return {
+                text: optionTextFromEntry(optionFormula),
+                correct: optionBooleanFlag(optionFormula, ['is_correct', 'correct']) === true
             };
+        }).filter(function(option) {
+            return Boolean(option.text);
+        });
+
+        if (!question || normalizedOptions.length < 2 || !normalizedOptions.some(function(option) { return option.correct; })) {
+            return null;
+        }
 
         return {
             kind: 'translation',
-            question: exercise.question,
-            info: exercise.info,
-            options: shuffle(exercise.options)
+            question: question,
+            info: info,
+            options: shuffle(normalizedOptions)
         };
     }
 
@@ -2048,7 +2023,25 @@ function initEquivalentQuiz(rootId) {
     }
 
     async function fetchTranslationExercise() {
-        return buildTranslationExercise();
+        const response = await fetch(translationApiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                mode: 'auto',
+                quantifier_ratio: 0.5,
+                wrong_options_count: 3,
+                names_pool: NOMI,
+                actions_pool: AZIONI,
+                implied_person_predicate: true,
+                allow_spoken_mode: false,
+                timeout_seconds: 10
+            })
+        });
+        if (!response.ok) {
+            throw new Error('HTTP ' + response.status);
+        }
+        const payload = await response.json();
+        return normalizeTranslationResult(payload);
     }
 
     /**
