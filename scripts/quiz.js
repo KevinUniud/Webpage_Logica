@@ -448,6 +448,7 @@ function initEquivalentQuiz(rootId) {
         options: [],
         correctIndex: -1,
         locked: false,
+        spokenlanguageLocked: false,
         exerciseKind: 'equivalence',
         showFormulas: false,
         colorAtoms: false,
@@ -1066,6 +1067,11 @@ function initEquivalentQuiz(rootId) {
         state.showWrongActionImages = Boolean(showWrongActionImagesInput.checked);
     }
 
+    function syncSpokenLanguageAvailability() {
+        if (!spokenLanguageInput) return;
+        spokenLanguageInput.disabled = Boolean(state.spokenlanguageLocked);
+    }
+
     function escapeHtml(text) {
         return String(text)
             .replace(/&/g, '&amp;')
@@ -1420,7 +1426,9 @@ function initEquivalentQuiz(rootId) {
      */
     function refreshCurrentExerciseRendering() {
         if (questionEl && currentQuestionText) {
-            questionEl.textContent = getCachedFormulaTransforms(currentQuestionText);
+            questionEl.textContent = state.exerciseKind === 'translation'
+                ? currentQuestionText
+                : getCachedFormulaTransforms(currentQuestionText);
             // Only sync width when rendering after question load (called in loadExercise),
             // not on every setting change to reduce DOM reflows
         }
@@ -1545,6 +1553,9 @@ function initEquivalentQuiz(rootId) {
         const htmlItems = items.map(function(item) {
             if (state.spokenlanguage) {
                 return '<li>' + escapeHtml(formatSpokenInfoLine(item)) + '</li>';
+            }
+            if (state.exerciseKind === 'translation') {
+                return '<li>' + colorizeAtomsInText(String(item)) + '</li>';
             }
             return '<li>' + colorizeAtomsInText(getCachedFormulaTransforms(item)) + '</li>';
         }).join('');
@@ -1823,6 +1834,62 @@ function initEquivalentQuiz(rootId) {
         };
     }
 
+    function buildTranslationExercise() {
+        const useQuantifier = Math.random() < 0.5;
+        const useUniversal = Math.random() < 0.5;
+        const exercise = useQuantifier
+            ? (useUniversal
+                ? {
+                    question: 'Tradurre la seguente frase in linguaggio logico: "Ogni persona balla e canta"',
+                    info: [
+                        'P(x) = x è una persona',
+                        'B(x) = x balla',
+                        'C(x) = x canta'
+                    ],
+                    options: [
+                        { text: '∀x (P(x) → (B(x) ∧ C(x)))', correct: true },
+                        { text: '∃x (P(x) ∧ (B(x) ∧ C(x)))', correct: false },
+                        { text: '∀x (P(x) ∧ (B(x) ∧ C(x)))', correct: false },
+                        { text: '∀x ((B(x) ∧ C(x)) → P(x))', correct: false }
+                    ]
+                }
+                : {
+                    question: 'Tradurre la seguente frase in linguaggio logico: "Esiste una persona che balla e canta"',
+                    info: [
+                        'P(x) = x è una persona',
+                        'B(x) = x balla',
+                        'C(x) = x canta'
+                    ],
+                    options: [
+                        { text: '∃x (P(x) ∧ B(x) ∧ C(x))', correct: true },
+                        { text: '∀x (P(x) → (B(x) ∧ C(x)))', correct: false },
+                        { text: '∃x (P(x) → (B(x) ∧ C(x)))', correct: false },
+                        { text: '∃x (P(x) ∧ (B(x) ∨ C(x)))', correct: false }
+                    ]
+                })
+            : {
+                question: 'Tradurre la seguente frase in linguaggio logico: "Se Gino balla allora Pino balla"',
+                info: [
+                    'B(x) = x balla',
+                    'g = Gino',
+                    'p = Pino'
+                ],
+                options: [
+                    { text: 'imp(B(g), B(p))', correct: true },
+                    { text: 'imp(B(p), B(g))', correct: false },
+                    { text: 'and(B(g), B(p))', correct: false },
+                    { text: 'imp(not(B(g)), B(p))', correct: false }
+                ]
+            };
+
+        return {
+            kind: 'translation',
+            question: exercise.question,
+            info: exercise.info,
+            options: shuffle(exercise.options)
+        };
+    }
+
     /**
      * Renderizza i bottoni opzione per la domanda corrente.
      * @pre state.options contiene il set opzioni corrente.
@@ -1980,6 +2047,10 @@ function initEquivalentQuiz(rootId) {
         };
     }
 
+    async function fetchTranslationExercise() {
+        return buildTranslationExercise();
+    }
+
     /**
      * Carica la prossima domanda scegliendo il tipo di esercizio in base al piano corrente.
      * @pre Il quiz e in stato attivo (test avviato) e i nodi UI essenziali sono disponibili.
@@ -2000,6 +2071,9 @@ function initEquivalentQuiz(rootId) {
                 fetchTruthValueExercise,
                 fetchLogicalConsequenceExercise
             ];
+            const availableLoaders = state.spokenlanguage
+                ? standardLoaders.slice()
+                : standardLoaders.concat([fetchTranslationExercise]);
             const pendingQuantifierNegation = Math.max(0, quantifierNegationTarget - quantifierNegationUsed);
             const questionsLeftIncludingCurrent = Math.max(0, totalExercises - currentExercise + 1);
             const mustUseQuantifierNegation = pendingQuantifierNegation > 0 && questionsLeftIncludingCurrent <= pendingQuantifierNegation;
@@ -2008,9 +2082,9 @@ function initEquivalentQuiz(rootId) {
             if (mustUseQuantifierNegation) {
                 loader = fetchQuantifierNegationExercise;
             } else if (pendingQuantifierNegation > 0) {
-                loader = pickRandom(standardLoaders.concat([fetchQuantifierNegationExercise]));
+                loader = pickRandom(availableLoaders.concat([fetchQuantifierNegationExercise]));
             } else {
-                loader = pickRandom(standardLoaders);
+                loader = pickRandom(availableLoaders);
             }
 
             const parsed = await loader();
@@ -2044,7 +2118,9 @@ function initEquivalentQuiz(rootId) {
                 atomSpokenMap = {};
                 resetSpokenNameColors();
             }
-            questionEl.textContent = applyFormulaTransforms(parsed.question);
+            questionEl.textContent = parsed.kind === 'translation'
+                ? parsed.question
+                : applyFormulaTransforms(parsed.question);
             syncWrongImagesWidth();
             currentQuestionInfo = Array.isArray(parsed.info) ? parsed.info.slice() : [];
             currentTruthAssignments = extractTruthAssignments(currentQuestionInfo);
@@ -2169,6 +2245,9 @@ function initEquivalentQuiz(rootId) {
                 case 'logical-consequence':
                     tipoDomanda = 'Conseguenza logica';
                     break;
+                case 'translation':
+                    tipoDomanda = 'Traduzione';
+                    break;
                 default:
                     tipoDomanda = 'Negazione';
                     break;
@@ -2284,6 +2363,8 @@ function initEquivalentQuiz(rootId) {
         state.colorAtoms = Boolean(colorAtomsInput && colorAtomsInput.checked);
         state.spokenlanguage = Boolean(spokenLanguageInput && spokenLanguageInput.checked);
         state.showWrongActionImages = Boolean(showWrongActionImagesInput && showWrongActionImagesInput.checked);
+        state.spokenlanguageLocked = false;
+        syncSpokenLanguageAvailability();
         syncWrongImagesAvailability();
         applyFormulasLayout();
         if (testTitleEl) testTitleEl.hidden = true;
@@ -2321,6 +2402,8 @@ function initEquivalentQuiz(rootId) {
         state.colorAtoms = Boolean(colorAtomsInput && colorAtomsInput.checked);
         state.spokenlanguage = Boolean(spokenLanguageInput && spokenLanguageInput.checked);
         state.showWrongActionImages = Boolean(showWrongActionImagesInput && showWrongActionImagesInput.checked);
+        state.spokenlanguageLocked = true;
+        syncSpokenLanguageAvailability();
         syncWrongImagesAvailability();
         applyFormulasLayout();
         updateTestTitle();
@@ -2412,6 +2495,10 @@ function initEquivalentQuiz(rootId) {
         }
         if (spokenLanguageInput) {
             spokenLanguageInput.addEventListener('change', function() {
+                if (state.spokenlanguageLocked) {
+                    spokenLanguageInput.checked = state.spokenlanguage;
+                    return;
+                }
                 state.spokenlanguage = Boolean(spokenLanguageInput.checked);
                 syncWrongImagesAvailability();
                 if (state.spokenlanguage && state.options && state.options.length > 0) {
