@@ -1990,23 +1990,46 @@ function initEquivalentQuiz(rootId) {
      * @post Restituisce un oggetto normalizzato con domanda e opzioni.
      */
     async function fetchLogicalConsequenceExercise() {
-        const variableCount = 3 + Math.floor(Math.random() * 2);
-        const response = await fetch(logicalConsequenceApiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                variable_count: variableCount,
-                correct_options_count: 1,
-                wrong_options_count: 3,
-                timeout: 10
-            })
-        });
-        const payload = await response.json();
-        const parsed = normalizeLogicalConsequenceResult(payload);
-        if (parsed) {
-            return parsed;
+        let lastStatus = 0;
+        let lastDetail = '';
+
+        for (let attempt = 0; attempt < 4; attempt += 1) {
+            const variableCount = attempt % 2 === 0 ? 3 : 4;
+            const response = await fetch(logicalConsequenceApiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    variable_count: variableCount,
+                    correct_options_count: 1,
+                    wrong_options_count: 3,
+                    timeout: 10
+                })
+            });
+
+            lastStatus = response.status;
+
+            let payload = null;
+            try {
+                payload = await response.json();
+            } catch (_) {
+                payload = null;
+            }
+
+            const parsed = normalizeLogicalConsequenceResult(payload);
+            if (parsed) {
+                return parsed;
+            }
+
+            const detailText = payload && typeof payload === 'object' ? String(payload.detail || '') : '';
+            if (detailText) {
+                lastDetail = detailText;
+            }
         }
-        throw new Error('HTTP ' + response.status);
+
+        if (lastDetail) {
+            throw new Error('HTTP ' + lastStatus + ' - ' + lastDetail);
+        }
+        throw new Error('HTTP ' + lastStatus);
     }
 
     async function fetchQuantifierNegationExercise() {
