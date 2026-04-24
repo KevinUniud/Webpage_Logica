@@ -1756,7 +1756,7 @@ function initEquivalentQuiz(rootId) {
         const normalizedOptions = allOptions.map(function(optionFormula) {
             return {
                 text: optionTextFromEntry(optionFormula),
-                correct: optionBooleanFlag(optionFormula, ['is_correct', 'correct']) === true
+                correct: optionBooleanFlag(optionFormula, ['is_correct', 'correct', 'is_consequence', 'consequence']) === true
             };
         }).filter(function(option) {
             return Boolean(option.text);
