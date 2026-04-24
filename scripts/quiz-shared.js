@@ -142,6 +142,16 @@
             return parentPrec > 4 ? '(' + text + ')' : text;
         }
 
+        if ((name === 'forall' || name === 'exists') && args.length === 2) {
+            const quantifier = name === 'forall' ? '∀' : '∃';
+            const variable = String(formatAst(args[0], -1) || '').trim().toLowerCase();
+            const bodyRaw = String(formatAst(args[1], -1) || '').trim();
+            const body = bodyRaw
+                ? (bodyRaw[0] === '(' && bodyRaw[bodyRaw.length - 1] === ')' ? bodyRaw : '(' + bodyRaw + ')')
+                : '()';
+            return quantifier + variable + ' ' + body;
+        }
+
         const binaryMap = {
             and: { symbol: '∧', prec: 3 },
             or: { symbol: '∨', prec: 2 },
