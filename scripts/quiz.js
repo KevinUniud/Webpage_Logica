@@ -1752,11 +1752,26 @@ function initEquivalentQuiz(rootId) {
         if (!res || typeof res !== 'object') return null;
 
         const question = String(res.question_prolog || '').trim();
-        const allOptions = extractOptionsArray(res);
+        let allOptions = extractOptionsArray(res);
+        const correctOptions = Array.isArray(res.correct_options) ? res.correct_options : [];
+        const wrongOptions = Array.isArray(res.wrong_options) ? res.wrong_options : [];
+
+        // Fallback: some payloads may omit `options` and provide split arrays only.
+        if (!allOptions.length && (correctOptions.length || wrongOptions.length)) {
+            allOptions = correctOptions.concat(wrongOptions);
+        }
+
+        const correctFormulaSet = new Set(correctOptions.map(function(entry) {
+            return optionTextFromEntry(entry);
+        }).filter(Boolean));
+
         const normalizedOptions = allOptions.map(function(optionFormula) {
+            const text = optionTextFromEntry(optionFormula);
+            const explicitFlag = optionBooleanFlag(optionFormula, ['is_correct', 'correct', 'is_consequence', 'consequence']);
+            const inferredCorrect = correctFormulaSet.has(text);
             return {
-                text: optionTextFromEntry(optionFormula),
-                correct: optionBooleanFlag(optionFormula, ['is_correct', 'correct', 'is_consequence', 'consequence']) === true
+                text: text,
+                correct: explicitFlag === true || inferredCorrect
             };
         }).filter(function(option) {
             return Boolean(option.text);
