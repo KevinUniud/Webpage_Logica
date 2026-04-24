@@ -1924,21 +1924,39 @@ function initEquivalentQuiz(rootId) {
                 timeout: 10
             })
         });
-        if (!response.ok) {
-            response = await fetch(equivalenceApiFallbackUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    wrong_answers_count: 3,
-                    timeout: 10
-                })
-            });
+        let payload = null;
+        let parsed = null;
+
+        try {
+            payload = await response.json();
+            parsed = normalizeEquivalenceResult(payload);
+            if (parsed) {
+                return parsed;
+            }
+        } catch (_) {
+            // Fallback endpoint below will handle non-JSON or invalid payload cases.
         }
-        if (!response.ok) {
-            throw new Error('HTTP ' + response.status);
+
+        response = await fetch(equivalenceApiFallbackUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                wrong_answers_count: 3,
+                timeout: 10
+            })
+        });
+
+        try {
+            payload = await response.json();
+            parsed = normalizeEquivalenceResult(payload);
+            if (parsed) {
+                return parsed;
+            }
+        } catch (_) {
+            // If both endpoints fail to provide valid JSON payload, throw below.
         }
-        const payload = await response.json();
-        return normalizeEquivalenceResult(payload);
+
+        throw new Error('HTTP ' + response.status);
     }
 
     /**
@@ -1958,11 +1976,12 @@ function initEquivalentQuiz(rootId) {
                 timeout: 10
             })
         });
-        if (!response.ok) {
-            throw new Error('HTTP ' + response.status);
-        }
         const payload = await response.json();
-        return normalizeTruthValueResult(payload);
+        const parsed = normalizeTruthValueResult(payload);
+        if (parsed) {
+            return parsed;
+        }
+        throw new Error('HTTP ' + response.status);
     }
 
     /**
@@ -2001,14 +2020,10 @@ function initEquivalentQuiz(rootId) {
                 timeout: 10
             })
         });
-        if (!response.ok) {
-            throw new Error('HTTP ' + response.status);
-        }
-
         const payload = await response.json();
         const baseFormula = String((payload && payload.result) || '').trim();
         if (!baseFormula) {
-            return null;
+            throw new Error('HTTP ' + response.status);
         }
 
         const logicalBaseFormula = prologToLogical(baseFormula);
