@@ -419,6 +419,7 @@ function initEquivalentQuiz(rootId) {
     }
 
     const equivalenceApiUrl = buildApiUrl('generator/build-exercise-from-depth');
+    const equivalenceApiFallbackUrl = buildApiUrl('generator/build-exercise');
     const truthApiUrl = buildApiUrl('generator/build-truth-value-options-question');
     const logicalConsequenceApiUrl = buildApiUrl('generator/build-logical-consequence-question');
     const formulaByVariableCountApiUrl = buildApiUrl('generator/generate-formula-by-variable-count');
@@ -841,15 +842,6 @@ function initEquivalentQuiz(rootId) {
                 if (formula) map[formula] = steps;
             });
         }
-
-        Object.keys(res).forEach(function(key) {
-            if (!/^distraction_\d+$/i.test(key)) return;
-            const item = res[key];
-            if (!item || typeof item !== 'object') return;
-            const formula = item.formula_prolog || item.formula || '';
-            const steps = normalizeGenerationSteps(item.generation_steps || item.steps || item.path);
-            if (formula) map[formula] = steps;
-        });
 
         return map;
     }
@@ -1569,6 +1561,32 @@ function initEquivalentQuiz(rootId) {
         return name + ' è ' + value;
     }
 
+    function optionTextFromEntry(entry) {
+        if (typeof entry === 'string') return String(entry || '').trim();
+        if (!entry || typeof entry !== 'object') return '';
+        return String(entry.formula_prolog || entry.formula || entry.text || '').trim();
+    }
+
+    function optionBooleanFlag(entry, keys) {
+        if (!entry || typeof entry !== 'object' || !Array.isArray(keys)) return null;
+        for (let i = 0; i < keys.length; i += 1) {
+            const key = keys[i];
+            if (!Object.prototype.hasOwnProperty.call(entry, key)) continue;
+            const value = entry[key];
+            if (typeof value === 'boolean') return value;
+            if (value === 1 || value === '1' || value === 'true') return true;
+            if (value === 0 || value === '0' || value === 'false') return false;
+        }
+        return null;
+    }
+
+    function extractOptionsArray(res) {
+        if (!res || typeof res !== 'object') return [];
+        if (Array.isArray(res.options)) return res.options;
+        if (Array.isArray(res.options_prolog)) return res.options_prolog;
+        return [];
+    }
+
     function pickGeneratorResult(payload, nestedKey) {
         if (!payload || typeof payload !== 'object') return payload;
         if (payload.result && typeof payload.result === 'object') {
@@ -1583,68 +1601,74 @@ function initEquivalentQuiz(rootId) {
     // Normalizza il payload equivalenza in un formato uniforme per il renderer quiz.
     function normalizeEquivalenceResult(payload) {
         const res = pickGeneratorResult(payload, 'build_ex_depth');
+        const optionsFromPayload = extractOptionsArray(res);
         const question =
             (res && res.question_prolog) ||
             (res && res.original_formula && res.original_formula.formula_prolog) ||
             '';
-        const correct =
-            (res && res.correct_answer_prolog) ||
-            (res && res.modified_formula && res.modified_formula.formula_prolog) ||
-            '';
-        const wrongsFromArray =
-            (res && Array.isArray(res.wrong_answers_prolog) && res.wrong_answers_prolog) ||
-            [];
-        const wrongsFromDistractions = res
-            ? Object.keys(res)
-                .filter(function(key) { return /^distraction_\d+$/i.test(key); })
-                .sort(function(a, b) {
-                    return Number(a.replace(/\D+/g, '')) - Number(b.replace(/\D+/g, ''));
-                })
-                .map(function(key) {
-                    const item = res[key];
-                    if (!item || typeof item !== 'object') return '';
-                    return String(item.formula_prolog || item.formula || '').trim();
-                })
-                .filter(function(formula) { return Boolean(formula); })
-            : [];
-        const wrongs = Array.from(new Set(wrongsFromArray.concat(wrongsFromDistractions))).filter(function(formula) {
-            return formula && formula !== correct;
+        const normalizedOptionsFromArray = optionsFromPayload.map(function(entry) {
+            return {
+                text: optionTextFromEntry(entry),
+                correct: optionBooleanFlag(entry, ['is_correct', 'correct']) === true,
+                formulaSteps: normalizeGenerationSteps(entry && entry.generation_steps)
+            };
+        }).filter(function(entry) {
+            return Boolean(entry.text);
         });
-
-        if (!question || !correct || wrongs.length < 1) {
-            return null;
-        }
 
         const questionStepsRaw =
             (res && res.original_formula && res.original_formula.generation_steps) ||
             [];
-        const correctStepsRaw =
-            (res && res.correct_answer_generation_steps) ||
-            (res && res.modified_formula && res.modified_formula.generation_steps) ||
-            [];
-        const wrongStepsMapRaw = extractWrongStepsMap(res, wrongs);
+        let options = [];
+        if (normalizedOptionsFromArray.length >= 2 && normalizedOptionsFromArray.some(function(entry) { return entry.correct; })) {
+            options = normalizedOptionsFromArray;
+        } else {
+            const correct =
+                (res && res.correct_answer_prolog) ||
+                (res && res.modified_formula && res.modified_formula.formula_prolog) ||
+                '';
+            const wrongs =
+                (res && Array.isArray(res.wrong_answers_prolog) && res.wrong_answers_prolog) ||
+                [];
+            const filteredWrongs = Array.from(new Set(wrongs)).filter(function(formula) {
+                return formula && formula !== correct;
+            });
+            if (!question || !correct || filteredWrongs.length < 1) {
+                return null;
+            }
+            const correctStepsRaw =
+                (res && res.correct_answer_generation_steps) ||
+                (res && res.modified_formula && res.modified_formula.generation_steps) ||
+                [];
+            const wrongStepsMapRaw = extractWrongStepsMap(res, filteredWrongs);
+            options = [
+                { text: correct, correct: true, formulaSteps: normalizeGenerationSteps(correctStepsRaw) }
+            ].concat(filteredWrongs.map(function(wrongFormula) {
+                return {
+                    text: wrongFormula,
+                    correct: false,
+                    formulaSteps: normalizeGenerationSteps(wrongStepsMapRaw[wrongFormula])
+                };
+            }));
+        }
 
-        const options = [
-            { text: correct, correct: true, formulaSteps: normalizeGenerationSteps(correctStepsRaw) }
-        ].concat(wrongs.map(function(wrongFormula) {
-            return {
-                text: wrongFormula,
-                correct: false,
-                formulaSteps: normalizeGenerationSteps(wrongStepsMapRaw[wrongFormula])
-            };
-        }));
+        if (!question || options.length < 2 || !options.some(function(entry) { return entry.correct; })) {
+            return null;
+        }
+
+        const correctOption = options.find(function(entry) { return entry.correct; });
 
         const imageFormulaSteps = {
             question: normalizeGenerationSteps(questionStepsRaw),
-            correct: normalizeGenerationSteps(correctStepsRaw),
+            correct: normalizeGenerationSteps(correctOption && correctOption.formulaSteps),
             wrongByFormula: {}
         };
 
         if (imageFormulaSteps.question.length === 0) {
             imageFormulaSteps.question = [question];
         }
-        if (imageFormulaSteps.correct.length === 0) {
-            imageFormulaSteps.correct = [correct];
+        if (imageFormulaSteps.correct.length === 0 && correctOption) {
+            imageFormulaSteps.correct = [correctOption.text];
         }
         options.forEach(function(option) {
             if (!option || option.correct) return;
@@ -1668,14 +1692,28 @@ function initEquivalentQuiz(rootId) {
      */
     function normalizeTruthValueResult(payload) {
         const res = pickGeneratorResult(payload, 'build_tvq');
-        const options = (res && Array.isArray(res.options) && res.options) || [];
+        const options = extractOptionsArray(res);
         const info = (res && Array.isArray(res.information) && res.information) || [];
-        const trueCount = Number(res && res.true_options_count);
-        const falseCount = Number(res && res.false_options_count);
 
         if (options.length !== 4 || info.length < 4 || info.length > 5) {
             return null;
         }
+
+        const parsedOptions = options.map(function(option) {
+            return {
+                text: optionTextFromEntry(option),
+                isTrue: optionBooleanFlag(option, ['is_true', 'truth_value'])
+            };
+        });
+
+        if (parsedOptions.some(function(option) {
+            return !option.text || typeof option.isTrue !== 'boolean';
+        })) {
+            return null;
+        }
+
+        const trueCount = parsedOptions.filter(function(option) { return option.isTrue; }).length;
+        const falseCount = parsedOptions.length - trueCount;
 
         let targetTruthValue = null;
         let question = '';
@@ -1689,10 +1727,10 @@ function initEquivalentQuiz(rootId) {
             return null;
         }
 
-        const normalizedOptions = shuffle(options.map(function(option) {
+        const normalizedOptions = shuffle(parsedOptions.map(function(option) {
             return {
-                text: option.formula_prolog,
-                correct: option.is_true === targetTruthValue
+                text: option.text,
+                correct: option.isTrue === targetTruthValue
             };
         }));
 
@@ -1714,46 +1752,25 @@ function initEquivalentQuiz(rootId) {
         if (!res || typeof res !== 'object') return null;
 
         const question = String(res.question_prolog || '').trim();
-        const correctOptions = Array.isArray(res.correct_options_prolog)
-            ? res.correct_options_prolog.filter(Boolean)
-            : [];
-        const wrongOptions = Array.isArray(res.wrong_options_prolog)
-            ? res.wrong_options_prolog.filter(Boolean)
-            : [];
-        const allOptions = Array.isArray(res.options_prolog)
-            ? res.options_prolog.filter(Boolean)
-            : [];
-
-        if (!question || correctOptions.length < 1 || allOptions.length < 2) {
-            return null;
-        }
-
-        const correctSet = new Set(correctOptions);
-        const uniqueOptions = Array.from(new Set(allOptions));
-        const normalizedOptions = uniqueOptions.map(function(optionFormula) {
+        const allOptions = extractOptionsArray(res);
+        const normalizedOptions = allOptions.map(function(optionFormula) {
             return {
-                text: optionFormula,
-                correct: correctSet.has(optionFormula)
+                text: optionTextFromEntry(optionFormula),
+                correct: optionBooleanFlag(optionFormula, ['is_correct', 'correct']) === true
             };
+        }).filter(function(option) {
+            return Boolean(option.text);
         });
 
-        if (!normalizedOptions.some(function(option) { return option.correct; })) {
+        if (!question || normalizedOptions.length < 2 || !normalizedOptions.some(function(option) { return option.correct; })) {
             return null;
         }
-
-        const finalOptions = normalizedOptions.length >= 2
-            ? normalizedOptions
-            : normalizedOptions.concat(wrongOptions.map(function(optionFormula) {
-                return { text: optionFormula, correct: false };
-            }));
-
-        if (finalOptions.length < 2) return null;
 
         return {
             kind: 'logical-consequence',
-            question: 'Quale formula è una conseguenza logica di "' + prologToLogical(question) + '"?',
+            question: 'Quale formula è conseguenza logica di "' + prologToLogical(question) + '":',
             info: [],
-            options: shuffle(finalOptions)
+            options: shuffle(normalizedOptions)
         };
     }
 
@@ -1841,14 +1858,25 @@ function initEquivalentQuiz(rootId) {
      * @post Restituisce un oggetto normalizzato pronto per il rendering o solleva errore.
      */
     async function fetchEquivalenceExercise() {
-        const response = await fetch(equivalenceApiUrl, {
+        let response = await fetch(equivalenceApiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 use_all: false,
-                wrong_answers_count: 3
+                wrong_answers_count: 3,
+                timeout: 10
             })
         });
+        if (!response.ok) {
+            response = await fetch(equivalenceApiFallbackUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    wrong_answers_count: 3,
+                    timeout: 10
+                })
+            });
+        }
         if (!response.ok) {
             throw new Error('HTTP ' + response.status);
         }
@@ -1869,7 +1897,8 @@ function initEquivalentQuiz(rootId) {
             body: JSON.stringify({
                 predicate_count: predicateCount,
                 true_options_count: 1,
-                false_options_count: 3
+                false_options_count: 3,
+                timeout: 10
             })
         });
         if (!response.ok) {
@@ -1892,7 +1921,8 @@ function initEquivalentQuiz(rootId) {
             body: JSON.stringify({
                 variable_count: variableCount,
                 correct_options_count: 1,
-                wrong_options_count: 3
+                wrong_options_count: 3,
+                timeout: 10
             })
         });
         if (!response.ok) {
