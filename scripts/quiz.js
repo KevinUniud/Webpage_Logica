@@ -814,6 +814,10 @@ function initEquivalentQuiz(rootId) {
      * @post Restituisce sempre una stringa renderizzabile in notazione utente.
      */
     function getOptionDisplayFormula(option) {
+        if (!option || typeof option !== 'object') return '';
+        if (typeof option.text === 'string' && option.text.trim()) {
+            return option.text;
+        }
         return displayFormulaText(getOptionFormulaSource(option));
     }
 
