@@ -2053,7 +2053,7 @@ function initEquivalentQuiz(rootId) {
                 wrong_options_count: 3,
                 names_pool: NOMI,
                 actions_pool: AZIONI,
-                implied_person_predicate: true,
+                implied_person_predicate: false,
                 allow_spoken_mode: false,
                 timeout_seconds: 10
             })
