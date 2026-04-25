@@ -419,7 +419,6 @@ function initEquivalentQuiz(rootId) {
     }
 
     const equivalenceApiUrl = buildApiUrl('generator/build-exercise-from-depth');
-    const equivalenceApiFallbackUrl = buildApiUrl('generator/build-exercise');
     const truthApiUrl = buildApiUrl('generator/build-truth-value-options-question');
     const logicalConsequenceApiUrl = buildApiUrl('generator/build-logical-consequence-question');
     const translationApiUrl = buildApiUrl('generator/build-translation-question');
@@ -431,7 +430,7 @@ function initEquivalentQuiz(rootId) {
     ];
 
     const NOMI = ['Luca', 'Matteo', 'Alessandro', 'Marco', 'Davide', 'Giulia', 'Sofia', 'Martina', 'Chiara', 'Elisa'];
-    const AZIONI = ['nuota', 'corre', 'salta', 'guarda', 'parla', 'apre', 'chiude', 'ascolta'];
+    const AZIONI = ['nuota', 'corre', 'salta', 'guarda', 'parla', 'apre la porta', 'chiude', 'ascolta'];
     const ACTION_IMAGE_FILES = {
         nuota: { day: 'Nuotare_White.png', night: 'Nuotare_Black.png' },
         corre: { day: 'Correre_White.png', night: 'Correre_Black.png' },
@@ -439,6 +438,7 @@ function initEquivalentQuiz(rootId) {
         guarda: { day: 'Guardare_White.png', night: 'Guardare_Black.png' },
         parla: { day: 'Parlare_White.png', night: 'Parlare_Black.png' },
         apre: { day: 'Aprire_White.png', night: 'Aprire_Black.png' },
+        'apre la porta': { day: 'Aprire_White.png', night: 'Aprire_Black.png' },
         chiude: { day: 'Chiudere_White.png', night: 'Chiudere_Black.png' },
         ascolta: { day: 'Ascoltare_White.png', night: 'Ascoltare_Black.png' }
     };
@@ -1263,8 +1263,11 @@ function initEquivalentQuiz(rootId) {
     function formatSpokenAction(action, negated) {
         const normalizedAction = String(action || '').trim();
         let actionText = normalizedAction;
-        if (normalizedAction === 'apre' || normalizedAction === 'chiude') {
+        if (normalizedAction === 'apre' || normalizedAction === 'apre la porta' || normalizedAction === 'chiude') {
             actionText = normalizedAction + ' la porta';
+            if (normalizedAction === 'apre la porta') {
+                actionText = normalizedAction;
+            }
         }
         if (negated) {
             return 'non ' + actionText;
@@ -1915,7 +1918,7 @@ function initEquivalentQuiz(rootId) {
      * @post Restituisce un oggetto normalizzato pronto per il rendering o solleva errore.
      */
     async function fetchEquivalenceExercise() {
-        let response = await fetch(equivalenceApiUrl, {
+        const response = await fetch(equivalenceApiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1924,36 +1927,15 @@ function initEquivalentQuiz(rootId) {
                 timeout: 10
             })
         });
-        let payload = null;
-        let parsed = null;
 
         try {
-            payload = await response.json();
-            parsed = normalizeEquivalenceResult(payload);
+            const payload = await response.json();
+            const parsed = normalizeEquivalenceResult(payload);
             if (parsed) {
                 return parsed;
             }
         } catch (_) {
-            // Fallback endpoint below will handle non-JSON or invalid payload cases.
-        }
-
-        response = await fetch(equivalenceApiFallbackUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                wrong_answers_count: 3,
-                timeout: 10
-            })
-        });
-
-        try {
-            payload = await response.json();
-            parsed = normalizeEquivalenceResult(payload);
-            if (parsed) {
-                return parsed;
-            }
-        } catch (_) {
-            // If both endpoints fail to provide valid JSON payload, throw below.
+            // The backend returned non-JSON or an unexpected payload.
         }
 
         throw new Error('HTTP ' + response.status);
