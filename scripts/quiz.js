@@ -1958,10 +1958,15 @@ function initEquivalentQuiz(rootId) {
                 timeout: 10
             })
         });
-        const payload = await response.json();
-        const parsed = normalizeTruthValueResult(payload);
-        if (parsed) {
-            return parsed;
+        
+        try {
+            const payload = await response.json();
+            const parsed = normalizeTruthValueResult(payload);
+            if (parsed) {
+                return parsed;
+            }
+        } catch (_) {
+            // The backend returned non-JSON or an unexpected payload.
         }
         throw new Error('HTTP ' + response.status);
     }
@@ -2025,22 +2030,25 @@ function initEquivalentQuiz(rootId) {
                 timeout: 10
             })
         });
-        const payload = await response.json();
-        const baseFormula = String((payload && payload.result) || '').trim();
-        if (!baseFormula) {
-            throw new Error('HTTP ' + response.status);
+        
+        try {
+            const payload = await response.json();
+            const baseFormula = String((payload && payload.result) || '').trim();
+            if (baseFormula) {
+                const logicalBaseFormula = prologToLogical(baseFormula);
+                const quantifier = Math.random() < 0.5 ? '∀' : '∃';
+                const quantified = buildQuantifiedNegationOptions(quantifier, logicalBaseFormula);
+                return {
+                    kind: 'quantifier-negation',
+                    question: quantified.question,
+                    info: [],
+                    options: quantified.options
+                };
+            }
+        } catch (_) {
+            // The backend returned non-JSON or an unexpected payload.
         }
-
-        const logicalBaseFormula = prologToLogical(baseFormula);
-        const quantifier = Math.random() < 0.5 ? '∀' : '∃';
-        const quantified = buildQuantifiedNegationOptions(quantifier, logicalBaseFormula);
-
-        return {
-            kind: 'quantifier-negation',
-            question: quantified.question,
-            info: [],
-            options: quantified.options
-        };
+        throw new Error('HTTP ' + response.status);
     }
 
     async function fetchTranslationExercise() {
@@ -2058,10 +2066,15 @@ function initEquivalentQuiz(rootId) {
                 timeout_seconds: 10
             })
         });
-        const payload = await response.json();
-        const parsed = normalizeTranslationResult(payload);
-        if (parsed) {
-            return parsed;
+        
+        try {
+            const payload = await response.json();
+            const parsed = normalizeTranslationResult(payload);
+            if (parsed) {
+                return parsed;
+            }
+        } catch (_) {
+            // The backend returned non-JSON or an unexpected payload.
         }
         throw new Error('HTTP ' + response.status);
     }
