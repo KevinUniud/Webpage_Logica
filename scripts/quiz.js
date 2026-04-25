@@ -805,7 +805,7 @@ function initEquivalentQuiz(rootId) {
         if (!option || typeof option !== 'object') return '';
         const steps = normalizeGenerationSteps(option.formulaSteps);
         if (steps.length > 0) return steps[0];
-        return option.text || '';
+        return '';
     }
 
     /**
@@ -830,16 +830,12 @@ function initEquivalentQuiz(rootId) {
             res.wrong_answers_generation_steps.forEach(function(entry, index) {
                 if (!entry) return;
                 if (Array.isArray(entry)) {
-                    const fallbackFormula = wrongs[index] || '';
-                    if (fallbackFormula) map[fallbackFormula] = normalizeGenerationSteps(entry);
                     return;
                 }
                 if (typeof entry === 'string') {
-                    const fallbackFormula = wrongs[index] || '';
-                    if (fallbackFormula) map[fallbackFormula] = [entry];
                     return;
                 }
-                const formula = entry.formula_prolog || entry.formula || wrongs[index] || '';
+                const formula = entry.formula_prolog || entry.formula || '';
                 const steps = normalizeGenerationSteps(entry.generation_steps || entry.steps || entry.path);
                 if (formula) map[formula] = steps;
             });
@@ -1003,19 +999,13 @@ function initEquivalentQuiz(rootId) {
             ? getCachedFormulaSequence(correctDescriptor.formulaText, mode)
             : [];
 
-        const fallbackCorrectSteps = [];
-        if (context.questionFormulaText) fallbackCorrectSteps.push(context.questionFormulaText);
-        if (context.correctFormulaText) fallbackCorrectSteps.push(context.correctFormulaText);
-        const correctStepsForBadge = Array.isArray(context.correctFormulaSteps) && context.correctFormulaSteps.length > 0
+        const correctStepsForBadge = Array.isArray(context.correctFormulaSteps)
             ? context.correctFormulaSteps
-            : fallbackCorrectSteps;
+            : [];
 
-        const fallbackWrongSteps = [];
-        if (context.questionFormulaText) fallbackWrongSteps.push(context.questionFormulaText);
-        if (context.wrongFormulaText) fallbackWrongSteps.push(context.wrongFormulaText);
-        const wrongStepsForBadge = Array.isArray(context.wrongFormulaSteps) && context.wrongFormulaSteps.length > 0
+        const wrongStepsForBadge = Array.isArray(context.wrongFormulaSteps)
             ? context.wrongFormulaSteps
-            : fallbackWrongSteps;
+            : [];
 
         const frag = document.createDocumentFragment();
         if (questionDescriptor && shouldRenderImages) {
