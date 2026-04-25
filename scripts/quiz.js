@@ -1617,14 +1617,20 @@ function initEquivalentQuiz(rootId) {
     function normalizeEquivalenceResult(payload) {
         const res = pickGeneratorResult(payload, 'build_ex_depth');
         const optionsFromPayload = extractOptionsArray(res);
-        const question =
+        const questionSource =
             (res && res.question_prolog) ||
             (res && res.original_formula && res.original_formula.formula_prolog) ||
             '';
+
+        const fallbackQuestion = questionSource
+            ? 'Quale formula è equivalente a "' + prologToLogical(questionSource) + '":'
+            : 'Seleziona una formula dall\'esercizio ricevuto:';
+
         const normalizedOptionsFromArray = optionsFromPayload.map(function(entry) {
+            const explicitCorrect = optionBooleanFlag(entry, ['is_correct', 'correct']);
             return {
                 text: optionTextFromEntry(entry),
-                correct: optionBooleanFlag(entry, ['is_correct', 'correct']) === true,
+                correct: explicitCorrect === null ? null : explicitCorrect,
                 formulaSteps: normalizeGenerationSteps(entry && entry.generation_steps)
             };
         }).filter(function(entry) {
@@ -1635,7 +1641,7 @@ function initEquivalentQuiz(rootId) {
             (res && res.original_formula && res.original_formula.generation_steps) ||
             [];
         let options = [];
-        if (normalizedOptionsFromArray.length >= 2 && normalizedOptionsFromArray.some(function(entry) { return entry.correct; })) {
+        if (normalizedOptionsFromArray.length > 0) {
             options = normalizedOptionsFromArray;
         } else {
             const correct =
@@ -1645,33 +1651,32 @@ function initEquivalentQuiz(rootId) {
             const wrongs =
                 (res && Array.isArray(res.wrong_answers_prolog) && res.wrong_answers_prolog) ||
                 [];
-            const filteredWrongs = Array.from(new Set(wrongs)).filter(function(formula) {
-                return formula && formula !== correct;
-            });
-            if (!question || !correct || filteredWrongs.length < 1) {
+            const allCandidateOptions = Array.from(new Set((correct ? [correct] : []).concat(wrongs))).filter(Boolean);
+            if (allCandidateOptions.length === 0) {
                 return null;
             }
             const correctStepsRaw =
                 (res && res.correct_answer_generation_steps) ||
                 (res && res.modified_formula && res.modified_formula.generation_steps) ||
                 [];
-            const wrongStepsMapRaw = extractWrongStepsMap(res, filteredWrongs);
-            options = [
-                { text: correct, correct: true, formulaSteps: normalizeGenerationSteps(correctStepsRaw) }
-            ].concat(filteredWrongs.map(function(wrongFormula) {
+            const wrongStepsMapRaw = extractWrongStepsMap(res, allCandidateOptions);
+            options = allCandidateOptions.map(function(candidateFormula) {
+                const isCorrect = correct ? candidateFormula === correct : null;
                 return {
-                    text: wrongFormula,
-                    correct: false,
-                    formulaSteps: normalizeGenerationSteps(wrongStepsMapRaw[wrongFormula])
+                    text: candidateFormula,
+                    correct: isCorrect,
+                    formulaSteps: isCorrect === true
+                        ? normalizeGenerationSteps(correctStepsRaw)
+                        : normalizeGenerationSteps(wrongStepsMapRaw[candidateFormula])
                 };
-            }));
+            });
         }
 
-        if (!question || options.length < 2 || !options.some(function(entry) { return entry.correct; })) {
+        if (options.length === 0) {
             return null;
         }
 
-        const correctOption = options.find(function(entry) { return entry.correct; });
+        const correctOption = options.find(function(entry) { return entry && entry.correct === true; });
 
         const imageFormulaSteps = {
             question: normalizeGenerationSteps(questionStepsRaw),
@@ -1679,21 +1684,21 @@ function initEquivalentQuiz(rootId) {
             wrongByFormula: {}
         };
 
-        if (imageFormulaSteps.question.length === 0) {
-            imageFormulaSteps.question = [question];
+        if (imageFormulaSteps.question.length === 0 && questionSource) {
+            imageFormulaSteps.question = [questionSource];
         }
         if (imageFormulaSteps.correct.length === 0 && correctOption) {
             imageFormulaSteps.correct = [correctOption.text];
         }
         options.forEach(function(option) {
-            if (!option || option.correct) return;
+            if (!option || option.correct === true) return;
             const steps = Array.isArray(option.formulaSteps) ? option.formulaSteps.slice() : [];
             imageFormulaSteps.wrongByFormula[option.text] = steps.length > 0 ? steps : [option.text];
         });
 
         return {
             kind: 'equivalence',
-            question: 'Quale formula è equivalente a "' + prologToLogical(question) + '":',
+            question: fallbackQuestion,
             info: [],
             options: shuffle(options),
             imageFormulaSteps: imageFormulaSteps
@@ -2125,14 +2130,10 @@ function initEquivalentQuiz(rootId) {
             state.correctIndex = parsed.options.findIndex(function(option) {
                 return option.correct;
             });
-            state.selectedIndex = 0;
+            state.selectedIndex = parsed.options.length > 0 ? 0 : null;
 
             if (parsed.kind === 'quantifier-negation') {
                 quantifierNegationUsed += 1;
-            }
-
-            if (state.correctIndex < 0) {
-                throw new Error('Risposta corretta non trovata');
             }
 
             currentQuestionText = parsed.question;
@@ -2155,7 +2156,16 @@ function initEquivalentQuiz(rootId) {
             showInfo(parsed.info);
             renderOptions();
             clearWrongActionImages();
-            setStatus('Usa il mouse o le frecce per selezionare.');
+            if (!Array.isArray(state.options) || state.options.length === 0) {
+                state.locked = true;
+                state.mode = 'next';
+                actionButton.textContent = currentExercise >= totalExercises ? 'Termina' : 'Prossimo';
+                setStatus('L\'API non ha fornito opzioni selezionabili. Premi invio per continuare.');
+            } else if (state.correctIndex < 0) {
+                setStatus('Opzioni ricevute senza risposta corretta esplicita dal backend. Seleziona e continua.');
+            } else {
+                setStatus('Usa il mouse o le frecce per selezionare.');
+            }
             optionsEl.focus();
             
             // Registra il timestamp di quando l'utente vede la domanda
@@ -2213,8 +2223,11 @@ function initEquivalentQuiz(rootId) {
     }
 
     function checkAnswer() {
-        if (!Array.isArray(state.options) || state.options.length < 2) {
-            setStatus('Nessun esercizio disponibile.');
+        if (!Array.isArray(state.options) || state.options.length === 0) {
+            state.locked = true;
+            state.mode = 'next';
+            actionButton.textContent = currentExercise >= totalExercises ? 'Termina' : 'Prossimo';
+            setStatus('Nessuna opzione disponibile. Premi invio per continuare.');
             return;
         }
 
@@ -2230,12 +2243,15 @@ function initEquivalentQuiz(rootId) {
                 return;
             }
 
-            const isCorrect = state.selectedIndex === state.correctIndex;
+            const canScore = state.correctIndex >= 0;
+            const isCorrect = canScore && state.selectedIndex === state.correctIndex;
 
             selected.classList.add('is-final');
-            selected.classList.add(isCorrect ? 'is-correct' : 'is-wrong');
+            if (canScore) {
+                selected.classList.add(isCorrect ? 'is-correct' : 'is-wrong');
+            }
 
-            if (!isCorrect) {
+            if (canScore && !isCorrect) {
                 const options = optionsEl.querySelectorAll('.quiz-option');
                 const correctOption = options[state.correctIndex];
                 if (correctOption) {
@@ -2243,13 +2259,15 @@ function initEquivalentQuiz(rootId) {
                     correctOption.classList.add('is-correct-answer');
                 }
                 renderWrongActionImages(false);
+            } else if (canScore) {
+                clearWrongActionImages();
             } else {
                 clearWrongActionImages();
             }
 
             // Accesso sicuro alle opzioni
             const selectedRaw = state.options[state.selectedIndex] ?? '';
-            const correctRaw = state.options[state.correctIndex] ?? '';
+            const correctRaw = canScore ? (state.options[state.correctIndex] ?? '') : '';
 
             const selectedFormula = getOptionDisplayFormula(selectedRaw);
             const correctFormula = getOptionDisplayFormula(correctRaw);
@@ -2314,7 +2332,9 @@ function initEquivalentQuiz(rootId) {
                     ? currentQuestionInfo.map(formatSpokenInfoLine)
                     : currentQuestionInfo.slice(),
                 selectedAnswer: state.spokenlanguage ? applySpokenTransform(selectedFormula) : applyFormulaTransforms(selectedFormula),
-                correctAnswer: state.spokenlanguage ? applySpokenTransform(correctFormula) : applyFormulaTransforms(correctFormula),
+                correctAnswer: canScore
+                    ? (state.spokenlanguage ? applySpokenTransform(correctFormula) : applyFormulaTransforms(correctFormula))
+                    : 'Non disponibile (fornita dal backend)',
                 isCorrect: isCorrect,
                 tipoDomanda: tipoDomanda,
                 tempoRisposta: tempoRisposta,
@@ -2322,7 +2342,9 @@ function initEquivalentQuiz(rootId) {
                 risposteMostrate: risposteMostrate
             });
 
-            setStatus('Usa il mouse o premi invio per continuare');
+            setStatus(canScore
+                ? 'Usa il mouse o premi invio per continuare'
+                : 'Risposta registrata senza correzione locale. Premi invio per continuare');
             actionButton.textContent = currentExercise >= totalExercises ? 'Termina' : 'Prossimo';
 
         } catch (err) {
