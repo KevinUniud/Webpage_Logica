@@ -2056,77 +2056,34 @@ function initEquivalentQuiz(rootId) {
         throw new Error('HTTP ' + response.status);
     }
 
-    function countNamesInQuestionText(text) {
-        const question = String(text || '').toLowerCase();
-        if (!question) return 0;
-
-        const found = new Set();
-        NOMI.forEach(function(name) {
-            const trimmed = String(name || '').trim().toLowerCase();
-            if (!trimmed) return;
-            const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const pattern = new RegExp('\\b' + escaped + '\\b', 'i');
-            if (pattern.test(question)) {
-                found.add(trimmed);
-            }
+    async function fetchTranslationExercise() {
+        const peopleCount = 2 + Math.floor(Math.random() * 2); // 2 oppure 3
+        const response = await fetch(translationApiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                mode: 'auto',
+                quantifier_ratio: 0.5,
+                wrong_options_count: 3,
+                names_pool: NOMI,
+                people_count: peopleCount,
+                actions_pool: AZIONI,
+                implied_person_predicate: false,
+                allow_spoken_mode: false,
+                timeout_seconds: 10
+            })
         });
 
-        return found.size;
-    }
-
-    async function fetchTranslationExercise() {
-        let lastStatus = 0;
-        let fallbackParsed = null;
-
-        for (let attempt = 0; attempt < 4; attempt += 1) {
-            const targetPeopleCount = 2 + Math.floor(Math.random() * 2); // 2 oppure 3
-            const response = await fetch(translationApiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    mode: 'auto',
-                    quantifier_ratio: 0.5,
-                    wrong_options_count: 3,
-                    names_pool: NOMI,
-                    actions_pool: AZIONI,
-                    implied_person_predicate: false,
-                    allow_spoken_mode: false,
-                    variable_count: targetPeopleCount,
-                    people_count: targetPeopleCount,
-                    subjects_count: targetPeopleCount,
-                    timeout_seconds: 10
-                })
-            });
-
-            lastStatus = response.status;
-
-            try {
-                const payload = await response.json();
-                const parsed = normalizeTranslationResult(payload);
-                if (!parsed) {
-                    continue;
-                }
-
-                const detectedPeopleCount = countNamesInQuestionText(parsed.question);
-                if (detectedPeopleCount >= 2 && detectedPeopleCount <= 3) {
-                    if (detectedPeopleCount === targetPeopleCount || detectedPeopleCount === 3) {
-                        return parsed;
-                    }
-                    if (!fallbackParsed) {
-                        fallbackParsed = parsed;
-                    }
-                } else if (!fallbackParsed) {
-                    fallbackParsed = parsed;
-                }
-            } catch (_) {
-                // The backend returned non-JSON or an unexpected payload.
+        try {
+            const payload = await response.json();
+            const parsed = normalizeTranslationResult(payload);
+            if (parsed) {
+                return parsed;
             }
+        } catch (_) {
+            // The backend returned non-JSON or an unexpected payload.
         }
-
-        if (fallbackParsed) {
-            return fallbackParsed;
-        }
-        throw new Error('HTTP ' + lastStatus);
+        throw new Error('HTTP ' + response.status);
     }
 
     /**
