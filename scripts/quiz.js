@@ -2068,7 +2068,6 @@ function initEquivalentQuiz(rootId) {
                 names_pool: NOMI,
                 people_count: peopleCount,
                 actions_pool: AZIONI,
-                implied_person_predicate: false,
                 allow_spoken_mode: false,
                 timeout_seconds: 10
             })
