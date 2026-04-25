@@ -2057,32 +2057,104 @@ function initEquivalentQuiz(rootId) {
     }
 
     async function fetchTranslationExercise() {
-        const peopleCount = 2 + Math.floor(Math.random() * 2); // 2 oppure 3
-        const response = await fetch(translationApiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                mode: 'auto',
-                quantifier_ratio: 0.5,
-                wrong_options_count: 3,
-                names_pool: NOMI,
-                people_count: peopleCount,
-                actions_pool: AZIONI,
-                allow_spoken_mode: false,
-                timeout_seconds: 10
-            })
-        });
+        function hasRepeatedPersonAction(questionText) {
+            const text = String(questionText || '').toLowerCase();
+            if (!text) return false;
 
-        try {
-            const payload = await response.json();
-            const parsed = normalizeTranslationResult(payload);
-            if (parsed) {
-                return parsed;
+            function escapeRegex(value) {
+                return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             }
-        } catch (_) {
-            // The backend returned non-JSON or an unexpected payload.
+
+            for (let nameIndex = 0; nameIndex < NOMI.length; nameIndex += 1) {
+                const name = String(NOMI[nameIndex] || '').trim().toLowerCase();
+                if (!name) continue;
+
+                for (let actionIndex = 0; actionIndex < AZIONI.length; actionIndex += 1) {
+                    const action = String(AZIONI[actionIndex] || '').trim().toLowerCase();
+                    if (!action) continue;
+
+                    const actionPattern = escapeRegex(action).replace(/\s+/g, '\\s+');
+                    const pattern = new RegExp('\\b' + escapeRegex(name) + '\\b(?:\\s|,|;|:)+(' + actionPattern + ')\\b', 'gi');
+                    const matches = text.match(pattern);
+                    if (matches && matches.length > 1) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
-        throw new Error('HTTP ' + response.status);
+
+        function countDistinctActionsInQuestion(questionText) {
+            const text = String(questionText || '').toLowerCase();
+            if (!text) return 0;
+
+            const found = new Set();
+            AZIONI.forEach(function(action) {
+                const normalized = String(action || '').trim().toLowerCase();
+                if (!normalized) return;
+                const escaped = normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const pattern = new RegExp('\\b' + escaped + '\\b', 'i');
+                if (pattern.test(text)) {
+                    found.add(normalized);
+                }
+            });
+
+            return found.size;
+        }
+
+        let fallbackParsed = null;
+        let lastStatus = 0;
+
+        for (let attempt = 0; attempt < 4; attempt += 1) {
+            const peopleCount = 2 + Math.floor(Math.random() * 2); // 2 oppure 3
+            const randomizedActionsPool = shuffle(AZIONI.slice());
+
+            const response = await fetch(translationApiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mode: 'auto',
+                    quantifier_ratio: 0.5,
+                    wrong_options_count: 3,
+                    names_pool: NOMI,
+                    people_count: peopleCount,
+                    actions_pool: randomizedActionsPool,
+                    allow_spoken_mode: false,
+                    timeout_seconds: 10
+                })
+            });
+
+            lastStatus = response.status;
+
+            try {
+                const payload = await response.json();
+                const parsed = normalizeTranslationResult(payload);
+                if (!parsed) {
+                    continue;
+                }
+
+                if (hasRepeatedPersonAction(parsed.question)) {
+                    continue;
+                }
+
+                const distinctActions = countDistinctActionsInQuestion(parsed.question);
+                if (distinctActions >= 2) {
+                    return parsed;
+                }
+
+                if (!fallbackParsed) {
+                    fallbackParsed = parsed;
+                }
+            } catch (_) {
+                // The backend returned non-JSON or an unexpected payload.
+            }
+        }
+
+        if (fallbackParsed) {
+            return fallbackParsed;
+        }
+        throw new Error('HTTP ' + lastStatus);
     }
 
     /**
