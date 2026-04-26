@@ -1563,14 +1563,13 @@ function initEquivalentQuiz(rootId) {
     }
 
     function buildTranslationPayload(seed) {
-        const peopleCount = 2 + Math.floor(Math.random() * 2);
         const randomizedActionsPool = shuffle(AZIONI.slice());
         return {
             mode: 'auto',
             quantifier_ratio: 0.5,
             wrong_options_count: 3,
             names_pool: NOMI,
-            people_count: peopleCount,
+            people_count: 3,
             actions_pool: randomizedActionsPool,
             allow_spoken_mode: false,
             timeout_seconds: 10,
@@ -2253,7 +2252,6 @@ function initEquivalentQuiz(rootId) {
         let lastStatus = 0;
 
         for (let attempt = 0; attempt < 4; attempt += 1) {
-            const peopleCount = 2 + Math.floor(Math.random() * 2); // 2 oppure 3
             const randomizedActionsPool = shuffle(AZIONI.slice());
 
             const response = await fetch(translationApiUrl, {
@@ -2264,7 +2262,7 @@ function initEquivalentQuiz(rootId) {
                     quantifier_ratio: 0.5,
                     wrong_options_count: 3,
                     names_pool: NOMI,
-                    people_count: peopleCount,
+                    people_count: 3,
                     actions_pool: randomizedActionsPool,
                     allow_spoken_mode: false,
                     timeout_seconds: 10
@@ -2313,7 +2311,7 @@ function initEquivalentQuiz(rootId) {
         state.mode = 'check';
         state.selectedIndex = null;
         actionButton.textContent = 'Controlla';
-        setStatus('Caricamento...');
+        setStatus('Caricamento');
         optionsEl.innerHTML = '';
         showInfo([]);
 
