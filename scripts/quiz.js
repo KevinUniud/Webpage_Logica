@@ -97,6 +97,11 @@ function initEquivalentQuiz(rootId) {
     let quantifierNegationUsed = 0;
     var quizStartTimestamp = Date.now();
     var questionViewTimestamps = [];
+    // Batch loading state
+    let batchQuestionsCache = [];
+    let batchCacheIndex = 0;
+    let batchInitialized = false;
+    let batchSeed = 0;
     const FEEDBACK_FIELDS = [
         { id: 'expectation', payloadKey: 'Aspettative test', label: 'Il test è andato bene:' },
         { id: 'aidsUtility', payloadKey: 'Utilità ausili', label: 'Gli ausili mi hanno aiutato a svolgere il test:' },
@@ -1477,6 +1482,147 @@ function initEquivalentQuiz(rootId) {
         return Math.max(1, Math.round(totalQuestions * 0.1));
     }
 
+    /**
+     * Costruisce una lista ordinata di operazioni garantendo almeno 1 di ogni tipo domanda.
+     * @pre totalCount e numero positivo, spokenlanguageMode e boolean.
+     * @post Restituisce array di {operation: string, payload: object} con distribuzione ordinata.
+     */
+    function buildOrderedQuestionsList(totalCount, spokenlanguageMode) {
+        const operations = [];
+        const operationTypes = [
+            { type: 'build_ex_depth', builder: buildEquivalencePayload },
+            { type: 'build_tvq', builder: buildTruthValuePayload },
+            { type: 'build_logical_consequence_question', builder: buildLogicalConsequencePayload },
+            { type: 'build_translation_question', builder: buildTranslationPayload }
+        ];
+        const availableTypes = spokenlanguageMode
+            ? operationTypes.filter(t => t.type !== 'build_translation_question')
+            : operationTypes;
+
+        // Aggiungi almeno 1 di ogni tipo disponibile
+        availableTypes.forEach(function(typeConfig) {
+            if (operations.length < totalCount) {
+                operations.push({
+                    operation: typeConfig.type,
+                    payload: typeConfig.builder(batchSeed + operations.length)
+                });
+            }
+        });
+
+        // Aggiungi quantifier-negation se target > 0
+        if (quantifierNegationTarget > 0 && operations.length < totalCount) {
+            for (let i = 0; i < quantifierNegationTarget && operations.length < totalCount; i += 1) {
+                operations.push({
+                    operation: 'build_quantifier_negation',
+                    payload: { seed: batchSeed + operations.length }
+                });
+            }
+        }
+
+        // Riempi il resto in modo casuale (round-robin su tipi)
+        while (operations.length < totalCount) {
+            const randomType = availableTypes[operations.length % availableTypes.length];
+            operations.push({
+                operation: randomType.type,
+                payload: randomType.builder(batchSeed + operations.length)
+            });
+        }
+
+        return operations;
+    }
+
+    function buildEquivalencePayload(seed) {
+        return {
+            use_all: false,
+            wrong_answers_count: 3,
+            timeout: 10,
+            seed: seed
+        };
+    }
+
+    function buildTruthValuePayload(seed) {
+        const predicateCount = 4 + Math.floor(Math.random() * 2);
+        return {
+            predicate_count: predicateCount,
+            true_options_count: 1,
+            false_options_count: 3,
+            timeout: 10,
+            seed: seed
+        };
+    }
+
+    function buildLogicalConsequencePayload(seed) {
+        const variableCount = seed % 2 === 0 ? 3 : 4;
+        return {
+            variable_count: variableCount,
+            correct_options_count: 1,
+            wrong_options_count: 3,
+            timeout: 10,
+            seed: seed
+        };
+    }
+
+    function buildTranslationPayload(seed) {
+        const peopleCount = 2 + Math.floor(Math.random() * 2);
+        const randomizedActionsPool = shuffle(AZIONI.slice());
+        return {
+            mode: 'auto',
+            quantifier_ratio: 0.5,
+            wrong_options_count: 3,
+            names_pool: NOMI,
+            people_count: peopleCount,
+            actions_pool: randomizedActionsPool,
+            allow_spoken_mode: false,
+            timeout_seconds: 10,
+            seed: seed
+        };
+    }
+
+    /**
+     * Recupera un batch di domande dall'API.
+     * @pre operationsList e un array valido di operazioni, seed e un numero.
+     * @post Restituisce array di risposte (alcune potenzialmente null per soft-fail).
+     */
+    async function fetchBatchQuestions(operationsList, seed) {
+        const batchApiUrl = buildApiUrl('generator/multiple-questions');
+        const response = await fetch(batchApiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                seed: seed,
+                questions: operationsList
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('HTTP ' + response.status);
+        }
+
+        try {
+            const payload = await response.json();
+            if (!Array.isArray(payload.results)) {
+                throw new Error('Batch response format invalid: missing results array');
+            }
+            return payload.results;
+        } catch (e) {
+            throw new Error('Batch response parsing failed: ' + String(e.message || e));
+        }
+    }
+
+    /**
+     * Ritorna la prossima domanda dalla cache batch.
+     * @pre batchQuestionsCache e inizializzata.
+     * @post Incrementa l'indice e ritorna la risposta (potenzialmente null).
+     */
+    function getNextCachedQuestion() {
+        if (batchCacheIndex >= batchQuestionsCache.length) {
+            return null;
+        }
+        const result = batchQuestionsCache[batchCacheIndex];
+        batchCacheIndex += 1;
+        return result;
+    }
+
     function formatTimer(totalSeconds) {
         const safe = Math.max(0, Number(totalSeconds) || 0);
         const mm = Math.floor(safe / 60);
@@ -2158,7 +2304,7 @@ function initEquivalentQuiz(rootId) {
     }
 
     /**
-     * Carica la prossima domanda scegliendo il tipo di esercizio in base al piano corrente.
+     * Carica la prossima domanda dal batch o fallback singolo se necessario.
      * @pre Il quiz e in stato attivo (test avviato) e i nodi UI essenziali sono disponibili.
      * @post Aggiorna domanda/opzioni/stato; in caso errore mostra fallback utente senza interrompere l'app.
      */
@@ -2172,32 +2318,57 @@ function initEquivalentQuiz(rootId) {
         showInfo([]);
 
         try {
-            const standardLoaders = [
-                fetchEquivalenceExercise,
-                fetchTruthValueExercise,
-                fetchLogicalConsequenceExercise
-            ];
-            const availableLoaders = state.spokenlanguage
-                ? standardLoaders.slice()
-                : standardLoaders.concat([fetchTranslationExercise]);
-            const pendingQuantifierNegation = Math.max(0, quantifierNegationTarget - quantifierNegationUsed);
-            const questionsLeftIncludingCurrent = Math.max(0, totalExercises - currentExercise + 1);
-            const mustUseQuantifierNegation = pendingQuantifierNegation > 0 && questionsLeftIncludingCurrent <= pendingQuantifierNegation;
+            let parsed = null;
 
-            let loader = null;
-            if (mustUseQuantifierNegation) {
-                loader = fetchQuantifierNegationExercise;
-            } else if (pendingQuantifierNegation > 0) {
-                loader = pickRandom(availableLoaders.concat([fetchQuantifierNegationExercise]));
-            } else {
-                loader = pickRandom(availableLoaders);
+            // Primo caricamento: fetch batch
+            if (!batchInitialized) {
+                try {
+                    console.log('Inizializzazione batch per ' + totalExercises + ' domande...');
+                    const operationsList = buildOrderedQuestionsList(totalExercises, state.spokenlanguage);
+                    console.log('Operazioni batch costruite:', operationsList.length);
+                    const batchResults = await fetchBatchQuestions(operationsList, batchSeed);
+                    console.log('Batch ricevuto:', batchResults.length, 'risposte');
+                    
+                    // Normalizza tutte le risposte del batch
+                    batchQuestionsCache = batchResults.map(function(result, index) {
+                        if (!result) {
+                            console.warn('Soft-fail: operazione ' + index + ' ritornata null');
+                            return null;
+                        }
+                        try {
+                            const operation = operationsList[index];
+                            return normalizeQuestionResult(result, operation.operation);
+                        } catch (e) {
+                            console.warn('Errore normalizzazione operazione ' + index + ':', e.message);
+                            return null;
+                        }
+                    });
+                    
+                    batchInitialized = true;
+                    console.log('Batch inizializzato con', batchQuestionsCache.filter(Boolean).length, 'domande valide su', batchQuestionsCache.length);
+                } catch (batchErr) {
+                    console.error('Errore batch fetch, fallback a singoli:', batchErr.message);
+                    batchInitialized = true; // Evita retry infiniti
+                    // Forza uso di caricamento singolo per questa domanda
+                    parsed = await loadSingleExercise();
+                }
             }
 
-            const parsed = await loader();
+            // Se batch non ha fornito risposta valida, prova cache o fallback singolo
+            if (!parsed) {
+                parsed = getNextCachedQuestion();
+                if (!parsed) {
+                    // Cache esaurita o nulla: fallback singolo
+                    console.log('Cache esaurita, fallback singolo per domanda', currentExercise);
+                    parsed = await loadSingleExercise();
+                }
+            }
+
             if (!parsed) {
                 throw new Error('Formato risposta non valido');
             }
 
+            // Resto della logica di rendering (identico a prima)
             state.exerciseKind = parsed.kind;
             state.options = parsed.options;
             state.correctIndex = parsed.options.findIndex(function(option) {
@@ -2257,6 +2428,71 @@ function initEquivalentQuiz(rootId) {
             showInfo([]);
             clearWrongActionImages();
         }
+    }
+
+    /**
+     * Normalizza una risposta del batch in base al tipo operazione.
+     * @pre result e una risposta backend, operationType e il tipo operazione richiesto.
+     * @post Restituisce oggetto quiz normalizzato o solleva errore.
+     */
+    function normalizeQuestionResult(result, operationType) {
+        if (operationType === 'build_ex_depth') {
+            return normalizeEquivalenceResult(result);
+        } else if (operationType === 'build_tvq') {
+            return normalizeTruthValueResult(result);
+        } else if (operationType === 'build_logical_consequence_question') {
+            return normalizeLogicalConsequenceResult(result);
+        } else if (operationType === 'build_translation_question') {
+            return normalizeTranslationResult(result);
+        } else if (operationType === 'build_quantifier_negation') {
+            // Per quantifier negation, la risposta del batch è direttamente una formula
+            try {
+                const baseFormula = String(result.result || result || '').trim();
+                if (!baseFormula) throw new Error('Empty formula');
+                const logicalBaseFormula = prologToLogical(baseFormula);
+                const quantifier = Math.random() < 0.5 ? '∀' : '∃';
+                const quantified = buildQuantifiedNegationOptions(quantifier, logicalBaseFormula);
+                return {
+                    kind: 'quantifier-negation',
+                    question: quantified.question,
+                    info: [],
+                    options: quantified.options
+                };
+            } catch (e) {
+                throw new Error('Invalid quantifier negation result: ' + e.message);
+            }
+        }
+        throw new Error('Unknown operation type: ' + operationType);
+    }
+
+    /**
+     * Carica una singola domanda usando il vecchio meccanismo (fallback soft-fail).
+     * @pre Lo stato quiz e configurato.
+     * @post Restituisce una domanda normalizzata o solleva errore.
+     */
+    async function loadSingleExercise() {
+        const standardLoaders = [
+            fetchEquivalenceExercise,
+            fetchTruthValueExercise,
+            fetchLogicalConsequenceExercise
+        ];
+        const availableLoaders = state.spokenlanguage
+            ? standardLoaders.slice()
+            : standardLoaders.concat([fetchTranslationExercise]);
+        const pendingQuantifierNegation = Math.max(0, quantifierNegationTarget - quantifierNegationUsed);
+        const questionsLeftIncludingCurrent = Math.max(0, totalExercises - currentExercise + 1);
+        const mustUseQuantifierNegation = pendingQuantifierNegation > 0 && questionsLeftIncludingCurrent <= pendingQuantifierNegation;
+
+        let loader = null;
+        if (mustUseQuantifierNegation) {
+            loader = fetchQuantifierNegationExercise;
+        } else if (pendingQuantifierNegation > 0) {
+            loader = pickRandom(availableLoaders.concat([fetchQuantifierNegationExercise]));
+        } else {
+            loader = pickRandom(availableLoaders);
+        }
+
+        return await loader();
     }
 
     /**
@@ -2475,6 +2711,11 @@ function initEquivalentQuiz(rootId) {
         feedbackValues = createEmptyFeedbackValues();
         reviewSubmissionState.inFlight = false;
         reviewSubmissionState.sent = false;
+        // Resetta batch state
+        batchQuestionsCache = [];
+        batchCacheIndex = 0;
+        batchInitialized = false;
+        batchSeed = 0;
         clearWrongActionImages();
         stopTimer();
         timerSecondsRemaining = standardTimeMinutes * 60;
@@ -2519,6 +2760,11 @@ function initEquivalentQuiz(rootId) {
         questionViewTimestamps = new Array(totalExercises + 1);
         // Aggiorna il timestamp di inizio esercitazione
         quizStartTimestamp = Date.now();
+        // Inizializza batch state
+        batchQuestionsCache = [];
+        batchCacheIndex = 0;
+        batchInitialized = false;
+        batchSeed = Date.now();
         if (questionCountInput) questionCountInput.value = String(totalExercises);
         if (timeMinutesInput) timeMinutesInput.value = String(standardTimeMinutes);
         state.showFormulas = Boolean(showFormulasInput && showFormulasInput.checked);
