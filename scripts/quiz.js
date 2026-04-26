@@ -102,6 +102,7 @@ function initEquivalentQuiz(rootId) {
     let batchCacheIndex = 0;
     let batchInitialized = false;
     let batchSeed = 0;
+    let batchOperationsPlan = [];
     const FEEDBACK_FIELDS = [
         { id: 'expectation', payloadKey: 'Aspettative test', label: 'Il test è andato bene:' },
         { id: 'aidsUtility', payloadKey: 'Utilità ausili', label: 'Gli ausili mi hanno aiutato a svolgere il test:' },
@@ -1514,7 +1515,8 @@ function initEquivalentQuiz(rootId) {
             for (let i = 0; i < quantifierNegationTarget && operations.length < totalCount; i += 1) {
                 operations.push({
                     operation: 'build_quantifier_negation',
-                    payload: { seed: batchSeed + operations.length }
+                    payload: { seed: batchSeed + operations.length },
+                    localOnly: true
                 });
             }
         }
@@ -1572,7 +1574,7 @@ function initEquivalentQuiz(rootId) {
             people_count: 3,
             actions_pool: randomizedActionsPool,
             allow_spoken_mode: false,
-            timeout_seconds: 10,
+            timeout: 10,
             seed: seed
         };
     }
@@ -1583,13 +1585,29 @@ function initEquivalentQuiz(rootId) {
      * @post Restituisce array di risposte (alcune potenzialmente null per soft-fail).
      */
     async function fetchBatchQuestions(operationsList, seed) {
+        const apiQuestions = [];
+        const apiIndexToPlanIndex = [];
+        operationsList.forEach(function(entry, planIndex) {
+            if (!entry || entry.localOnly) return;
+            apiQuestions.push({
+                operation: entry.operation,
+                payload: entry.payload
+            });
+            apiIndexToPlanIndex.push(planIndex);
+        });
+
+        const alignedResults = new Array(operationsList.length).fill(null);
+        if (apiQuestions.length === 0) {
+            return alignedResults;
+        }
+
         const batchApiUrl = buildApiUrl('generator/multiple-questions');
         const response = await fetch(batchApiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 seed: seed,
-                questions: operationsList
+                questions: apiQuestions
             })
         });
 
@@ -1599,10 +1617,34 @@ function initEquivalentQuiz(rootId) {
 
         try {
             const payload = await response.json();
-            if (!Array.isArray(payload.results)) {
-                throw new Error('Batch response format invalid: missing results array');
+            const payloadRoot = payload && typeof payload === 'object' && payload.result && typeof payload.result === 'object'
+                ? payload.result
+                : payload;
+            const questions = Array.isArray(payloadRoot && payloadRoot.questions)
+                ? payloadRoot.questions
+                : (Array.isArray(payload && payload.results) ? payload.results : []);
+
+            if (!Array.isArray(questions)) {
+                throw new Error('Batch response format invalid: missing questions array');
             }
-            return payload.results;
+
+            questions.forEach(function(item, position) {
+                if (!item || typeof item !== 'object') return;
+
+                const rawIndex = Number(item.index);
+                const apiIndex = Number.isInteger(rawIndex) ? rawIndex : position;
+                if (apiIndex < 0 || apiIndex >= apiIndexToPlanIndex.length) return;
+
+                const planIndex = apiIndexToPlanIndex[apiIndex];
+                const resultPayload = Object.prototype.hasOwnProperty.call(item, 'result') ? item.result : item;
+                const isOk = Object.prototype.hasOwnProperty.call(item, 'status')
+                    ? item.status === 'ok'
+                    : Boolean(resultPayload);
+
+                alignedResults[planIndex] = isOk ? resultPayload : null;
+            });
+
+            return alignedResults;
         } catch (e) {
             throw new Error('Batch response parsing failed: ' + String(e.message || e));
         }
@@ -2265,7 +2307,7 @@ function initEquivalentQuiz(rootId) {
                     people_count: 3,
                     actions_pool: randomizedActionsPool,
                     allow_spoken_mode: false,
-                    timeout_seconds: 10
+                    timeout: 10
                 })
             });
 
@@ -2326,6 +2368,7 @@ function initEquivalentQuiz(rootId) {
                 try {
                     console.log('Inizializzazione batch per ' + totalExercises + ' domande...');
                     const operationsList = buildOrderedQuestionsList(totalExercises, state.spokenlanguage);
+                    batchOperationsPlan = operationsList.slice();
                     console.log('Operazioni batch costruite:', operationsList.length);
                     const batchResults = await fetchBatchQuestions(operationsList, batchSeed);
                     console.log('Batch ricevuto:', batchResults.length, 'risposte');
@@ -2337,7 +2380,7 @@ function initEquivalentQuiz(rootId) {
                             return null;
                         }
                         try {
-                            const operation = operationsList[index];
+                            const operation = batchOperationsPlan[index];
                             return normalizeQuestionResult(result, operation.operation);
                         } catch (e) {
                             console.warn('Errore normalizzazione operazione ' + index + ':', e.message);
@@ -2350,6 +2393,7 @@ function initEquivalentQuiz(rootId) {
                 } catch (batchErr) {
                     console.error('Errore batch fetch, fallback a singoli:', batchErr.message);
                     batchInitialized = true; // Evita retry infiniti
+                    batchOperationsPlan = [];
                     // Forza uso di caricamento singolo per questa domanda
                     parsed = await loadSingleExercise();
                 }
@@ -2357,11 +2401,14 @@ function initEquivalentQuiz(rootId) {
 
             // Se batch non ha fornito risposta valida, prova cache o fallback singolo
             if (!parsed) {
+                const currentPlanIndex = batchCacheIndex;
                 parsed = getNextCachedQuestion();
                 if (!parsed) {
                     // Cache esaurita o nulla: fallback singolo
                     console.log('Cache esaurita, fallback singolo per domanda', currentExercise);
-                    parsed = await loadSingleExercise();
+                    const planned = batchOperationsPlan[currentPlanIndex];
+                    const plannedOperation = planned && planned.operation ? planned.operation : '';
+                    parsed = await loadSingleExerciseByOperation(plannedOperation);
                 }
             }
 
@@ -2494,6 +2541,25 @@ function initEquivalentQuiz(rootId) {
         }
 
         return await loader();
+    }
+
+    async function loadSingleExerciseByOperation(operationType) {
+        if (operationType === 'build_ex_depth') {
+            return await fetchEquivalenceExercise();
+        }
+        if (operationType === 'build_tvq') {
+            return await fetchTruthValueExercise();
+        }
+        if (operationType === 'build_logical_consequence_question') {
+            return await fetchLogicalConsequenceExercise();
+        }
+        if (operationType === 'build_translation_question') {
+            return await fetchTranslationExercise();
+        }
+        if (operationType === 'build_quantifier_negation') {
+            return await fetchQuantifierNegationExercise();
+        }
+        return await loadSingleExercise();
     }
 
     /**
@@ -2717,6 +2783,7 @@ function initEquivalentQuiz(rootId) {
         batchCacheIndex = 0;
         batchInitialized = false;
         batchSeed = 0;
+        batchOperationsPlan = [];
         clearWrongActionImages();
         stopTimer();
         timerSecondsRemaining = standardTimeMinutes * 60;
@@ -2766,6 +2833,7 @@ function initEquivalentQuiz(rootId) {
         batchCacheIndex = 0;
         batchInitialized = false;
         batchSeed = Date.now();
+        batchOperationsPlan = [];
         if (questionCountInput) questionCountInput.value = String(totalExercises);
         if (timeMinutesInput) timeMinutesInput.value = String(standardTimeMinutes);
         state.showFormulas = Boolean(showFormulasInput && showFormulasInput.checked);
