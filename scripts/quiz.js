@@ -2312,8 +2312,11 @@ function initEquivalentQuiz(rootId) {
         state.selectedIndex = null;
         actionButton.textContent = 'Controlla';
         setStatus('Caricamento');
+        questionEl.textContent = 'Caricamento';
+        currentQuestionText = '';
         optionsEl.innerHTML = '';
         showInfo([]);
+        clearWrongActionImages();
 
         try {
             let parsed = null;
