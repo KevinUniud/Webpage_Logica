@@ -436,7 +436,7 @@ function initEquivalentQuiz(rootId) {
     ];
 
     const NOMI = ['Luca', 'Matteo', 'Alessandro', 'Marco', 'Davide', 'Giulia', 'Sofia', 'Martina', 'Chiara', 'Elisa'];
-    const AZIONI = ['nuota', 'corre', 'salta', 'guarda', 'parla', 'apre la porta', 'chiude', 'ascolta'];
+    const AZIONI = ['nuota', 'corre', 'salta', 'guarda', 'parla', 'apre la porta', 'chiude la porta', 'ascolta'];
     const ACTION_IMAGE_FILES = {
         nuota: { day: 'Nuotare_White.png', night: 'Nuotare_Black.png' },
         corre: { day: 'Correre_White.png', night: 'Correre_Black.png' },
