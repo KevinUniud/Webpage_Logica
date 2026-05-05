@@ -98,7 +98,20 @@
             </ul>
             Se assegniamo un valore di verità agli atomi possiamo iniziare a fare delle deduzioni, in particolare a seconda dei simboli possiamo sapere se una certa affermazione sia vera o falsa, come prima per Anna e Bob.<br>
             <br>
-            Sapendo che l'ordine di precedenza è (), ¬, ∧, ∨, →, si risolvano gli esercizi tramite la tabella di verità:
+            Si introduce il seguente ordine di precedenza degli operatori:
+            <ol>
+                <li>()</li>
+                <li>¬</li>
+                <li>∧, ∨</li>
+                <li>→</li>
+            </ol>
+            Questo ordine consente di ridurre l'uso delle parentesi nelle formule. Ad esempio, l'espressione ((¬(P) ∧ Q) ∧ R) può essere scritta come ¬P ∧ Q ∧ R mantenendo invariato il significato.<br><br>
+
+            Rimangono tuttavia casi ambigui. Si prenda l'espressione P ∧ Q ∨ R, può venire interpretata sia come (P ∧ Q) ∨ R che come P ∧ (Q ∨ R). Rimangono quindi dei casi in cui è necessario utilizzare esplicitamente le parentesi per evitare ambiguità.<br><br>
+
+            Grazie all'ordine di precedenza introdotto, è possibile semplificare espressioni come P ∧ Q → R garantendo la corretta interpretazione come (P ∧ Q) → R anche senza in assenza di parentesi.<br><br>
+
+            Si risolvano gli esercizi tramite la tabella di verità: 
         </p>
 
         <div class="rounded-box"> <!-- True, False -->
