@@ -190,7 +190,8 @@
             }
 
             const text = left + ' ' + op.symbol + ' ' + right;
-            return parentPrec > op.prec ? '(' + text + ')' : text;
+            const needsParens = parentPrec > op.prec || name === 'equiv' || name === 'iff';
+            return needsParens ? '(' + text + ')' : text;
         }
 
         const renderedArgs = args.map(function(arg) {
