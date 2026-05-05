@@ -122,7 +122,7 @@
         return parseNode();
     }
 
-    function formatAst(ast, parentPrec) {
+    function formatAst(ast, parentPrec, parentName) {
         if (!ast) return '';
 
         if (ast.type === 'var') {
@@ -137,15 +137,15 @@
         const args = ast.args || [];
 
         if (name === 'not' && args.length === 1) {
-            const inner = formatAst(args[0], 4);
+            const inner = formatAst(args[0], 4, name);
             const text = '¬' + inner;
             return parentPrec > 4 ? '(' + text + ')' : text;
         }
 
         if ((name === 'forall' || name === 'exists') && args.length === 2) {
             const quantifier = name === 'forall' ? '∀' : '∃';
-            const variable = String(formatAst(args[0], -1) || '').trim().toLowerCase();
-            const bodyRaw = String(formatAst(args[1], -1) || '').trim();
+            const variable = String(formatAst(args[0], -1, name) || '').trim().toLowerCase();
+            const bodyRaw = String(formatAst(args[1], -1, name) || '').trim();
             const body = bodyRaw
                 ? (bodyRaw[0] === '(' && bodyRaw[bodyRaw.length - 1] === ')' ? bodyRaw : '(' + bodyRaw + ')')
                 : '()';
@@ -179,8 +179,8 @@
 
         const op = binaryMap[name];
         if (op && args.length === 2) {
-            let left = formatAst(args[0], op.prec);
-            let right = formatAst(args[1], op.prec + (name === 'imp' ? 1 : 0));
+            let left = formatAst(args[0], op.prec, name);
+            let right = formatAst(args[1], op.prec + (name === 'imp' ? 1 : 0), name);
 
             if (isMixedAndOrChild(name, args[0])) {
                 left = wrapIfMissing(left);
@@ -190,12 +190,12 @@
             }
 
             const text = left + ' ' + op.symbol + ' ' + right;
-            const needsParens = parentPrec > op.prec || name === 'equiv' || name === 'iff';
+            const needsParens = parentPrec > op.prec || ((name === 'equiv' || name === 'iff') && (parentName === 'equiv' || parentName === 'iff'));
             return needsParens ? '(' + text + ')' : text;
         }
 
         const renderedArgs = args.map(function(arg) {
-            return formatAst(arg, -1);
+            return formatAst(arg, -1, name);
         }).join(', ');
         return name + '(' + renderedArgs + ')';
     }
