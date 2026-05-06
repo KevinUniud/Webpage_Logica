@@ -315,6 +315,10 @@ function initGlobalSettings() {
     const savedLogDataMode = localStorage.getItem('logDataMode') || 'none';
     logDataSelect.value = savedLogDataMode;
 
+    const logDataInfo = document.createElement('p');
+    logDataInfo.className = 'settings-info';
+    logDataInfo.textContent = 'Il questionario è completamente anonimo, non raccoglie dati personali e viene utilizzato esclusivamente per fini di studio universitario.';
+
     const actions = document.createElement('div');
     actions.className = 'settings-actions';
 
@@ -342,6 +346,7 @@ function initGlobalSettings() {
     modal.appendChild(exercisesRow1);
     modal.appendChild(exercisesRow2);
     modal.appendChild(exercisesLogRow);
+    modal.appendChild(logDataInfo);
     modal.appendChild(actions);
     overlay.appendChild(modal);
 
