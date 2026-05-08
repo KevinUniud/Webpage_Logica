@@ -59,6 +59,10 @@ function initEquivalentQuiz(rootId) {
     const colorAtomsInput = root.querySelector('#quizColorAtoms');
     const spokenLanguageInput = root.querySelector('#quizSpokenLanguage');
     const showWrongActionImagesInput = root.querySelector('#quizShowWrongActionImages');
+    const logDataAgeInput = root.querySelector('#quizLogDataAge');
+    const logDataInstitutionSelect = root.querySelector('#quizLogDataInstitution');
+    const logDataStemRow = root.querySelector('#quizLogDataStemRow');
+    const logDataStemSelect = root.querySelector('#quizLogDataStem');
     const testEl = root.querySelector('#quizTest');
     const splitLayoutEl = document.getElementById('quizTestLayout') || root.querySelector('#quizTestLayout');
     const formulasPaneEl = document.getElementById('quizFormulasPane') || root.querySelector('#quizFormulasPane');
@@ -138,21 +142,96 @@ function initEquivalentQuiz(rootId) {
      * @returns {Object} Oggetto con mode e school
      */
     function getLogDataSettings() {
-        const mode = localStorage.getItem('logDataMode') || 'none';
-        let school = '';
-        
-        if (mode === 'dmif-uniud') {
-            school = 'DMIF Uniud';
-        }
-        
-        // else if (mode === 'altra-scuola') {
-        //     school = 'Altra Scuola';
-        // }
+        const age = localStorage.getItem('logDataAge') || '';
+        const institution = localStorage.getItem('logDataInstitution') || '';
+        const stem = localStorage.getItem('logDataStem') || '';
         
         return {
-            mode: mode,
-            school: school
+            age: age,
+            institution: institution,
+            stem: stem
         };
+    }
+
+    function getLogDataInstitutionLabel(value) {
+        const labels = {
+            'triennale': 'Corso di laurea Triennale',
+            'magistrale': 'Corso di laurea Magistrale',
+            'ciclo-unico': 'Ciclo unico',
+            'liceo-scientifico': 'Liceo scientifico',
+            'altro-liceo': 'Altro liceo',
+            'iti': 'Istituto tecnico industriale',
+            'altri-tecnici': 'Altri istituti tecnici',
+            'professionale': 'Istituto professionale',
+            'altro': 'Altro'
+        };
+        return labels[String(value || '')] || '';
+    }
+
+    function isLogDataStemRequired(institutionValue) {
+        return ['triennale', 'magistrale', 'ciclo-unico'].indexOf(String(institutionValue || '')) >= 0;
+    }
+
+    function syncLogDataStemVisibility() {
+        if (!logDataInstitutionSelect || !logDataStemRow || !logDataStemSelect) return;
+        const required = isLogDataStemRequired(logDataInstitutionSelect.value);
+        logDataStemRow.hidden = !required;
+        if (!required) {
+            logDataStemSelect.value = '';
+            localStorage.removeItem('logDataStem');
+        }
+    }
+
+    function commitLogDataSettings() {
+        if (logDataAgeInput) {
+            const rawAge = String(logDataAgeInput.value || '').trim();
+            if (rawAge === '') {
+                localStorage.removeItem('logDataAge');
+            } else {
+                const ageValue = parseInt(rawAge, 10);
+                if (Number.isFinite(ageValue) && ageValue > 0 && ageValue < 200) {
+                    localStorage.setItem('logDataAge', String(ageValue));
+                    logDataAgeInput.value = String(ageValue);
+                }
+            }
+        }
+
+        if (logDataInstitutionSelect) {
+            const institutionValue = String(logDataInstitutionSelect.value || '');
+            localStorage.setItem('logDataInstitution', institutionValue);
+            syncLogDataStemVisibility();
+        }
+
+        if (logDataStemSelect && !logDataStemRow?.hidden) {
+            localStorage.setItem('logDataStem', String(logDataStemSelect.value || ''));
+        }
+    }
+
+    function validateLogDataSettings() {
+        const ageValue = logDataAgeInput ? String(logDataAgeInput.value || '').trim() : '';
+        const institutionValue = logDataInstitutionSelect ? String(logDataInstitutionSelect.value || '') : '';
+        const stemValue = logDataStemSelect ? String(logDataStemSelect.value || '') : '';
+
+        if (ageValue === '') {
+            alert('Compila il campo Età prima di iniziare il quiz.');
+            return false;
+        }
+        const ageNumber = parseInt(ageValue, 10);
+        if (!Number.isFinite(ageNumber) || ageNumber <= 0 || ageNumber >= 200) {
+            alert('L\'età deve essere maggiore di 0 e minore di 200.');
+            return false;
+        }
+        if (!institutionValue) {
+            alert('Seleziona un istituto di provenienza prima di iniziare il quiz.');
+            return false;
+        }
+        if (isLogDataStemRequired(institutionValue) && !stemValue) {
+            alert('Se selezioni un corso di laurea, devi scegliere STEM o Non STEM.');
+            return false;
+        }
+
+        commitLogDataSettings();
+        return true;
     }
 
     function createEmptyFeedbackValues() {
@@ -182,16 +261,22 @@ function initEquivalentQuiz(rootId) {
             feedbackPayload[field.payloadKey] = String(feedbackMap[field.id] || '');
         });
 
+        const initialData = {
+            "Tempo inizio esercitazione": formatDateTime(quizStartTimestamp),
+            "Tempo totale": tempoTotale,
+            "Totale domande": reviewResults.length,
+            "Totale domande corrette": reviewResults.filter(function(e) { return e.isCorrect; }).length,
+            "Totale domande errate": reviewResults.filter(function(e) { return !e.isCorrect; }).length,
+            "Opzioni attive": opzioniAttiveGlobali
+        };
+        
+        // Aggiungi i nuovi campi log dati se disponibili
+        if (logSettings.age) initialData["Età"] = logSettings.age;
+        if (logSettings.institution) initialData["Istituto di provenienza"] = getLogDataInstitutionLabel(logSettings.institution);
+        if (logSettings.stem) initialData["Indirizzo"] = logSettings.stem;
+
         return {
-            "Initial Data": {
-                "Scuola": logSettings.school,
-                "Tempo inizio esercitazione": formatDateTime(quizStartTimestamp),
-                "Tempo totale": tempoTotale,
-                "Totale domande": reviewResults.length,
-                "Totale domande corrette": reviewResults.filter(function(e) { return e.isCorrect; }).length,
-                "Totale domande errate": reviewResults.filter(function(e) { return !e.isCorrect; }).length,
-                "Opzioni attive": opzioniAttiveGlobali
-            },
+            "Initial Data": initialData,
             "Domande": reviewResults.map(function(entry, idx) {
                 return {
                     ["Domanda nº " + (idx + 1)]: {
@@ -2815,6 +2900,9 @@ function initEquivalentQuiz(rootId) {
      * @post Timer avviato, stato azzerato e prima domanda in caricamento.
      */
     function startTest() {
+        if (!validateLogDataSettings()) {
+            return;
+        }
         currentExercise = 1;
         reviewResults.length = 0;
         totalExercises = parsePositiveInt(questionCountInput && questionCountInput.value, DEFAULT_EXERCISES);
@@ -2960,6 +3048,25 @@ function initEquivalentQuiz(rootId) {
                 }
             });
         }
+        if (logDataAgeInput) {
+            const savedAge = localStorage.getItem('logDataAge') || '';
+            logDataAgeInput.value = savedAge;
+            logDataAgeInput.addEventListener('change', commitLogDataSettings);
+            logDataAgeInput.addEventListener('input', function() {
+                if (logDataAgeInput.value.trim() === '') {
+                    localStorage.removeItem('logDataAge');
+                }
+            });
+        }
+        if (logDataInstitutionSelect) {
+            logDataInstitutionSelect.value = localStorage.getItem('logDataInstitution') || '';
+            logDataInstitutionSelect.addEventListener('change', commitLogDataSettings);
+        }
+        if (logDataStemSelect) {
+            logDataStemSelect.value = localStorage.getItem('logDataStem') || '';
+            logDataStemSelect.addEventListener('change', commitLogDataSettings);
+        }
+        syncLogDataStemVisibility();
         window.addEventListener('logicExerciseSettingsChanged', function(evt) {
             if (!isExercisesPage) return;
             const detail = evt && evt.detail ? evt.detail : {};

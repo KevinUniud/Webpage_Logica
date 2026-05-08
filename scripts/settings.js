@@ -282,43 +282,6 @@ function initGlobalSettings() {
     exercisesRow2.appendChild(parensInput);
     exercisesRow2.appendChild(parensLabel);
 
-    const exercisesLogRow = document.createElement('div');
-    exercisesLogRow.className = 'settings-row';
-
-    const logDataLabel = document.createElement('label');
-    logDataLabel.textContent = 'Log dati:';
-    logDataLabel.setAttribute('for', 'settingsLogDataSelect');
-
-    const logDataSelect = document.createElement('select');
-    logDataSelect.id = 'settingsLogDataSelect';
-    logDataSelect.className = 'settings-input settings-input-wide';
-
-    const optNone = document.createElement('option');
-    optNone.value = 'none';
-    optNone.textContent = 'Nessuno';
-    logDataSelect.appendChild(optNone);
-
-    const optDMIFUniud = document.createElement('option');
-    optDMIFUniud.value = 'dmif-uniud';
-    optDMIFUniud.textContent = 'DMIF Uniud';
-    logDataSelect.appendChild(optDMIFUniud);
-
-    // Add an event listener for the settingsLogDataSelect element
-    logDataSelect.addEventListener('change', function() {
-        const mode = logDataSelect.value;
-        localStorage.setItem('logDataMode', mode);
-    });
-    
-    exercisesLogRow.appendChild(logDataLabel);
-    exercisesLogRow.appendChild(logDataSelect);
-    // Restore the selected option when initializing the settings
-    const savedLogDataMode = localStorage.getItem('logDataMode') || 'none';
-    logDataSelect.value = savedLogDataMode;
-
-    const logDataInfo = document.createElement('p');
-    logDataInfo.className = 'settings-info';
-    logDataInfo.textContent = 'Il questionario è completamente anonimo, non raccoglie dati personali e viene utilizzato esclusivamente per fini di studio universitario.';
-
     const actions = document.createElement('div');
     actions.className = 'settings-actions';
 
@@ -345,8 +308,6 @@ function initGlobalSettings() {
     modal.appendChild(exercisesTitle);
     modal.appendChild(exercisesRow1);
     modal.appendChild(exercisesRow2);
-    modal.appendChild(exercisesLogRow);
-    modal.appendChild(logDataInfo);
     modal.appendChild(actions);
     overlay.appendChild(modal);
 
