@@ -2905,7 +2905,7 @@ function initEquivalentQuiz(rootId) {
         }
         currentExercise = 1;
         reviewResults.length = 0;
-        totalExercises = parsePositiveInt(questionCountInput && questionCountInput.value, DEFAULT_EXERCISES);
+        totalExercises = Math.min(parsePositiveInt(questionCountInput && questionCountInput.value, DEFAULT_EXERCISES), 100);
         standardTimeMinutes = parsePositiveInt(timeMinutesInput && timeMinutesInput.value, DEFAULT_TIME_MINUTES);
         quantifierNegationTarget = pickQuantifierNegationTarget(totalExercises);
         quantifierNegationUsed = 0;
