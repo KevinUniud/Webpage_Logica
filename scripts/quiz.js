@@ -222,7 +222,7 @@ function initEquivalentQuiz(rootId) {
             return false;
         }
         if (!institutionValue) {
-            alert('Seleziona un istituto di provenienza prima di iniziare il quiz.');
+            alert('Seleziona un istituto di appartenenza prima di iniziare il quiz.');
             return false;
         }
         if (isLogDataStemRequired(institutionValue) && !stemValue) {
@@ -272,7 +272,7 @@ function initEquivalentQuiz(rootId) {
         
         // Aggiungi i nuovi campi log dati se disponibili
         if (logSettings.age) initialData["Età"] = logSettings.age;
-        if (logSettings.institution) initialData["Istituto di provenienza"] = getLogDataInstitutionLabel(logSettings.institution);
+        if (logSettings.institution) initialData["Istituto di appartenenza"] = getLogDataInstitutionLabel(logSettings.institution);
         if (logSettings.stem) initialData["Indirizzo"] = logSettings.stem;
 
         return {
@@ -1590,7 +1590,7 @@ function initEquivalentQuiz(rootId) {
             if (operations.length < totalCount) {
                 operations.push({
                     operation: typeConfig.type,
-                    payload: typeConfig.builder(batchSeed + operations.length)
+                    payload: typeConfig.builder(batchSeed + operations.length, spokenlanguageMode)
                 });
             }
         });
@@ -1611,45 +1611,48 @@ function initEquivalentQuiz(rootId) {
             const randomType = availableTypes[operations.length % availableTypes.length];
             operations.push({
                 operation: randomType.type,
-                payload: randomType.builder(batchSeed + operations.length)
+                payload: randomType.builder(batchSeed + operations.length, spokenlanguageMode)
             });
         }
 
         return operations;
     }
 
-    function buildEquivalencePayload(seed) {
+    function buildEquivalencePayload(seed, spokenlanguageMode) {
         return {
             use_all: false,
             wrong_answers_count: 3,
+            allow_spoken_mode: Boolean(spokenlanguageMode),
             timeout: 10,
             seed: seed
         };
     }
 
-    function buildTruthValuePayload(seed) {
+    function buildTruthValuePayload(seed, spokenlanguageMode) {
         const predicateCount = 4 + Math.floor(Math.random() * 2);
         return {
             predicate_count: predicateCount,
             true_options_count: 1,
             false_options_count: 3,
+            allow_spoken_mode: Boolean(spokenlanguageMode),
             timeout: 10,
             seed: seed
         };
     }
 
-    function buildLogicalConsequencePayload(seed) {
+    function buildLogicalConsequencePayload(seed, spokenlanguageMode) {
         const variableCount = seed % 2 === 0 ? 3 : 4;
         return {
             variable_count: variableCount,
             correct_options_count: 1,
             wrong_options_count: 3,
+            allow_spoken_mode: Boolean(spokenlanguageMode),
             timeout: 10,
             seed: seed
         };
     }
 
-    function buildTranslationPayload(seed) {
+    function buildTranslationPayload(seed, spokenlanguageMode) {
         const randomizedActionsPool = shuffle(AZIONI.slice());
         return {
             mode: 'auto',
@@ -1658,7 +1661,7 @@ function initEquivalentQuiz(rootId) {
             names_pool: NOMI,
             people_count: 3,
             actions_pool: randomizedActionsPool,
-            allow_spoken_mode: false,
+            allow_spoken_mode: Boolean(spokenlanguageMode),
             timeout: 10,
             seed: seed
         };
