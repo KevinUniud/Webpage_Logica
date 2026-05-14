@@ -106,7 +106,6 @@ function initEquivalentQuiz(rootId) {
     let batchQuestionsCache = [];
     let batchCacheIndex = 0;
     let batchInitialized = false;
-    let batchSeed = 0;
     let batchOperationsPlan = [];
     const FEEDBACK_FIELDS = [
         { id: 'expectation', payloadKey: 'Aspettative test', label: 'Il test è andato bene:' },
@@ -1591,7 +1590,7 @@ function initEquivalentQuiz(rootId) {
             if (operations.length < totalCount) {
                 operations.push({
                     operation: typeConfig.type,
-                    payload: typeConfig.builder(batchSeed + operations.length, spokenlanguageMode)
+                    payload: typeConfig.builder(spokenlanguageMode)
                 });
             }
         });
@@ -1601,7 +1600,7 @@ function initEquivalentQuiz(rootId) {
             for (let i = 0; i < quantifierNegationTarget && operations.length < totalCount; i += 1) {
                 operations.push({
                     operation: 'build_quantifier_negation',
-                    payload: { seed: batchSeed + operations.length },
+                    payload: {},
                     localOnly: true
                 });
             }
@@ -1612,47 +1611,44 @@ function initEquivalentQuiz(rootId) {
             const randomType = availableTypes[operations.length % availableTypes.length];
             operations.push({
                 operation: randomType.type,
-                payload: randomType.builder(batchSeed + operations.length, spokenlanguageMode)
+                payload: randomType.builder(spokenlanguageMode)
             });
         }
 
         return operations;
     }
 
-    function buildEquivalencePayload(seed, spokenlanguageMode) {
+    function buildEquivalencePayload(spokenlanguageMode) {
         return {
             use_all: false,
             variable_count: TARGET_ATOM_COUNT,
             wrong_answers_count: 3,
             allow_spoken_mode: Boolean(spokenlanguageMode),
-            timeout: 10,
-            seed: seed
+            timeout: 10
         };
     }
 
-    function buildTruthValuePayload(seed, spokenlanguageMode) {
+    function buildTruthValuePayload(spokenlanguageMode) {
         return {
             predicate_count: TARGET_ATOM_COUNT,
             true_options_count: 1,
             false_options_count: 3,
             allow_spoken_mode: Boolean(spokenlanguageMode),
-            timeout: 10,
-            seed: seed
+            timeout: 10
         };
     }
 
-    function buildLogicalConsequencePayload(seed, spokenlanguageMode) {
+    function buildLogicalConsequencePayload(spokenlanguageMode) {
         return {
             variable_count: TARGET_ATOM_COUNT,
             correct_options_count: 1,
             wrong_options_count: 3,
             allow_spoken_mode: Boolean(spokenlanguageMode),
-            timeout: 10,
-            seed: seed
+            timeout: 10
         };
     }
 
-    function buildTranslationPayload(seed, spokenlanguageMode) {
+    function buildTranslationPayload(spokenlanguageMode) {
         const randomizedActionsPool = shuffle(AZIONI.slice());
         return {
             mode: 'auto',
@@ -1662,8 +1658,7 @@ function initEquivalentQuiz(rootId) {
             people_count: 3,
             actions_pool: randomizedActionsPool,
             allow_spoken_mode: Boolean(spokenlanguageMode),
-            timeout: 10,
-            seed: seed
+            timeout: 10
         };
     }
 
@@ -1672,7 +1667,7 @@ function initEquivalentQuiz(rootId) {
      * @pre operationsList e un array valido di operazioni, seed e un numero.
      * @post Restituisce array di risposte (alcune potenzialmente null per soft-fail).
      */
-    async function fetchBatchQuestions(operationsList, seed) {
+    async function fetchBatchQuestions(operationsList) {
         const apiQuestions = [];
         const apiIndexToPlanIndex = [];
         operationsList.forEach(function(entry, planIndex) {
@@ -1694,7 +1689,6 @@ function initEquivalentQuiz(rootId) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                seed: seed,
                 questions: apiQuestions
             })
         });
@@ -2456,7 +2450,7 @@ function initEquivalentQuiz(rootId) {
                     const operationsList = buildOrderedQuestionsList(totalExercises, state.spokenlanguage);
                     batchOperationsPlan = operationsList.slice();
                     console.log('Operazioni batch costruite:', operationsList.length);
-                    const batchResults = await fetchBatchQuestions(operationsList, batchSeed);
+                    const batchResults = await fetchBatchQuestions(operationsList);
                     console.log('Batch ricevuto:', batchResults.length, 'risposte');
                     
                     // Normalizza tutte le risposte del batch
@@ -2868,7 +2862,6 @@ function initEquivalentQuiz(rootId) {
         batchQuestionsCache = [];
         batchCacheIndex = 0;
         batchInitialized = false;
-        batchSeed = 0;
         batchOperationsPlan = [];
         clearWrongActionImages();
         stopTimer();
@@ -2921,7 +2914,6 @@ function initEquivalentQuiz(rootId) {
         batchQuestionsCache = [];
         batchCacheIndex = 0;
         batchInitialized = false;
-        batchSeed = Date.now();
         batchOperationsPlan = [];
         if (questionCountInput) questionCountInput.value = String(totalExercises);
         if (timeMinutesInput) timeMinutesInput.value = String(standardTimeMinutes);
