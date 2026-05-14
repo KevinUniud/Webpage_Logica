@@ -1621,7 +1621,6 @@ function initEquivalentQuiz(rootId) {
     function buildEquivalencePayload(spokenlanguageMode) {
         return {
             use_all: false,
-            variable_count: TARGET_ATOM_COUNT,
             wrong_answers_count: 3,
             allow_spoken_mode: Boolean(spokenlanguageMode),
             timeout: 10
@@ -2197,7 +2196,6 @@ function initEquivalentQuiz(rootId) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 use_all: false,
-                variable_count: TARGET_ATOM_COUNT,
                 wrong_answers_count: 3,
                 timeout: 10
             })
