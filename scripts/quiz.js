@@ -85,6 +85,8 @@ function initEquivalentQuiz(rootId) {
 
     const DEFAULT_EXERCISES = 10;
     const DEFAULT_TIME_MINUTES = 20;
+    const TARGET_ATOM_COUNT = 3;
+    const TARGET_BINARY_OPERATOR_COUNT = 2;
     let currentExercise = 0;
     let totalExercises = DEFAULT_EXERCISES;
     let standardTimeMinutes = DEFAULT_TIME_MINUTES;
@@ -1621,6 +1623,8 @@ function initEquivalentQuiz(rootId) {
     function buildEquivalencePayload(seed, spokenlanguageMode) {
         return {
             use_all: false,
+            variable_count: TARGET_ATOM_COUNT,
+            binary_operator_count: TARGET_BINARY_OPERATOR_COUNT,
             wrong_answers_count: 3,
             allow_spoken_mode: Boolean(spokenlanguageMode),
             timeout: 10,
@@ -1629,9 +1633,9 @@ function initEquivalentQuiz(rootId) {
     }
 
     function buildTruthValuePayload(seed, spokenlanguageMode) {
-        const predicateCount = 4 + Math.floor(Math.random() * 2);
         return {
-            predicate_count: predicateCount,
+            predicate_count: TARGET_ATOM_COUNT,
+            binary_operator_count: TARGET_BINARY_OPERATOR_COUNT,
             true_options_count: 1,
             false_options_count: 3,
             allow_spoken_mode: Boolean(spokenlanguageMode),
@@ -1641,9 +1645,9 @@ function initEquivalentQuiz(rootId) {
     }
 
     function buildLogicalConsequencePayload(seed, spokenlanguageMode) {
-        const variableCount = seed % 2 === 0 ? 3 : 4;
         return {
-            variable_count: variableCount,
+            variable_count: TARGET_ATOM_COUNT,
+            binary_operator_count: TARGET_BINARY_OPERATOR_COUNT,
             correct_options_count: 1,
             wrong_options_count: 3,
             allow_spoken_mode: Boolean(spokenlanguageMode),
@@ -2203,6 +2207,8 @@ function initEquivalentQuiz(rootId) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 use_all: false,
+                variable_count: TARGET_ATOM_COUNT,
+                binary_operator_count: TARGET_BINARY_OPERATOR_COUNT,
                 wrong_answers_count: 3,
                 timeout: 10
             })
@@ -2227,12 +2233,12 @@ function initEquivalentQuiz(rootId) {
      * @post Restituisce un oggetto normalizzato con domanda, info e 4 opzioni.
      */
     async function fetchTruthValueExercise() {
-        const predicateCount = 4 + Math.floor(Math.random() * 2);
         const response = await fetch(truthApiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                predicate_count: predicateCount,
+                predicate_count: TARGET_ATOM_COUNT,
+                binary_operator_count: TARGET_BINARY_OPERATOR_COUNT,
                 true_options_count: 1,
                 false_options_count: 3,
                 timeout: 10
@@ -2261,12 +2267,12 @@ function initEquivalentQuiz(rootId) {
         let lastDetail = '';
 
         for (let attempt = 0; attempt < 4; attempt += 1) {
-            const variableCount = attempt % 2 === 0 ? 3 : 4;
             const response = await fetch(logicalConsequenceApiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    variable_count: variableCount,
+                    variable_count: TARGET_ATOM_COUNT,
+                    binary_operator_count: TARGET_BINARY_OPERATOR_COUNT,
                     correct_options_count: 1,
                     wrong_options_count: 3,
                     timeout: 10
@@ -2300,12 +2306,12 @@ function initEquivalentQuiz(rootId) {
     }
 
     async function fetchQuantifierNegationExercise() {
-        const variableCount = 3 + Math.floor(Math.random() * 2);
         const response = await fetch(formulaByVariableCountApiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                variable_count: variableCount,
+                variable_count: TARGET_ATOM_COUNT,
+                binary_operator_count: TARGET_BINARY_OPERATOR_COUNT,
                 use_all: false,
                 timeout: 10
             })
