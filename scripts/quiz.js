@@ -1621,7 +1621,7 @@ function initEquivalentQuiz(rootId) {
     function buildEquivalencePayload(spokenlanguageMode) {
         return {
             use_all: false,
-            wrong_answers_count: 2,
+            wrong_answers_count: 3,
             allow_spoken_mode: Boolean(spokenlanguageMode),
             timeout: 10
         };
@@ -1631,7 +1631,7 @@ function initEquivalentQuiz(rootId) {
         return {
             predicate_count: TARGET_ATOM_COUNT,
             true_options_count: 1,
-            false_options_count: 2,
+            false_options_count: 3,
             allow_spoken_mode: Boolean(spokenlanguageMode),
             timeout: 10
         };
@@ -1641,7 +1641,7 @@ function initEquivalentQuiz(rootId) {
         return {
             variable_count: TARGET_ATOM_COUNT,
             correct_options_count: 1,
-            wrong_options_count: 2,
+            wrong_options_count: 3,
             allow_spoken_mode: Boolean(spokenlanguageMode),
             timeout: 10
         };
@@ -1652,7 +1652,7 @@ function initEquivalentQuiz(rootId) {
         return {
             mode: 'auto',
             quantifier_ratio: 0.5,
-            wrong_options_count: 2,
+            wrong_options_count: 3,
             names_pool: NOMI,
             people_count: 3,
             actions_pool: randomizedActionsPool,
@@ -1788,7 +1788,8 @@ function initEquivalentQuiz(rootId) {
                     showCompletion();
                 }
                 return;
-                }
+            }
+            renderTimer();
         }, 1000);
     }
 
@@ -1982,7 +1983,7 @@ function initEquivalentQuiz(rootId) {
         const options = extractOptionsArray(res);
         const info = (res && Array.isArray(res.information) && res.information) || [];
 
-        if (options.length !== 3 && options.length !== 4) {
+        if (options.length !== 4 || info.length < 4 || info.length > 5) {
             return null;
         }
 
@@ -2004,10 +2005,10 @@ function initEquivalentQuiz(rootId) {
 
         let targetTruthValue = null;
         let question = '';
-        if (trueCount < falseCount) {
+        if (trueCount === 1 && falseCount === 3) {
             targetTruthValue = true;
             question = 'Quale formula è vera tra le seguenti?';
-        } else if (falseCount < trueCount) {
+        } else if (trueCount === 3 && falseCount === 1) {
             targetTruthValue = false;
             question = 'Quale formula è falsa tra le seguenti?';
         } else {
@@ -2195,7 +2196,7 @@ function initEquivalentQuiz(rootId) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 use_all: false,
-                wrong_answers_count: 2,
+                wrong_answers_count: 3,
                 timeout: 10
             })
         });
@@ -2225,7 +2226,7 @@ function initEquivalentQuiz(rootId) {
             body: JSON.stringify({
                 predicate_count: TARGET_ATOM_COUNT,
                 true_options_count: 1,
-                false_options_count: 2,
+                false_options_count: 3,
                 timeout: 10
             })
         });
@@ -2258,7 +2259,7 @@ function initEquivalentQuiz(rootId) {
                 body: JSON.stringify({
                     variable_count: TARGET_ATOM_COUNT,
                     correct_options_count: 1,
-                    wrong_options_count: 2,
+                    wrong_options_count: 3,
                     timeout: 10
                 })
             });
@@ -2379,7 +2380,7 @@ function initEquivalentQuiz(rootId) {
                 body: JSON.stringify({
                     mode: 'auto',
                     quantifier_ratio: 0.5,
-                    wrong_options_count: 2,
+                    wrong_options_count: 3,
                     names_pool: NOMI,
                     people_count: 3,
                     actions_pool: randomizedActionsPool,
@@ -2684,7 +2685,7 @@ function initEquivalentQuiz(rootId) {
             return;
         }
 
-                wrong_options_count: 2,
+        if (state.locked) return;
         state.locked = true;
 
         try {
