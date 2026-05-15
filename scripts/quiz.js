@@ -2198,6 +2198,7 @@ function initEquivalentQuiz(rootId) {
             body: JSON.stringify({
                 use_all: false,
                 wrong_answers_count: 3,
+                allow_spoken_mode: Boolean(state.spokenlanguage),
                 timeout: 10
             })
         });
@@ -2228,6 +2229,7 @@ function initEquivalentQuiz(rootId) {
                 predicate_count: TARGET_ATOM_COUNT,
                 true_options_count: 1,
                 false_options_count: 3,
+                allow_spoken_mode: Boolean(state.spokenlanguage),
                 timeout: 10
             })
         });
@@ -2261,6 +2263,7 @@ function initEquivalentQuiz(rootId) {
                     variable_count: TARGET_ATOM_COUNT,
                     correct_options_count: 1,
                     wrong_options_count: 3,
+                    allow_spoken_mode: Boolean(state.spokenlanguage),
                     timeout: 10
                 })
             });
@@ -2298,6 +2301,7 @@ function initEquivalentQuiz(rootId) {
             body: JSON.stringify({
                 variable_count: TARGET_ATOM_COUNT,
                 use_all: false,
+                allow_spoken_mode: Boolean(state.spokenlanguage),
                 timeout: 10
             })
         });
@@ -2385,7 +2389,7 @@ function initEquivalentQuiz(rootId) {
                     names_pool: NOMI,
                     people_count: 3,
                     actions_pool: randomizedActionsPool,
-                    allow_spoken_mode: false,
+                    allow_spoken_mode: Boolean(state.spokenlanguage),
                     timeout: 10
                 })
             });
