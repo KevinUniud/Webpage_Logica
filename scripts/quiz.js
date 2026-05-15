@@ -1983,7 +1983,7 @@ function initEquivalentQuiz(rootId) {
         const options = extractOptionsArray(res);
         const info = (res && Array.isArray(res.information) && res.information) || [];
 
-        if (options.length !== 4 || info.length < 4 || info.length > 5) {
+        if (options.length !== 4 || info.length < 3 || info.length > 5) {
             return null;
         }
 
