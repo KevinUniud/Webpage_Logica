@@ -1427,10 +1427,12 @@ function initEquivalentQuiz(rootId) {
      * @post Restituisce una frase naturale basata su atomSpokenMap se disponibile.
      */
     function formatSpokenInfoLine(line) {
-        const match = String(line).match(/^\s*([A-Za-z][A-Za-z0-9_]*)\s+(?:e|è|=|:)\s*(vero|falso)\s*$/i);
+        // Accept multiple separators and both Italian/English boolean literals
+        const match = String(line).match(/^\s*([A-Za-z][A-Za-z0-9_]*)\s*(?:-|:|\s+|(?:e|è|=))\s*(vero|falso|true|false|1|0)\s*$/i);
         if (!match) return applySpokenTransform(String(line));
         const atom = match[1];
-        const isTrue = match[2].toLowerCase() === 'vero';
+        const rawVal = String(match[2] || '').toLowerCase();
+        const isTrue = rawVal === 'vero' || rawVal === 'true' || rawVal === '1';
         const key = normalizeAtomLookupKey(atom);
         const entry = atomSpokenMap[key] || atomSpokenMap[String(key).toLowerCase()];
         if (!entry) return line;
@@ -2515,6 +2517,13 @@ function initEquivalentQuiz(rootId) {
             currentImageFormulaSteps = parsed.imageFormulaSteps || { question: [], correct: [], wrongByFormula: {} };
             // Clear formula sequence cache when loading new question to avoid stale data
             clearFormulaSequenceCaches();
+            // If backend indicated spoken_mode, enable spoken language mode automatically
+            if (parsed && parsed.spoken_mode) {
+                state.spokenlanguage = true;
+                state.spokenlanguageLocked = false;
+                try { syncSpokenLanguageAvailability(); } catch (_) {}
+            }
+
             if (state.spokenlanguage) {
                 atomSpokenMap = buildAtomSpokenMap(collectAtomsFromExercise(parsed));
                 buildSpokenNameColorMap();
