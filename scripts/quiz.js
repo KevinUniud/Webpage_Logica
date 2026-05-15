@@ -531,6 +531,7 @@ function initEquivalentQuiz(rootId) {
         apre: { day: 'Aprire_White.png', night: 'Aprire_Black.png' },
         'apre la porta': { day: 'Aprire_White.png', night: 'Aprire_Black.png' },
         chiude: { day: 'Chiudere_White.png', night: 'Chiudere_Black.png' },
+        'chiude la porta': { day: 'Chiudere_White.png', night: 'Chiudere_Black.png' },
         ascolta: { day: 'Ascoltare_White.png', night: 'Ascoltare_Black.png' }
     };
 
