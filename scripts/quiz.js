@@ -1841,7 +1841,11 @@ function initEquivalentQuiz(rootId) {
      */
     function displayFormulaText(formula) {
         if (shouldKeepRawFormula(formula)) {
-            return normalizeFormulaAtoms(String(formula || ''));
+            // Keep raw PROLOG-like text only in spoken language mode.
+            if (state.spokenlanguage) {
+                return normalizeFormulaAtoms(String(formula || ''));
+            }
+            return normalizeFormulaAtoms(prologToLogical(formula));
         }
         return normalizeFormulaAtoms(prologToLogical(formula));
     }
