@@ -27,7 +27,7 @@ function initEquivalentQuiz(rootId) {
             };
         }
         const root = document.getElementById(rootId);
-            if (!root) return; // Ensure the root element exists
+    if (!root) return;
 
     const EX_HIGHLIGHT_KEY = 'logic-exercises-highlight-atoms';
     const EX_PARENS_KEY = 'logic-exercises-differentiate-parens';
@@ -356,7 +356,7 @@ function initEquivalentQuiz(rootId) {
     function renderFeedbackPage() {
         if (!reviewListEl) return;
         reviewListEl.innerHTML = '';
-            reviewListEl.classList.add('quiz-feedback-panel'); // Add feedback panel class
+        reviewListEl.classList.add('quiz-feedback-panel');
 
         const radioNodes = [];
         FEEDBACK_FIELDS.forEach(function(field) {
@@ -1549,10 +1549,7 @@ function initEquivalentQuiz(rootId) {
                     || extractFormulaFromQuestionText(currentQuestionText)
                     || '';
                 if (prologSource) {
-                    // Show the logical (symbol) form for readability, but keep
-                    // the raw Prolog in a data attribute for debugging/access.
-                    prologEl.innerHTML = '<span class="quiz-prolog-label">Prolog:</span> ' + escapeHtml(String(displayFormulaText(prologSource))) +
-                        ' <span class="quiz-prolog-raw" data-prolog="' + escapeHtml(String(prologSource)) + '"></span>';
+                    prologEl.innerHTML = '<span class="quiz-prolog-label">Prolog:</span> ' + escapeHtml(String(prologSource));
                     prologEl.hidden = false;
                 } else {
                     prologEl.hidden = true;
@@ -2195,10 +2192,8 @@ function initEquivalentQuiz(rootId) {
             const formulaDisplay = getOptionDisplayFormula(opt);
             const prologSource = getOptionFormulaSource(opt) || '';
             let inner = colorizeAtomsInText(getCachedFormulaTransforms(formulaDisplay));
-            if (prologSource) {
-                // Show logical-symbol version for clarity; keep raw in data-prolog
-                const logicalRight = displayFormulaText(prologSource);
-                inner += ' <span class="quiz-option-prolog" data-prolog="' + escapeHtml(String(prologSource)) + '">(' + escapeHtml(String(logicalRight)) + ')</span>';
+            if (state.spokenlanguage && prologSource) {
+                inner += ' <span class="quiz-option-prolog">(' + escapeHtml(String(prologSource)) + ')</span>';
             }
             button.innerHTML = inner;
             optionsEl.appendChild(button);
