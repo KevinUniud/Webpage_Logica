@@ -26,13 +26,27 @@ function initEquivalentQuiz(rootId) {
                 showWrongActionImages
             };
         }
-        const root = document.getElementById(rootId);
-            if (!root) return; // Ensure the root element exists
+                // Left side: transformed/display text
+                const leftHtml = colorizeAtomsInText(getCachedFormulaTransforms(formulaDisplay));
+                // Right side: when in spoken mode show original Prolog source; otherwise show logical-symbol fallback
+                let rightHtml = '';
+                if (prologSource) {
+                    if (state.spokenlanguage) {
+                        rightHtml = '<span class="quiz-option-prolog" data-prolog="' + escapeHtml(String(prologSource)) + '">' + escapeHtml(String(prologSource)) + '</span>';
+                        // mark element to enable right-aligned layout via CSS
+                        button.setAttribute('data-has-prolog', '1');
+                    } else {
+                        const logicalRight = displayFormulaText(prologSource);
+                        rightHtml = '<span class="quiz-option-prolog" data-prolog="' + escapeHtml(String(prologSource)) + '">(' + escapeHtml(String(logicalRight)) + ')</span>';
+                    }
+                }
 
-    const EX_HIGHLIGHT_KEY = 'logic-exercises-highlight-atoms';
-    const EX_PARENS_KEY = 'logic-exercises-differentiate-parens';
-    const isExercisesPage = /\/esercizi\//.test(window.location.pathname);
-
+                if (rightHtml) {
+                    // Use a simple two-column structure so the prolog appears to the right of the answer
+                    button.innerHTML = '<span class="quiz-option-text">' + leftHtml + '</span>' + rightHtml;
+                } else {
+                    button.innerHTML = leftHtml;
+                }
     function readExerciseSetting(key) {
         return localStorage.getItem(key) === '1';
     }

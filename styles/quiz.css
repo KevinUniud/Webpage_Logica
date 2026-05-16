@@ -49,6 +49,26 @@
     transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
+/* When an option includes a Prolog preview, layout it as two columns */
+.quiz-option[data-has-prolog="1"] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.quiz-option-text {
+    flex: 1 1 auto;
+}
+
+.quiz-option-prolog {
+    flex: 0 0 auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', 'Courier New', monospace;
+    font-size: 0.85em;
+    color: var(--muted);
+    margin-left: 10px;
+}
+
 .quiz-option:hover {
     background: var(--surface-3);
 }
@@ -364,7 +384,8 @@ body.quiz-formulas-mode {
     margin-right: 6px;
     color: var(--muted);
 }
-.quiz-option-prolog {
+/* fallback for options without data-has-prolog attribute */
+.quiz-option:not([data-has-prolog]) .quiz-option-prolog {
     font-size: 0.85em;
     color: var(--muted);
     margin-left: 10px;
