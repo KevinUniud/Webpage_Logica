@@ -351,21 +351,3 @@ body.quiz-formulas-mode {
     padding-left: 5%;
     padding-right: 5%;
 }
-
-/* Prolog preview shown when spoken language is active */
-.quiz-prolog-preview {
-    margin-top: 8px;
-    font-size: 0.9em;
-    color: var(--muted);
-    display: block;
-}
-.quiz-prolog-preview .quiz-prolog-label {
-    font-weight: 700;
-    margin-right: 6px;
-    color: var(--muted);
-}
-.quiz-option-prolog {
-    font-size: 0.85em;
-    color: var(--muted);
-    margin-left: 10px;
-}

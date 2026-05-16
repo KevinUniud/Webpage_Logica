@@ -1530,36 +1530,6 @@ function initEquivalentQuiz(rootId) {
             // Only sync width when rendering after question load (called in loadExercise),
             // not on every setting change to reduce DOM reflows
         }
-        // When spoken language is active, show the original Prolog form to the right
-        try {
-            const existing = document.getElementById('quizPrologPreview');
-            const parent = questionEl && questionEl.parentNode;
-            if (!parent) return;
-            let prologEl = existing;
-            if (!prologEl) {
-                prologEl = document.createElement('div');
-                prologEl.id = 'quizPrologPreview';
-                prologEl.className = 'quiz-prolog-preview';
-                parent.appendChild(prologEl);
-            }
-
-            if (state.spokenlanguage) {
-                // Prefer explicit prolog source from generation steps, fallback to extracting
-                const prologSource = (Array.isArray(currentImageFormulaSteps.question) && currentImageFormulaSteps.question[0])
-                    || extractFormulaFromQuestionText(currentQuestionText)
-                    || '';
-                if (prologSource) {
-                    prologEl.innerHTML = '<span class="quiz-prolog-label">Prolog:</span> ' + escapeHtml(String(prologSource));
-                    prologEl.hidden = false;
-                } else {
-                    prologEl.hidden = true;
-                }
-            } else {
-                prologEl.hidden = true;
-            }
-        } catch (e) {
-            // ignore rendering preview errors
-        }
         showInfo(currentQuestionInfo);
         renderOptions();
     }
@@ -2189,13 +2159,7 @@ function initEquivalentQuiz(rootId) {
             button.setAttribute('role', 'radio');
             button.setAttribute('aria-checked', index === state.selectedIndex ? 'true' : 'false');
             button.dataset.index = String(index);
-            const formulaDisplay = getOptionDisplayFormula(opt);
-            const prologSource = getOptionFormulaSource(opt) || '';
-            let inner = colorizeAtomsInText(getCachedFormulaTransforms(formulaDisplay));
-            if (state.spokenlanguage && prologSource) {
-                inner += ' <span class="quiz-option-prolog">(' + escapeHtml(String(prologSource)) + ')</span>';
-            }
-            button.innerHTML = inner;
+            button.innerHTML = colorizeAtomsInText(getCachedFormulaTransforms(getOptionDisplayFormula(opt)));
             optionsEl.appendChild(button);
         });
 
