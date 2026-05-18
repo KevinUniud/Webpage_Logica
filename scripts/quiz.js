@@ -1473,18 +1473,18 @@ function initEquivalentQuiz(rootId) {
             return spokenTokens[numericIndex] || '';
         });
 
-        // Remove outer parentheses immediately following quantifiers
+        // Remove outer parentheses immediately following quantifiers (do not change inner capitalization here)
         out = out.replace(/(Per ogni persona, |Esiste una persona, )\(\s*([^)]*?)\s*\)/g, function(_, prefix, inner) {
             inner = String(inner || '').trim();
-            if (inner.length > 0) {
-                inner = inner.charAt(0).toUpperCase() + inner.slice(1);
-            }
             return prefix + inner;
         });
 
         out = out.replace(/\s{2,}/g, ' ').trim();
         if (out.length > 0) {
-            out = out.charAt(0).toUpperCase() + out.slice(1);
+            const firstLetterIndex = out.search(/[A-Za-zÀ-ÖØ-öø-ÿ]/);
+            if (firstLetterIndex >= 0) {
+                out = out.slice(0, firstLetterIndex) + out.charAt(firstLetterIndex).toUpperCase() + out.slice(firstLetterIndex + 1);
+            }
         }
         return out;
     }
