@@ -1393,12 +1393,12 @@ function initEquivalentQuiz(rootId) {
                 if (m) {
                     const variable = String(m[2] || '').toLowerCase();
                     if (quantifiedSet.has(variable)) {
-                        return stashSpoken(formatSpokenAction(entry.azione, true));
+                        return stashSpoken('non è vero che ' + formatSpokenAction(entry.azione, false));
                     }
                 }
-                return stashSpoken(entry.nome + ' ' + formatSpokenAction(entry.azione, true));
+                return stashSpoken('non è vero che ' + entry.nome + ' ' + formatSpokenAction(entry.azione, false));
             }
-            return 'non ' + atom;
+            return 'non è vero che ' + atom;
         });
 
         out = out.replace(/\b([A-Za-z][A-Za-z0-9_]*)(?:\s*\(\s*([A-Za-z][A-Za-z0-9_]*)\s*\))?/g, function(match, atom, variable) {
@@ -1419,14 +1419,19 @@ function initEquivalentQuiz(rootId) {
             return match;
         });
 
+        // handle implication between stashed spoken tokens as "se P allora Q"
+        out = out.replace(/(%%\d+%%)\s*→\s*(%%\d+%%)/g, function(_, a, b) {
+            return 'se ' + a + ' allora ' + b;
+        });
+
         out = out
-            .replace(/∀\s*[A-Za-z][A-Za-z0-9_]*/g, 'Per ogni persona, la persona')
-            .replace(/∃\s*[A-Za-z][A-Za-z0-9_]*/g, 'Esiste una persona che')
+            .replace(/∀\s*([A-Za-z][A-Za-z0-9_]*)/g, function(_, v) { return 'Per ogni ' + String(v); })
+            .replace(/∃\s*([A-Za-z][A-Za-z0-9_]*)/g, function(_, v) { return 'Esiste un ' + String(v); })
             .replace(/↔/g, ' se e solo se ')
-            .replace(/→/g, ' implica che ')
+            .replace(/→/g, ' allora ')
             .replace(/∧/g, ' e ')
-            .replace(/∨/g, ' o ')
-            .replace(/¬\s*/g, 'non ');
+            .replace(/∨/g, ' oppure ')
+            .replace(/¬\s*/g, 'non è vero che ');
 
         out = out.replace(/%%(\d+)%%/g, function(_, idx) {
             const numericIndex = Number(idx);
