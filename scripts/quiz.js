@@ -1419,14 +1419,14 @@ function initEquivalentQuiz(rootId) {
             return match;
         });
 
-        // handle implication between stashed spoken tokens as "se P allora Q"
+        // handle implication between stashed spoken tokens as "Se P allora Q"
         out = out.replace(/(%%\d+%%)\s*→\s*(%%\d+%%)/g, function(_, a, b) {
-            return 'se ' + a + ' allora ' + b;
+            return 'Se ' + a + ' allora ' + b;
         });
 
         out = out
-            .replace(/∀\s*([A-Za-z][A-Za-z0-9_]*)/g, function(_, v) { return 'Per ogni ' + String(v); })
-            .replace(/∃\s*([A-Za-z][A-Za-z0-9_]*)/g, function(_, v) { return 'Esiste un ' + String(v); })
+            .replace(/∀\s*([A-Za-z][A-Za-z0-9_]*)/g, function(_, v) { return 'Per ogni persona, ' + String(v); })
+            .replace(/∃\s*([A-Za-z][A-Za-z0-9_]*)/g, function(_, v) { return 'Esiste una persona, ' + String(v); })
             .replace(/↔/g, ' se e solo se ')
             .replace(/→/g, ' allora ')
             .replace(/∧/g, ' e ')
@@ -1437,7 +1437,11 @@ function initEquivalentQuiz(rootId) {
             const numericIndex = Number(idx);
             return spokenTokens[numericIndex] || '';
         });
-        return out.replace(/\s{2,}/g, ' ').trim();
+        out = out.replace(/\s{2,}/g, ' ').trim();
+        if (out.length > 0) {
+            out = out.charAt(0).toUpperCase() + out.slice(1);
+        }
+        return out;
     }
 
     /**
