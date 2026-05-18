@@ -1456,7 +1456,7 @@ function initEquivalentQuiz(rootId) {
 
         // handle implication between stashed spoken tokens as "Se P allora Q"
         out = out.replace(/(%%\d+%%)\s*→\s*(%%\d+%%)/g, function(_, a, b) {
-            return 'Se ' + a + ' allora ' + b;
+            return 'se ' + a + ' allora ' + b;
         });
 
         out = out
