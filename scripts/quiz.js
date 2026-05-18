@@ -1479,6 +1479,9 @@ function initEquivalentQuiz(rootId) {
             return prefix + inner;
         });
 
+        // Remove any remaining parentheses in the spoken form
+        out = out.replace(/[()]/g, '');
+
         out = out.replace(/\s{2,}/g, ' ').trim();
         if (out.length > 0) {
             const firstLetterIndex = out.search(/[A-Za-zÀ-ÖØ-öø-ÿ]/);
