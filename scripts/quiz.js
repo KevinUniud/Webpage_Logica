@@ -1393,7 +1393,7 @@ function initEquivalentQuiz(rootId) {
                 if (m) {
                     const variable = String(m[2] || '').toLowerCase();
                     if (quantifiedSet.has(variable)) {
-                        return stashSpoken('la persona ' + formatSpokenAction(entry.azione, true));
+                        return stashSpoken(formatSpokenAction(entry.azione, true));
                     }
                 }
                 return stashSpoken(entry.nome + ' ' + formatSpokenAction(entry.azione, true));
@@ -1411,7 +1411,7 @@ function initEquivalentQuiz(rootId) {
                 if (variable) {
                     const varLower = String(variable || '').toLowerCase();
                     if (quantifiedSet.has(varLower)) {
-                        return stashSpoken('la persona ' + formatSpokenAction(entry.azione, false));
+                        return stashSpoken(formatSpokenAction(entry.azione, false));
                     }
                 }
                 return stashSpoken(entry.nome + ' ' + formatSpokenAction(entry.azione, false));
