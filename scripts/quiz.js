@@ -1437,6 +1437,16 @@ function initEquivalentQuiz(rootId) {
             const numericIndex = Number(idx);
             return spokenTokens[numericIndex] || '';
         });
+
+        // Remove outer parentheses immediately following quantifiers
+        out = out.replace(/(Per ogni persona, |Esiste una persona, )\(\s*([^)]*?)\s*\)/g, function(_, prefix, inner) {
+            inner = String(inner || '').trim();
+            if (inner.length > 0) {
+                inner = inner.charAt(0).toUpperCase() + inner.slice(1);
+            }
+            return prefix + inner;
+        });
+
         out = out.replace(/\s{2,}/g, ' ').trim();
         if (out.length > 0) {
             out = out.charAt(0).toUpperCase() + out.slice(1);
