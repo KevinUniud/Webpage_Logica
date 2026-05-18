@@ -1388,6 +1388,14 @@ function initEquivalentQuiz(rootId) {
             const key = normalizeAtomLookupKey(atom);
             const entry = atomSpokenMap[key] || atomSpokenMap[String(key).toLowerCase()];
             if (entry) {
+                // detect if atom has a quantified variable like P(x)
+                const m = String(atom).match(/^([A-Za-z][A-Za-z0-9_]*)\s*\(\s*([A-Za-z][A-Za-z0-9_]*)\s*\)$/);
+                if (m) {
+                    const variable = String(m[2] || '').toLowerCase();
+                    if (quantifiedSet.has(variable)) {
+                        return stashSpoken('la persona ' + formatSpokenAction(entry.azione, true));
+                    }
+                }
                 return stashSpoken(entry.nome + ' ' + formatSpokenAction(entry.azione, true));
             }
             return 'non ' + atom;
@@ -1400,14 +1408,20 @@ function initEquivalentQuiz(rootId) {
             const key = normalizeAtomLookupKey(variable ? atom + '(' + variable + ')' : atom);
             const entry = atomSpokenMap[key] || atomSpokenMap[String(key).toLowerCase()];
             if (entry) {
+                if (variable) {
+                    const varLower = String(variable || '').toLowerCase();
+                    if (quantifiedSet.has(varLower)) {
+                        return stashSpoken('la persona ' + formatSpokenAction(entry.azione, false));
+                    }
+                }
                 return stashSpoken(entry.nome + ' ' + formatSpokenAction(entry.azione, false));
             }
             return match;
         });
 
         out = out
-            .replace(/∀\s*[A-Za-z][A-Za-z0-9_]*/g, 'per ogni persona tale che')
-            .replace(/∃\s*[A-Za-z][A-Za-z0-9_]*/g, 'esiste una persona tale che')
+            .replace(/∀\s*[A-Za-z][A-Za-z0-9_]*/g, 'Per ogni persona, la persona')
+            .replace(/∃\s*[A-Za-z][A-Za-z0-9_]*/g, 'Esiste una persona che')
             .replace(/↔/g, ' se e solo se ')
             .replace(/→/g, ' implica che ')
             .replace(/∧/g, ' e ')
