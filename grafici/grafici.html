@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="it">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Grafici</title>
+        <meta name="description" content="Galleria accessibile dei grafici presenti nella cartella grafici">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="../styles/base.css">
+        <link rel="stylesheet" href="../styles/components.css">
+        <link rel="stylesheet" href="../styles/quiz.css">
+        <link rel="stylesheet" href="../styles/themes.css">
+    </head>
+    <body>
+        <script src="../scripts/settings.js?v=2"></script>
+        <script src="../scripts/app.js"></script>
+
+        <main class="graphs-page" id="main-content" tabindex="-1">
+            <h1>Grafici del progetto</h1>
+
+            <nav class="graphs-anchors" aria-label="Sezioni grafici">
+                <a class="btn-wide" href="#general">Generali</a>
+                <a class="btn-wide" href="#timings">Tempi</a>
+                <a class="btn-wide" href="#temporal">Andamento temporale</a>
+                <a class="btn-wide" href="#behavioral">Comportamentali</a>
+                <a class="btn-wide" href="#demographics">Demografici</a>
+                <a class="btn-wide" href="#accuracy">Accuratezza</a>
+                <a class="btn-wide" href="#advanced">Avanzati</a>
+            </nav>
+
+            <section class="graphs-section" id="general">
+                <h2>Generali</h2>
+                <div class="graphs-grid">
+                    <figure class="graph-card rounded-box">
+                        <img src="./general/performance_summary.png" alt="Riepilogo prestazioni generali del test" loading="lazy" decoding="async">
+                        <figcaption>Panoramica complessiva delle prestazioni.</figcaption>
+                    </figure>
+                    <figure class="graph-card rounded-box">
+                        <img src="./general/percentuale_domande_corrette.png" alt="Percentuale di domande corrette" loading="lazy" decoding="async">
+                        <figcaption>Quota di risposte corrette sul totale.</figcaption>
+                    </figure>
+                    <figure class="graph-card rounded-box">
+                        <img src="./general/corrette_vs_errate.png" alt="Confronto tra risposte corrette e errate" loading="lazy" decoding="async">
+                        <figcaption>Bilancio tra risposte corrette ed errate.</figcaption>
+                    </figure>
+                </div>
+            </section>
+
+            <section class="graphs-section" id="timings">
+                <h2>Tempi</h2>
+                <div class="graphs-grid">
+                    <figure class="graph-card rounded-box">
+                        <img src="./timings/tempo_medio_risposta.png" alt="Tempo medio di risposta" loading="lazy" decoding="async">
+                        <figcaption>Tempo medio necessario per rispondere.</figcaption>
+                    </figure>
+                    <figure class="graph-card rounded-box">
+                        <img src="./timings/tempo_per_tipologia.png" alt="Tempo di risposta per tipologia di domanda" loading="lazy" decoding="async">
+                        <figcaption>Confronto dei tempi per tipologia di domanda.</figcaption>
+                    </figure>
+                    <figure class="graph-card rounded-box">
+                        <img src="./timings/tempo_vs_correttezza.png" alt="Relazione tra tempo di risposta e correttezza" loading="lazy" decoding="async">
+                        <figcaption>Relazione tra rapidita e accuratezza.</figcaption>
+                    </figure>
+                    <figure class="graph-card rounded-box">
+                        <img src="./timings/distribuzione_tempi.png" alt="Distribuzione dei tempi di risposta" loading="lazy" decoding="async">
+                        <figcaption>Distribuzione complessiva dei tempi registrati.</figcaption>
+                    </figure>
+                    <figure class="graph-card rounded-box">
+                        <img src="./timings/boxplot_tempi_tipologia.png" alt="Boxplot dei tempi per tipologia" loading="lazy" decoding="async">
+                        <figcaption>Variabilita dei tempi per tipologia.</figcaption>
+                    </figure>
+                    <figure class="graph-card rounded-box">
+                        <img src="./timings/timeline_risposte.png" alt="Timeline delle risposte nel tempo" loading="lazy" decoding="async">
+                        <figcaption>Sequenza temporale delle risposte fornite.</figcaption>
+                    </figure>
+                </div>
+            </section>
+
+            <section class="graphs-section" id="temporal">
+                <h2>Andamento temporale</h2>
+                <div class="graphs-grid">
+                    <figure class="graph-card rounded-box">
+                        <img src="./temporal/accuracy_timeline.png" alt="Andamento temporale dell'accuratezza" loading="lazy" decoding="async">
+                        <figcaption>Evoluzione dell'accuratezza nel tempo.</figcaption>
+                    </figure>
+                    <figure class="graph-card rounded-box">
+                        <img src="./temporal/velocity_timeline.png" alt="Andamento temporale della velocita di risposta" loading="lazy" decoding="async">
+                        <figcaption>Evoluzione della velocita di risposta nel tempo.</figcaption>
+                    </figure>
+                </div>
+            </section>
+
+            <section class="graphs-section" id="behavioral">
+                <h2>Comportamentali</h2>
+                <div class="graphs-grid">
+                    <figure class="graph-card rounded-box">
+                        <img src="./behavioral/opzioni_vs_performance.png" alt="Relazione tra opzioni selezionate e prestazioni" loading="lazy" decoding="async">
+                        <figcaption>Effetto delle opzioni di configurazione sulle prestazioni.</figcaption>
+                    </figure>
+                    <figure class="graph-card rounded-box">
+                        <img src="./behavioral/heatmap_sessioni_tipologie.png" alt="Heatmap delle sessioni per tipologia" loading="lazy" decoding="async">
+                        <figcaption>Distribuzione delle sessioni per tipologia di esercizio.</figcaption>
+                    </figure>
+                </div>
+            </section>
+
+            <section class="graphs-section" id="demographics">
+                <h2>Demografici</h2>
+                <div class="graphs-grid">
+                    <figure class="graph-card rounded-box">
+                        <img src="./demographics/performance_per_demographic.png" alt="Prestazioni per gruppo demografico" loading="lazy" decoding="async">
+                        <figcaption>Confronto delle prestazioni tra gruppi demografici.</figcaption>
+                    </figure>
+                    <figure class="graph-card rounded-box">
+                        <img src="./demographics/feedback_correlation.png" alt="Correlazione tra feedback e prestazioni" loading="lazy" decoding="async">
+                        <figcaption>Relazione tra feedback raccolto e risultati.</figcaption>
+                    </figure>
+                </div>
+            </section>
+
+            <section class="graphs-section" id="accuracy">
+                <h2>Accuratezza</h2>
+                <div class="graphs-grid">
+                    <figure class="graph-card rounded-box">
+                        <img src="./accuracy/accuratezza_per_tipologia.png" alt="Accuratezza per tipologia di domanda" loading="lazy" decoding="async">
+                        <figcaption>Accuratezza suddivisa per tipologia.</figcaption>
+                    </figure>
+                    <figure class="graph-card rounded-box">
+                        <img src="./accuracy/difficolta_vs_risultato.png" alt="Relazione tra difficolta e risultato" loading="lazy" decoding="async">
+                        <figcaption>Confronto tra difficolta percepita e risultato ottenuto.</figcaption>
+                    </figure>
+                    <figure class="graph-card rounded-box">
+                        <img src="./accuracy/multipanel_tipologia.png" alt="Vista multipannello per tipologia" loading="lazy" decoding="async">
+                        <figcaption>Quadro multipannello delle principali tipologie.</figcaption>
+                    </figure>
+                    <figure class="graph-card rounded-box">
+                        <img src="./accuracy/radar_competenze.png" alt="Grafico radar delle competenze" loading="lazy" decoding="async">
+                        <figcaption>Radar sintetico delle competenze osservate.</figcaption>
+                    </figure>
+                </div>
+            </section>
+
+            <section class="graphs-section" id="advanced">
+                <h2>Avanzati</h2>
+                <div class="graphs-grid">
+                    <figure class="graph-card rounded-box">
+                        <img src="./advanced/performance_projection.png" alt="Proiezione delle prestazioni future" loading="lazy" decoding="async">
+                        <figcaption>Proiezione delle prestazioni sulla base dei dati raccolti.</figcaption>
+                    </figure>
+                    <figure class="graph-card rounded-box">
+                        <img src="./advanced/learning_curve.png" alt="Curva di apprendimento" loading="lazy" decoding="async">
+                        <figcaption>Andamento della curva di apprendimento.</figcaption>
+                    </figure>
+                    <figure class="graph-card rounded-box">
+                        <img src="./advanced/regression_tempo_accuracy.png" alt="Regressione tra tempo e accuratezza" loading="lazy" decoding="async">
+                        <figcaption>Modello di regressione tra tempo e accuratezza.</figcaption>
+                    </figure>
+                </div>
+            </section>
+
+            <div class="graphs-footer">
+                <a class="btn-wide" href="../index.html">Torna all'indice</a>
+            </div>
+        </main>
+
+        <div class="graphs-lightbox" id="graphsLightbox" hidden>
+            <div class="graphs-lightbox-panel" role="dialog" aria-modal="true" aria-labelledby="graphsLightboxTitle">
+                <div class="graphs-lightbox-header">
+                    <h2 class="graphs-lightbox-title" id="graphsLightboxTitle">Grafico ingrandito</h2>
+                    <button class="graphs-lightbox-close" type="button" id="graphsLightboxClose" aria-label="Chiudi grafico ingrandito">&times;</button>
+                </div>
+                <img class="graphs-lightbox-image" id="graphsLightboxImage" alt="">
+                <p class="graphs-lightbox-caption" id="graphsLightboxCaption"></p>
+            </div>
+        </div>
+
+        <script>
+            (function() {
+                const images = Array.from(document.querySelectorAll('.graph-card img'));
+                const lightbox = document.getElementById('graphsLightbox');
+                const lightboxImage = document.getElementById('graphsLightboxImage');
+                const lightboxCaption = document.getElementById('graphsLightboxCaption');
+                const lightboxClose = document.getElementById('graphsLightboxClose');
+                const lightboxTitle = document.getElementById('graphsLightboxTitle');
+                const activeImageClass = 'is-lightbox-active';
+                let lastFocusedElement = null;
+
+                function openLightbox(image) {
+                    if (!lightbox || !lightboxImage || !lightboxCaption || !lightboxClose || !lightboxTitle) return;
+                    lastFocusedElement = document.activeElement;
+                    lightboxImage.src = image.currentSrc || image.src;
+                    lightboxImage.alt = image.alt || '';
+                    lightboxCaption.textContent = image.alt || 'Grafico ingrandito';
+                    lightboxTitle.textContent = image.alt || 'Grafico ingrandito';
+                    lightbox.hidden = false;
+                    document.body.classList.add('graphs-modal-open');
+                    lightboxClose.focus();
+                    image.classList.add(activeImageClass);
+                }
+
+                function closeLightbox() {
+                    if (!lightbox || lightbox.hidden) return;
+                    lightbox.hidden = true;
+                    document.body.classList.remove('graphs-modal-open');
+                    if (lightboxImage) {
+                        lightboxImage.src = '';
+                        lightboxImage.alt = '';
+                    }
+                    if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+                        lastFocusedElement.focus();
+                    }
+                    images.forEach(function(image) {
+                        image.classList.remove(activeImageClass);
+                    });
+                }
+
+                images.forEach(function(image) {
+                    image.setAttribute('role', 'button');
+                    image.setAttribute('tabindex', '0');
+                    image.setAttribute('aria-label', 'Ingrandisci grafico: ' + (image.alt || 'grafico'));
+
+                    image.addEventListener('click', function() {
+                        openLightbox(image);
+                    });
+
+                    image.addEventListener('keydown', function(event) {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            openLightbox(image);
+                        }
+                    });
+                });
+
+                if (lightbox) {
+                    lightbox.addEventListener('click', function(event) {
+                        if (event.target === lightbox) {
+                            closeLightbox();
+                        }
+                    });
+                }
+
+                if (lightboxClose) {
+                    lightboxClose.addEventListener('click', closeLightbox);
+                }
+
+                document.addEventListener('keydown', function(event) {
+                    if (event.key === 'Escape' && lightbox && !lightbox.hidden) {
+                        closeLightbox();
+                    }
+                });
+            })();
+        </script>
+    </body>
+</html>

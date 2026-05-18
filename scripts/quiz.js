@@ -72,6 +72,7 @@ function initEquivalentQuiz(rootId) {
     const reviewNavEl = document.getElementById('quizReviewNav') || root.querySelector('#quizReviewNav');
     const reviewRestartButton = document.getElementById('quizReviewRestart') || root.querySelector('#quizReviewRestart');
     const introTitleEl = document.getElementById('quizIntroTitle') || root.querySelector('#quizIntroTitle');
+    const indexNavEl = document.getElementById('quizIndexNav') || root.querySelector('#quizIndexNav');
     const testTitleEl = document.getElementById('quizTestTitle') || root.querySelector('#quizTestTitle');
     const timerDisplayEl = ensureTimerDisplay();
     const questionEl = root.querySelector('#quizQuestion');
@@ -3015,6 +3016,7 @@ function initEquivalentQuiz(rootId) {
         if (introEl) introEl.hidden = true;
         if (reviewEl) reviewEl.hidden = true;
         if (reviewNavEl) reviewNavEl.hidden = true;
+        if (indexNavEl) indexNavEl.hidden = true;
         if (testEl) testEl.hidden = false;
         applyFormulasLayout();
         startTimer(standardTimeMinutes);
