@@ -1367,6 +1367,31 @@ function initEquivalentQuiz(rootId) {
         return actionText;
     }
 
+    function pluralizeAction(actionText) {
+        const a = String(actionText || '').trim();
+        if (!a) return a;
+        const parts = a.split(/\s+/);
+        const first = parts[0];
+        const map = {
+            nuota: 'nuotano',
+            corre: 'corrono',
+            salta: 'saltano',
+            guarda: 'guardano',
+            parla: 'parlano',
+            apre: 'aprono',
+            chiude: 'chiudono',
+            ascolta: 'ascoltano'
+        };
+        let pluralFirst = map[first];
+        if (!pluralFirst) {
+            if (first.endsWith('a')) pluralFirst = first.slice(0, -1) + 'ano';
+            else if (first.endsWith('e')) pluralFirst = first.slice(0, -1) + 'ono';
+            else pluralFirst = first + 'ano';
+        }
+        parts[0] = pluralFirst;
+        return parts.join(' ');
+    }
+
     /**
      * Converte una formula simbolica in testo piu naturale in base alla mappa parlata.
      * @pre text e una stringa formula o testo; atomSpokenMap puo essere vuota.
@@ -1378,6 +1403,10 @@ function initEquivalentQuiz(rootId) {
         const quantifiedSet = new Set(extractQuantifiedVariables(out).map(function(v) {
             return String(v).toLowerCase();
         }));
+        const universalSet = new Set();
+        String(out).replace(/∀\s*([A-Za-z][A-Za-z0-9_]*)/g, function(_, v) { universalSet.add(String(v || '').toLowerCase()); return _; });
+        const existentialSet = new Set();
+        String(out).replace(/∃\s*([A-Za-z][A-Za-z0-9_]*)/g, function(_, v) { existentialSet.add(String(v || '').toLowerCase()); return _; });
         const spokenTokens = [];
         function stashSpoken(textChunk) {
             spokenTokens.push(textChunk);
@@ -1392,7 +1421,10 @@ function initEquivalentQuiz(rootId) {
                 const m = String(atom).match(/^([A-Za-z][A-Za-z0-9_]*)\s*\(\s*([A-Za-z][A-Za-z0-9_]*)\s*\)$/);
                 if (m) {
                     const variable = String(m[2] || '').toLowerCase();
-                    if (quantifiedSet.has(variable)) {
+                    if (universalSet.has(variable)) {
+                        return stashSpoken('non è vero che ' + pluralizeAction(formatSpokenAction(entry.azione, false)));
+                    }
+                    if (existentialSet.has(variable)) {
                         return stashSpoken('non è vero che ' + formatSpokenAction(entry.azione, false));
                     }
                 }
@@ -1410,7 +1442,10 @@ function initEquivalentQuiz(rootId) {
             if (entry) {
                 if (variable) {
                     const varLower = String(variable || '').toLowerCase();
-                    if (quantifiedSet.has(varLower)) {
+                    if (universalSet.has(varLower)) {
+                        return stashSpoken(pluralizeAction(formatSpokenAction(entry.azione, false)));
+                    }
+                    if (existentialSet.has(varLower)) {
                         return stashSpoken(formatSpokenAction(entry.azione, false));
                     }
                 }
