@@ -497,6 +497,7 @@ function initEquivalentQuiz(rootId) {
         }
         renderReviewList();
         if (reviewNavEl) reviewNavEl.hidden = false;
+        if (indexNavEl) indexNavEl.hidden = true;
     }
 
     function normalizeApiBase(rawBase) {
@@ -2907,6 +2908,7 @@ function initEquivalentQuiz(rootId) {
             reviewTitleEl.textContent = 'Feedback';
         }
         if (reviewNavEl) reviewNavEl.hidden = true;
+        if (indexNavEl) indexNavEl.hidden = true;
         renderFeedbackPage();
     }
 
@@ -2924,6 +2926,7 @@ function initEquivalentQuiz(rootId) {
         if (reviewTitleEl) reviewTitleEl.hidden = false;
         if (testEl) testEl.hidden = true;
         if (reviewEl) reviewEl.hidden = false;
+        if (indexNavEl) indexNavEl.hidden = true;
         state.mode = 'completed';
     }
 
@@ -2970,6 +2973,7 @@ function initEquivalentQuiz(rootId) {
         if (reviewNavEl) reviewNavEl.hidden = true;
         if (testEl) testEl.hidden = true;
         if (introEl) introEl.hidden = false;
+        if (indexNavEl) indexNavEl.hidden = false;
     }
 
     /**

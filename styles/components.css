@@ -345,6 +345,11 @@ body::after{
     display: none !important;
 }
 
+/* Ensure the bottom index nav respects the hidden attribute (overrides .lesson-nav) */
+#quizIndexNav[hidden] {
+    display: none !important;
+}
+
 /* Navigazione tra lezioni (precedente/successivo e switcher laterale). */
 .lesson-nav {
     position: relative;
