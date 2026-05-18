@@ -1425,8 +1425,8 @@ function initEquivalentQuiz(rootId) {
         });
 
         out = out
-            .replace(/∀\s*([A-Za-z][A-Za-z0-9_]*)/g, function(_, v) { return 'Per ogni persona, ' + String(v); })
-            .replace(/∃\s*([A-Za-z][A-Za-z0-9_]*)/g, function(_, v) { return 'Esiste una persona, ' + String(v); })
+            .replace(/∀\s*([A-Za-z][A-Za-z0-9_]*)/g, function() { return 'Per ogni persona, '; })
+            .replace(/∃\s*([A-Za-z][A-Za-z0-9_]*)/g, function() { return 'Esiste una persona, '; })
             .replace(/↔/g, ' se e solo se ')
             .replace(/→/g, ' allora ')
             .replace(/∧/g, ' e ')
