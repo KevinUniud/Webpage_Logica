@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Contrapposizione e Inversione Logica</title>
+
+        <link rel="stylesheet" href="../styles/base.css">
+        <link rel="stylesheet" href="../styles/components.css">
+        <link rel="stylesheet" href="../styles/quiz.css">
+        <link rel="stylesheet" href="../styles/themes.css">
+        <link rel="stylesheet" href="../styles/errori.css">
+</head>
+
+<body class="esiste-original">
+  <script src="../scripts/settings.js?v=2"></script>
+  <script src="../scripts/app.js"></script>
+
+<div class="container">
+
+  <h1>Contrapposizione e Inversione Logica</h1>
+
+  <!-- INTRO -->
+  <div class="rounded-box">
+
+    <h2>Frase iniziale</h2>
+
+    <div class="formula">
+      “Se Lisa è in Danimarca, allora è in Europa”
+    </div>
+
+    <div class="grid">
+
+      <div class="card">
+        <h3>Definizione dei predicati</h3>
+
+        <ul>
+          <li>P = “Lisa è in Danimarca”</li>
+          <li>Q = “Lisa è in Europa”</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Forma logica</h3>
+
+        <div class="formula">
+          P → Q
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="arrow">↓</div>
+
+  <!-- CONTRAPOSITION -->
+  <div class="rounded-box">
+
+    <h2>Contrapposizione</h2>
+
+    <p>
+      Una implicazione è logicamente equivalente
+      alla sua contrapposta:
+    </p>
+
+    <div class="equivalence">
+      P → Q ≡ ¬Q → ¬P
+    </div>
+
+    <div class="note">
+      Traduzione:
+      <br><br>
+      “Se Lisa non è in Europa,
+      allora non è in Danimarca.”
+    </div>
+
+    <p>
+      Questa frase mantiene esattamente
+      lo stesso significato logico
+      dell'implicazione originale.
+    </p>
+
+  </div>
+
+  <div class="arrow">↓</div>
+
+  <!-- WRONG INVERSE -->
+  <div class="rounded-box">
+
+    <h2>Inversa (non equivalente)</h2>
+
+    <div class="formula">
+      ¬P → ¬Q
+    </div>
+
+    <div class="note">
+      Traduzione:
+      <br><br>
+      “Se Lisa non è in Danimarca,
+      allora non è in Europa.”
+    </div>
+
+    <p>
+      Questa frase NON è equivalente
+      alla frase iniziale,
+      perché Lisa potrebbe essere
+      in un altro paese europeo.
+    </p>
+
+  </div>
+
+  <div class="arrow">↓</div>
+
+  <!-- TRUTH TABLE -->
+  <div class="section">
+
+    <h2>Tabella di Verità</h2>
+
+    <div class="table">
+    <table>
+
+      <thead>
+        <tr>
+          <th>P</th>
+          <th>Q</th>
+          <th>P → Q</th>
+          <th>¬Q → ¬P</th>
+          <th>¬P → ¬Q</th>
+        </tr>
+      </thead>
+
+      <tbody>
+
+        <tr>
+          <td>F</td>
+          <td>F</td>
+          <td>T</td>
+          <td>T</td>
+          <td>T</td>
+        </tr>
+
+        <tr>
+          <td>T</td>
+          <td>F</td>
+          <td>F</td>
+          <td>F</td>
+          <td>T</td>
+        </tr>
+
+        <tr>
+          <td>F</td>
+          <td>T</td>
+          <td>T</td>
+          <td>T</td>
+          <td>F</td>
+        </tr>
+
+        <tr>
+          <td>T</td>
+          <td>T</td>
+          <td>T</td>
+          <td>T</td>
+          <td>T</td>
+        </tr>
+
+      </tbody>
+
+    </table>
+    </div>
+
+    <div class="note">
+      Si osserva che:
+      <ul>
+        <li><strong>P → Q</strong> e <strong>¬Q → ¬P</strong> coincidono sempre.</li>
+        <li><strong>¬P → ¬Q</strong> ha invece valori differenti.</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <div class="arrow">↓</div>
+
+  <!-- DEDUCTION -->
+  <div class="section">
+
+    <h2>Dimostrazione tramite equivalenze logiche</h2>
+
+    <div class="formula">
+      P → Q
+    </div>
+
+    <div class="arrow">↓</div>
+
+    <div class="formula">
+      ¬P ∨ Q
+    </div>
+
+    <div class="note">
+      Definizione dell'implicazione:
+      <br><br>
+      P → Q ≡ ¬P ∨ Q
+    </div>
+
+    <div class="arrow">↓</div>
+
+    <div class="formula">
+      Q ∨ ¬P
+    </div>
+
+    <p class="center">
+      (commutatività dell’OR)
+    </p>
+
+    <div class="arrow">↓</div>
+
+    <div class="formula">
+      ¬(¬Q) ∨ ¬P
+    </div>
+
+    <p class="center">
+      Inseriamo una doppia negazione.
+    </p>
+
+    <div class="arrow">↓</div>
+
+    <div class="formula">
+      ¬Q → ¬P
+    </div>
+
+    <div class="note">
+      Abbiamo quindi dimostrato:
+      <br><br>
+
+      <div class="equivalence">
+        P → Q ≡ ¬Q → ¬P
+      </div>
+    </div>
+
+  </div>
+
+  <div class="arrow">↓</div>
+
+  <!-- DEFINITIONS -->
+  <div class="section">
+
+    <h2>Definizioni</h2>
+
+    <div class="definition">
+      <h3>Contrapposizione</h3>
+
+      <p>
+        È una forma di inferenza logica
+        in cui si nega e si scambia
+        antecedente e conseguente
+        di una implicazione.
+      </p>
+    </div>
+
+    <div class="definition">
+      <h3>Inversa</h3>
+
+      <p>
+        L’inversa di una implicazione
+        si ottiene negando entrambe
+        le proposizioni senza invertirle.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="arrow">↓</div>
+
+  <!-- FINAL EXAMPLE -->
+  <div class="section">
+
+    <h2>Esempio Finale</h2>
+
+    <div class="formula">
+      “Se non piove,
+      allora la strada non è bagnata”
+    </div>
+
+    <p>
+      Per rendere l'affermazione logicamente equivalente
+      alla sua versione inversa,
+      sarebbe necessario usare
+      una doppia implicazione:
+    </p>
+
+    <div class="formula">
+      P ↔ Q
+    </div>
+
+    <div class="note">
+      Il simbolo ↔ significa
+      “se e solo se”.
+      <br><br>
+      In questo caso entrambe
+      le direzioni dell'implicazione
+      risultano vere.
+    </div>
+
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -1907,7 +1907,7 @@ function initEquivalentQuiz(rootId) {
             }
             return '<li>' + colorizeAtomsInText(getCachedFormulaTransforms(item)) + '</li>';
         }).join('');
-        infoEl.innerHTML = '<p>Sapendo che:</p><ul>' + htmlItems + '</ul>';
+        infoEl.innerHTML = '<p>Sappiamo che:</p><ul>' + htmlItems + '</ul>';
         infoEl.hidden = false;
     }
 
