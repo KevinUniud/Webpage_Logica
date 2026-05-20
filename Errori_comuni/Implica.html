@@ -25,28 +25,81 @@
 
     <h2>Frase iniziale</h2>
 
-    <div class="formula">
-      “Se Lisa è in Danimarca, allora è in Europa”
-    </div>
+    <p>Si prenda la frase "Se Lisa è in Danimarca, allora è in Europa", possiamo in modo equivalente dire "Se Lisa non è in Europa allora non è in Danimarca".</p>
+    
+    <p>Vediamo invece la frase "Se Lisa non è in Danimarca allora non è in Europa", questa frase equivarrebbe a dire "Se Lisa è in Europa allora è in Danimarca" che chiaramente non rispecchia la frase iniziale.</p>
 
-    <div class="grid">
+    <p>Vediamo quindi due modi per essere sicuri di questo anche a livello logico matematico, il primo tramite tabella di verità e il secondo tramite deduzione logica.</p>
 
-      <div class="card">
-        <h3>Definizione dei predicati</h3>
+  </div>
 
-        <ul>
-          <li>P = “Lisa è in Danimarca”</li>
-          <li>Q = “Lisa è in Europa”</li>
-        </ul>
-      </div>
+  <div class="arrow">↓</div>
 
-      <div class="card">
-        <h3>Forma logica</h3>
+  <div class="rounded-box">
 
-        <div class="formula">
-          P → Q
-        </div>
-      </div>
+    <h2>Tabella di verità</h2>
+
+    <p>Sapendo che:</p>
+    <ul>
+      <li>P = È in Danimarca</li>
+      <li>Q = È in Europa</li>
+    </ul>
+
+    <div class="table">
+      <table>
+
+        <thead>
+          <tr>
+            <th>P</th>
+            <th>Q</th>
+            <th>P → Q</th>
+            <th>¬Q → ¬P</th>
+            <th>Q → P</th>
+            <th>¬P → ¬Q</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          <tr>
+            <td>F</td>
+            <td>F</td>
+            <td>T</td>
+            <td>T</td>
+            <td>T</td>
+            <td>T</td>
+          </tr>
+
+          <tr>
+            <td>T</td>
+            <td>F</td>
+            <td>F</td>
+            <td>F</td>
+            <td>T</td>
+            <td>T</td>
+          </tr>
+
+          <tr>
+            <td>F</td>
+            <td>T</td>
+            <td>T</td>
+            <td>T</td>
+            <td>F</td>
+            <td>F</td>
+          </tr>
+
+          <tr>
+            <td>T</td>
+            <td>T</td>
+            <td>T</td>
+            <td>T</td>
+            <td>T</td>
+            <td>T</td>
+          </tr>
+
+        </tbody>
+
+      </table>
 
     </div>
 
@@ -54,14 +107,72 @@
 
   <div class="arrow">↓</div>
 
+  <div class="rounded-box">
+
+    <h2>Applicazione delle Leggi di De Morgan</h2>
+
+    <p>
+      Si ricordano le seguenti equivalenze:
+    </p>
+    <ol>
+      <li>A → B ≡ ¬A ∨ B</li>
+      <li>¬¬A ≡ A</li>
+    </ol>
+
+    <div class="formula">
+      1. P → Q
+    </div>
+
+    <div class="arrow">↓</div>
+    
+    <div class="formula">
+      ¬P ∨ Q
+      <div class="formula-comment">(Scambiamo l'ordine)</div>
+    </div>
+
+    <div class="arrow">↓</div>
+
+    <div class="formula">
+      2. Q ∨ ¬P
+      <div class="formula-comment">(Vogliamo riapplicare 1. ma per poterlo fare abbiamo bisogno di un ¬ prima di Q)</div>
+    </div>
+
+    <div class="arrow">↓</div>
+
+    <div class="formula">
+      1. ¬¬Q ∨ ¬P
+      <div class="formula-comment">(¬A ∨ B ≡ A → B con  A = ¬Q, B = ¬P)</div>
+    </div>
+
+    <div class="arrow">↓</div>
+
+    <div class="formula">
+      ¬Q → ¬P
+    </div>
+
+    <p>
+      Si è quindi raggiunta la nostra equivalenza:
+    </p>
+
+    <div class="formula">
+      P → Q ≡ ¬P ∨ Q ≡ Q ∨ ¬P ≡ ¬(¬(Q)) ∨ ¬(P) ≡ ¬Q → ¬P
+    </div>
+
+    <p>
+      Cioè: P → Q ≡ ¬Q → ¬P.
+    </p>
+
+  </div>
+
   <!-- CONTRAPOSITION -->
   <div class="rounded-box">
 
     <h2>Contrapposizione</h2>
 
     <p>
-      Una implicazione è logicamente equivalente
-      alla sua contrapposta:
+      È una forma di inferenza in cui una proposizione è dedotta da un'altra e dove 
+      la prima ha per soggetto il contraddittorio del predicato della proposizione 
+      logica originale.
     </p>
 
     <div class="equivalence">
@@ -83,12 +194,14 @@
 
   </div>
 
-  <div class="arrow">↓</div>
-
-  <!-- WRONG INVERSE -->
   <div class="rounded-box">
 
     <h2>Inversa (non equivalente)</h2>
+
+    <p>
+      L'inversione di un implicazione è il risultato dell'inversione 
+      delle sue affermazioni costituenti.
+    </p>
 
     <div class="formula">
       ¬P → ¬Q
@@ -110,171 +223,9 @@
 
   </div>
 
-  <div class="arrow">↓</div>
+  <div class="rounded-box">
 
-  <!-- TRUTH TABLE -->
-  <div class="section">
-
-    <h2>Tabella di Verità</h2>
-
-    <div class="table">
-    <table>
-
-      <thead>
-        <tr>
-          <th>P</th>
-          <th>Q</th>
-          <th>P → Q</th>
-          <th>¬Q → ¬P</th>
-          <th>¬P → ¬Q</th>
-        </tr>
-      </thead>
-
-      <tbody>
-
-        <tr>
-          <td>F</td>
-          <td>F</td>
-          <td>T</td>
-          <td>T</td>
-          <td>T</td>
-        </tr>
-
-        <tr>
-          <td>T</td>
-          <td>F</td>
-          <td>F</td>
-          <td>F</td>
-          <td>T</td>
-        </tr>
-
-        <tr>
-          <td>F</td>
-          <td>T</td>
-          <td>T</td>
-          <td>T</td>
-          <td>F</td>
-        </tr>
-
-        <tr>
-          <td>T</td>
-          <td>T</td>
-          <td>T</td>
-          <td>T</td>
-          <td>T</td>
-        </tr>
-
-      </tbody>
-
-    </table>
-    </div>
-
-    <div class="note">
-      Si osserva che:
-      <ul>
-        <li><strong>P → Q</strong> e <strong>¬Q → ¬P</strong> coincidono sempre.</li>
-        <li><strong>¬P → ¬Q</strong> ha invece valori differenti.</li>
-      </ul>
-    </div>
-
-  </div>
-
-  <div class="arrow">↓</div>
-
-  <!-- DEDUCTION -->
-  <div class="section">
-
-    <h2>Dimostrazione tramite equivalenze logiche</h2>
-
-    <div class="formula">
-      P → Q
-    </div>
-
-    <div class="arrow">↓</div>
-
-    <div class="formula">
-      ¬P ∨ Q
-    </div>
-
-    <div class="note">
-      Definizione dell'implicazione:
-      <br><br>
-      P → Q ≡ ¬P ∨ Q
-    </div>
-
-    <div class="arrow">↓</div>
-
-    <div class="formula">
-      Q ∨ ¬P
-    </div>
-
-    <p class="center">
-      (commutatività dell’OR)
-    </p>
-
-    <div class="arrow">↓</div>
-
-    <div class="formula">
-      ¬(¬Q) ∨ ¬P
-    </div>
-
-    <p class="center">
-      Inseriamo una doppia negazione.
-    </p>
-
-    <div class="arrow">↓</div>
-
-    <div class="formula">
-      ¬Q → ¬P
-    </div>
-
-    <div class="note">
-      Abbiamo quindi dimostrato:
-      <br><br>
-
-      <div class="equivalence">
-        P → Q ≡ ¬Q → ¬P
-      </div>
-    </div>
-
-  </div>
-
-  <div class="arrow">↓</div>
-
-  <!-- DEFINITIONS -->
-  <div class="section">
-
-    <h2>Definizioni</h2>
-
-    <div class="definition">
-      <h3>Contrapposizione</h3>
-
-      <p>
-        È una forma di inferenza logica
-        in cui si nega e si scambia
-        antecedente e conseguente
-        di una implicazione.
-      </p>
-    </div>
-
-    <div class="definition">
-      <h3>Inversa</h3>
-
-      <p>
-        L’inversa di una implicazione
-        si ottiene negando entrambe
-        le proposizioni senza invertirle.
-      </p>
-    </div>
-
-  </div>
-
-  <div class="arrow">↓</div>
-
-  <!-- FINAL EXAMPLE -->
-  <div class="section">
-
-    <h2>Esempio Finale</h2>
+    <h2>Se e solo se</h2>
 
     <div class="formula">
       “Se non piove,
@@ -292,6 +243,8 @@
       P ↔ Q
     </div>
 
+    <p>E in questo caso la frase originale diventerebbe "La strada è bagnata se e solo se piove"</p>
+
     <div class="note">
       Il simbolo ↔ significa
       “se e solo se”.
@@ -303,6 +256,10 @@
 
   </div>
 
+</div>
+
+<div style="text-align:center; margin: 28px 0;">
+  <a class="btn-wide" href="index.html">Torna a Errori Comuni</a>
 </div>
 
 </body>
