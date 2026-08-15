@@ -46,7 +46,29 @@
     --selected-dot: #ffffff;
     --atom-true: #39ff6a;
     --atom-false: #ff3b3b;
+    --quiz-name-color-0: #7dd3fc;
+    --quiz-name-color-1: #fcb160;
+    --quiz-name-color-2: #86efac;
+    --quiz-name-color-3: #fca5a5;
 }
+
+html.font-size-12 { --base-font-size: 12px; }
+html.font-size-13 { --base-font-size: 13px; }
+html.font-size-14 { --base-font-size: 14px; }
+html.font-size-15 { --base-font-size: 15px; }
+html.font-size-16 { --base-font-size: 16px; }
+html.font-size-17 { --base-font-size: 17px; }
+html.font-size-18 { --base-font-size: 18px; }
+html.font-size-19 { --base-font-size: 19px; }
+html.font-size-20 { --base-font-size: 20px; }
+html.font-size-21 { --base-font-size: 21px; }
+html.font-size-22 { --base-font-size: 22px; }
+html.font-size-23 { --base-font-size: 23px; }
+html.font-size-24 { --base-font-size: 24px; }
+html.font-size-25 { --base-font-size: 25px; }
+html.font-size-26 { --base-font-size: 26px; }
+html.font-size-27 { --base-font-size: 27px; }
+html.font-size-28 { --base-font-size: 28px; }
 
 /* Override tema day mode. */
 html.day-mode,
@@ -75,6 +97,10 @@ body.day-mode {
     --list-marker: #666666;
     --timer-text: #666666;
     --selected-dot: #222222;
+    --quiz-name-color-0: #0057b8;
+    --quiz-name-color-1: #ca6c1e;
+    --quiz-name-color-2: #0b6e4f;
+    --quiz-name-color-3: #b91c1c;
 }
 
 /* Palette daltonismo: mapping semantico success/error/atom per accessibilita. */

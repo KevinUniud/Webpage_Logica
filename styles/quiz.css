@@ -85,6 +85,12 @@
     border-color: var(--selected-dot);
 }
 
+.lesson-radio-option:has(.lesson-radio-input:focus-visible) {
+    outline: 3px solid var(--link);
+    outline-offset: 3px;
+    border-radius: 8px;
+}
+
 .lesson-radio-text {
     font-size: 1em;
     line-height: 1.4;
@@ -177,12 +183,28 @@
 }
 
 .quiz-review-title {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px;
     margin: 0 0 8px;
     font-weight: 700;
 }
 
 .quiz-review-line {
     margin: 4px 0;
+}
+
+/* Il renderer corrente usa due span adiacenti: mantiene etichetta e valore leggibili. */
+.quiz-review-answer-row {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.quiz-review-answer-label {
+    font-weight: 700;
 }
 
 .quiz-review-hypotheses ul {
@@ -279,6 +301,10 @@
     text-align: left;
 }
 
+.quiz-timer[hidden] {
+    display: none;
+}
+
 .quiz-test-layout {
     display: block;
 }
@@ -346,8 +372,42 @@
     }
 }
 
-/* Riduce i padding laterali quando e attivo il pannello formule. */
+/* Il pannello formule non deve aggiungere padding alla pagina o restringere la shell. */
 body.quiz-formulas-mode {
-    padding-left: 5%;
-    padding-right: 5%;
+    padding-inline: 0;
+}
+.quiz-config-group {
+    display: grid;
+    gap: 0.55rem;
+    margin: 1rem 0;
+    padding: 1rem;
+}
+
+.quiz-config-group label {
+    align-items: center;
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: auto 1fr minmax(4rem, 5rem);
+}
+
+.quiz-resume-panel {
+    border: 2px solid var(--accent-color, #2b6cb0);
+    border-radius: 0.75rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+}
+
+.quiz-inline-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+@media print {
+    #quizTimerDisplay,
+    #quizReviewNav,
+    #quizIndexNav,
+    .settings-fab {
+        display: none !important;
+    }
 }

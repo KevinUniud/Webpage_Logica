@@ -284,6 +284,90 @@
         return palette[index];
     }
 
+    /**
+     * Associa in modo deterministico atomi, nomi e azioni per la forma parlata.
+     * @pre atoms, names e actions sono array; nomi e azioni possono essere vuoti.
+     * @post Lo stesso insieme di atomi e le stesse liste producono sempre la stessa mappa.
+     */
+    function buildStableSpokenMap(atoms, names, actions) {
+        const namePool = Array.isArray(names) ? names.filter(Boolean).map(String) : [];
+        const actionPool = Array.isArray(actions) ? actions.filter(Boolean).map(String) : [];
+        if (namePool.length === 0 || actionPool.length === 0) return {};
+
+        const orderedAtoms = Array.from(new Set((Array.isArray(atoms) ? atoms : [])
+            .map(normalizeNameKey)
+            .filter(Boolean)))
+            .sort();
+        const map = {};
+        const signature = orderedAtoms.join('|');
+        const nameOffset = stableStringHash('names|' + signature) % namePool.length;
+        const actionOffset = stableStringHash('actions|' + signature) % actionPool.length;
+
+        orderedAtoms.forEach(function(atom, index) {
+            map[atom] = {
+                nome: namePool[(nameOffset + index) % namePool.length],
+                azione: actionPool[(actionOffset + index) % actionPool.length]
+            };
+        });
+        return map;
+    }
+
+    /**
+     * Converte le righe di legenda API (es. "P = Luca corre") nella mappa parlata.
+     * @pre infoLines e actions sono array; le righe non conformi vengono ignorate.
+     * @post Restituisce soltanto le associazioni esplicitamente presenti nella legenda.
+     */
+    function buildSpokenMapFromLegend(infoLines, actions) {
+        const actionPool = (Array.isArray(actions) ? actions : [])
+            .filter(Boolean)
+            .map(String)
+            .sort(function(left, right) { return right.length - left.length; });
+        const map = {};
+        if (!Array.isArray(infoLines)) return map;
+
+        infoLines.forEach(function(line) {
+            const match = String(line || '').match(
+                /^\s*([A-Za-z][A-Za-z0-9_]*)(?:\s*\(\s*([A-Za-z][A-Za-z0-9_]*)\s*\))?\s*(?:=|:)\s*(.+?)\s*$/
+            );
+            if (!match) return;
+
+            const atom = normalizeNameKey(match[1]);
+            const variable = normalizeNameKey(match[2]);
+            const description = String(match[3] || '').trim();
+            const normalizedDescription = normalizeNameKey(description);
+            let action = actionPool.find(function(candidate) {
+                const normalizedAction = normalizeNameKey(candidate);
+                return normalizedDescription === normalizedAction
+                    || normalizedDescription.endsWith(' ' + normalizedAction);
+            }) || '';
+            let subject = action ? description.slice(0, description.length - action.length).trim() : '';
+
+            if (!action) {
+                const fallback = description.match(/^(\S+)\s+(.+)$/);
+                if (!fallback) return;
+                subject = fallback[1];
+                action = fallback[2].trim();
+            }
+            if (!atom || !subject || !action) return;
+
+            map[atom] = {
+                nome: variable && normalizeNameKey(subject) === variable ? 'persona' : subject,
+                azione: action
+            };
+        });
+        return map;
+    }
+
+    /**
+     * Risolve la mappa parlata privilegiando la legenda API rispetto al fallback stabile.
+     * @post Il fallback viene usato solo quando nessuna riga di legenda e valida.
+     */
+    function resolveSpokenMap(infoLines, atoms, names, actions) {
+        const legendMap = buildSpokenMapFromLegend(infoLines, actions);
+        if (Object.keys(legendMap).length > 0) return legendMap;
+        return buildStableSpokenMap(atoms, names, actions);
+    }
+
     window.quizShared = {
         differentiateParentheses: differentiateParentheses,
         parsePositiveInt: parsePositiveInt,
@@ -295,6 +379,9 @@
         pickRandom: pickRandom,
         normalizeNameKey: normalizeNameKey,
         isGenericPersonLabel: isGenericPersonLabel,
-        getDeterministicNameColor: getDeterministicNameColor
+        getDeterministicNameColor: getDeterministicNameColor,
+        buildStableSpokenMap: buildStableSpokenMap,
+        buildSpokenMapFromLegend: buildSpokenMapFromLegend,
+        resolveSpokenMap: resolveSpokenMap
     };
 })();

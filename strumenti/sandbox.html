@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="it">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#243b53">
+    <meta name="description" content="Laboratorio per costruire e analizzare formule logiche.">
+    <title>Laboratorio di logica</title>
+    <link rel="stylesheet" href="../styles/base.css">
+    <link rel="stylesheet" href="../styles/components.css">
+    <link rel="stylesheet" href="../styles/formula-construction.css">
+    <link rel="stylesheet" href="../styles/study-tools.css">
+    <link rel="stylesheet" href="../styles/themes.css">
+</head>
+<body class="sandbox-page">
+    <script src="../scripts/settings-preferences.js"></script>
+    <script src="../scripts/app-events.js"></script>
+    <script src="../scripts/data-contracts.js"></script>
+    <script src="../scripts/privacy-controls.js"></script>
+    <script src="../scripts/app-storage.js"></script>
+    <script src="../scripts/settings.js?v=3"></script>
+    <script src="../scripts/api-client.js"></script>
+    <script src="../scripts/formula-construction.js"></script>
+    <script src="../scripts/formula-construction-renderer.js"></script>
+    <script src="../scripts/formula-tree.js"></script>
+    <script src="../scripts/logic-sandbox.js"></script>
+    <script src="../scripts/app.js"></script>
+    <main id="main-content" class="study-page" tabindex="-1">
+        <header class="sandbox-header">
+            <h1>Laboratorio di logica</h1>
+            <p class="sandbox-lead">Componi una formula nella sintassi controllata, osservane la costruzione e richiedi analisi al backend. Il testo non viene mai eseguito come codice Prolog arbitrario.</p>
+        </header>
+        <section class="rounded-box sandbox-workbench" aria-labelledby="sandboxWorkbenchTitle">
+            <h2 id="sandboxWorkbenchTitle">Componi e analizza</h2>
+            <div class="sandbox-field">
+                <label for="sandboxExamples">Esempio</label>
+                <select id="sandboxExamples" class="sandbox-control">
+                    <option value="">Scegli un esempio</option>
+                    <option value="and(p,q)">p e q</option>
+                    <option value="imp(and(p,q),r)">(p e q) implica r</option>
+                    <option value="or(not(p),q)">non p oppure q</option>
+                    <option value="forall(x,imp(p(x),q(x)))">Per ogni x, se p allora q</option>
+                </select>
+            </div>
+            <div class="sandbox-field">
+                <div class="sandbox-label-row">
+                    <label for="sandboxFormula">Formula principale</label>
+                    <span id="sandboxFormulaHint" class="sandbox-hint">Massimo 500 caratteri</span>
+                </div>
+                <textarea id="sandboxFormula" class="sandbox-control sandbox-formula-input" rows="4" maxlength="500" spellcheck="false" autocapitalize="none" autocomplete="off" aria-describedby="sandboxFormulaHint">imp(and(p,q),r)</textarea>
+            </div>
+            <div class="sandbox-field">
+                <p id="sandboxSymbolsLabel" class="sandbox-control-label">Operatori</p>
+                <div id="sandboxSymbols" class="sandbox-symbols" role="group" aria-labelledby="sandboxSymbolsLabel">
+                    <button class="sandbox-symbol-button" type="button" data-symbol="and(,)">and</button>
+                    <button class="sandbox-symbol-button" type="button" data-symbol="or(,)">or</button>
+                    <button class="sandbox-symbol-button" type="button" data-symbol="not()">not</button>
+                    <button class="sandbox-symbol-button" type="button" data-symbol="imp(,)">implica</button>
+                    <button class="sandbox-symbol-button" type="button" data-symbol="iff(,)">iff</button>
+                    <button class="sandbox-symbol-button" type="button" data-symbol="forall(,)">forall</button>
+                    <button class="sandbox-symbol-button" type="button" data-symbol="exists(,)">exists</button>
+                </div>
+            </div>
+            <div class="sandbox-field">
+                <label for="sandboxCompareFormula">Seconda formula, per il confronto</label>
+                <textarea id="sandboxCompareFormula" class="sandbox-control sandbox-formula-input" rows="3" maxlength="500" spellcheck="false" autocapitalize="none" autocomplete="off">or(not(and(p,q)),r)</textarea>
+            </div>
+            <div class="sandbox-actions" role="group" aria-label="Azioni di analisi">
+                <button class="sandbox-action-button" id="sandboxVariables" type="button">Trova variabili</button>
+                <button class="sandbox-action-button" id="sandboxTruthTable" type="button">Tabella di verità</button>
+                <button class="sandbox-action-button" id="sandboxTautology" type="button">Verifica tautologia</button>
+                <button class="sandbox-action-button" id="sandboxRewrite" type="button">Percorso di riscrittura</button>
+                <button class="sandbox-action-button" id="sandboxCompare" type="button">Confronta formule</button>
+                <button class="sandbox-action-button sandbox-clear-button" id="sandboxClear" type="button">Cancella</button>
+            </div>
+            <p id="sandboxStatus" class="sandbox-status" role="status" aria-live="polite"></p>
+        </section>
+        <section class="sandbox-output-section">
+            <h2>Costruzione passo passo</h2>
+            <div id="sandboxConstruction" class="formula-construction"></div>
+        </section>
+        <section class="sandbox-output-section">
+            <h2>Albero della formula</h2>
+            <p class="sandbox-section-help">Seleziona un nodo con mouse, Invio o barra spaziatrice. L'elenco testuale precedente resta la descrizione completa.</p>
+            <div id="sandboxTree" class="sandbox-tree"></div>
+            <p id="sandboxTreeDetail" class="sandbox-tree-detail" aria-live="polite"></p>
+        </section>
+        <section class="sandbox-output-section">
+            <h2>Risultato dell'analisi</h2>
+            <div id="sandboxResult" class="rounded-box sandbox-result" tabindex="0" aria-label="Risultato dell'analisi"></div>
+        </section>
+        <nav class="rounded-box lesson-nav" aria-label="Navigazione laboratorio">
+            <a class="lesson-nav-btn" href="../lezioni/lezione-1.html">Ripassa le basi</a>
+            <a class="lesson-nav-btn" href="../index.html">Indice</a>
+        </nav>
+    </main>
+</body>
+</html>

@@ -9,14 +9,24 @@
  * @post Esistono bottone/overlay impostazioni e le preferenze correnti sono applicate al DOM.
  */
 function initGlobalSettings() {
-    const FONT_KEY = 'logic-app-font-size-px';
-    const EX_HIGHLIGHT_KEY = 'logic-exercises-highlight-atoms';
-    const EX_PARENS_KEY = 'logic-exercises-differentiate-parens';
-    const THEME_KEY = 'logic-app-theme';
-    const DALTONISM_KEY = 'logic-app-daltonism-mode';
+    const preferences = window.LogicPreferences;
+    if (!preferences) throw new Error('Modulo settings-preferences.js non caricato');
+    const privacy = window.LogicPrivacy || null;
+    const appStorage = window.LogicAppStorage && window.LogicAppStorage.instance;
+    const FONT_KEY = preferences.KEYS.font;
+    const EX_HIGHLIGHT_KEY = preferences.KEYS.highlightAtoms;
+    const EX_PARENS_KEY = preferences.KEYS.differentiateParens;
+    const THEME_KEY = preferences.KEYS.theme;
+    const DALTONISM_KEY = preferences.KEYS.daltonism;
     const MIN_FONT_PX = 12;
     const MAX_FONT_PX = 28;
     const DEFAULT_FONT_PX = 16;
+
+    function clearLegacyDemographics() {
+        ['logDataAge', 'logDataInstitution', 'logDataStem'].forEach(function(key) {
+            localStorage.removeItem(key);
+        });
+    }
 
     /**
      * Limita la dimensione font al range configurato.
@@ -24,19 +34,20 @@ function initGlobalSettings() {
      * @post Restituisce sempre un intero compreso tra MIN_FONT_PX e MAX_FONT_PX.
      */
     function clampFontPx(value) {
-        const n = Number(value);
-        if (!Number.isFinite(n)) return DEFAULT_FONT_PX;
-        return Math.min(MAX_FONT_PX, Math.max(MIN_FONT_PX, Math.round(n)));
+        return preferences.clampFontPx(value, MIN_FONT_PX, MAX_FONT_PX, DEFAULT_FONT_PX);
     }
 
     /**
-     * Applica la dimensione font base come CSS custom property globale.
+     * Applica la dimensione font base tramite una classe CSS predefinita.
      * @pre sizePx e un valore numerico o convertibile.
-     * @post --base-font-size su documentElement e aggiornato e il valore clamped viene restituito.
+     * @post documentElement espone una sola classe font-size-* e il valore clamped viene restituito.
      */
     function applyFontPx(sizePx) {
         const safe = clampFontPx(sizePx);
-        document.documentElement.style.setProperty('--base-font-size', safe + 'px');
+        for (let value = MIN_FONT_PX; value <= MAX_FONT_PX; value += 1) {
+            document.documentElement.classList.remove('font-size-' + value);
+        }
+        document.documentElement.classList.add('font-size-' + safe);
         return safe;
     }
 
@@ -46,9 +57,7 @@ function initGlobalSettings() {
      * @post Restituisce un numero clamped oppure null se non valido.
      */
     function parsePxValue(text) {
-        const parsed = Number(String(text).replace(/px/gi, '').trim());
-        if (!Number.isFinite(parsed)) return null;
-        return clampFontPx(parsed);
+        return preferences.parsePxValue(text, MIN_FONT_PX, MAX_FONT_PX, DEFAULT_FONT_PX);
     }
 
     const savedPx = localStorage.getItem(FONT_KEY);
@@ -58,31 +67,12 @@ function initGlobalSettings() {
 
     // Applica il tema giorno/notte tramite classi sul documento.
     function applyTheme(mode) {
-        const isDay = mode === 'day';
-        document.documentElement.classList.toggle('day-mode', isDay);
-        document.body.classList.toggle('day-mode', isDay);
+        return preferences.applyTheme(document, mode);
     }
 
     // Applica una palette semantica alternativa per accessibilita visiva.
     function applyDaltonism(mode) {
-        const modes = ['none', 'protanopia', 'deuteranopia', 'tritanopia', 'achromatopsia'];
-        const safeMode = modes.indexOf(mode) >= 0 ? mode : 'none';
-        const root = document.documentElement;
-        const body = document.body;
-
-        modes.forEach(function(item) {
-            if (item === 'none') return;
-            const cls = 'daltonism-' + item;
-            root.classList.remove(cls);
-            body.classList.remove(cls);
-        });
-
-        if (safeMode !== 'none') {
-            const cls = 'daltonism-' + safeMode;
-            root.classList.add(cls);
-            body.classList.add(cls);
-        }
-        return safeMode;
+        return preferences.applyDaltonism(document, mode);
     }
 
     const savedTheme = localStorage.getItem(THEME_KEY) || 'night';
@@ -95,7 +85,7 @@ function initGlobalSettings() {
      * @post Restituisce true solo se il valore salvato e "1".
      */
     function readBool(key) {
-        return localStorage.getItem(key) === '1';
+        return preferences.readBool(localStorage, key);
     }
 
     /**
@@ -104,7 +94,7 @@ function initGlobalSettings() {
      * @post localStorage[key] viene aggiornato con "1" o "0".
      */
     function writeBool(key, value) {
-        localStorage.setItem(key, value ? '1' : '0');
+        preferences.writeBool(localStorage, key, value);
     }
 
     // Notifica gli script degli esercizi quando cambiano le opzioni locali.
@@ -156,6 +146,9 @@ function initGlobalSettings() {
 
     const exercisesTitle = document.createElement('h3');
     exercisesTitle.textContent = 'Opzioni esercitazione:';
+
+    const privacyTitle = document.createElement('h3');
+    privacyTitle.textContent = 'Dati e privacy:';
 
     const fontRow = document.createElement('div');
     fontRow.className = 'settings-row';
@@ -282,6 +275,79 @@ function initGlobalSettings() {
     exercisesRow2.appendChild(parensInput);
     exercisesRow2.appendChild(parensLabel);
 
+    const privacyValues = privacy ? privacy.read() : { localData: false, anonymousFeedback: false, includeDemographics: false };
+    const localDataRow = document.createElement('div');
+    localDataRow.className = 'settings-row';
+    const localDataInput = document.createElement('input');
+    localDataInput.id = 'settingsLocalData';
+    localDataInput.type = 'checkbox';
+    localDataInput.checked = privacyValues.localData;
+    const localDataLabel = document.createElement('label');
+    localDataLabel.setAttribute('for', localDataInput.id);
+    localDataLabel.textContent = 'Salva localmente sessioni e progressi';
+    localDataRow.appendChild(localDataInput);
+    localDataRow.appendChild(localDataLabel);
+
+    const feedbackDataRow = document.createElement('div');
+    feedbackDataRow.className = 'settings-row';
+    const feedbackDataInput = document.createElement('input');
+    feedbackDataInput.id = 'settingsAnonymousFeedback';
+    feedbackDataInput.type = 'checkbox';
+    feedbackDataInput.checked = privacyValues.anonymousFeedback;
+    const feedbackDataLabel = document.createElement('label');
+    feedbackDataLabel.setAttribute('for', feedbackDataInput.id);
+    feedbackDataLabel.textContent = 'Consenti invio feedback anonimo';
+    feedbackDataRow.appendChild(feedbackDataInput);
+    feedbackDataRow.appendChild(feedbackDataLabel);
+
+    const demographicsRow = document.createElement('div');
+    demographicsRow.className = 'settings-row';
+    const demographicsInput = document.createElement('input');
+    demographicsInput.id = 'settingsIncludeDemographics';
+    demographicsInput.type = 'checkbox';
+    demographicsInput.checked = privacyValues.includeDemographics;
+    demographicsInput.disabled = !privacyValues.anonymousFeedback;
+    const demographicsLabel = document.createElement('label');
+    demographicsLabel.setAttribute('for', demographicsInput.id);
+    demographicsLabel.textContent = 'Includi dati demografici nel feedback';
+    demographicsRow.appendChild(demographicsInput);
+    demographicsRow.appendChild(demographicsLabel);
+
+    const privacyHelp = document.createElement('p');
+    privacyHelp.className = 'settings-help';
+    privacyHelp.textContent = 'I dati locali restano in questo browser. Nessun feedback viene inviato senza consenso.';
+    const privacyInfoLink = document.createElement('a');
+    const settingsScript = document.querySelector('script[src*="settings.js"]');
+    privacyInfoLink.href = settingsScript ? new URL('../privacy.html', settingsScript.src).href : 'privacy.html';
+    privacyInfoLink.textContent = ' Leggi l’informativa completa.';
+    privacyHelp.appendChild(privacyInfoLink);
+
+    const privacyActions = document.createElement('div');
+    privacyActions.className = 'settings-actions settings-privacy-actions';
+    const exportDataButton = document.createElement('button');
+    exportDataButton.type = 'button';
+    exportDataButton.className = 'btn-wide';
+    exportDataButton.textContent = 'Esporta dati';
+    const deleteSessionsButton = document.createElement('button');
+    deleteSessionsButton.type = 'button';
+    deleteSessionsButton.className = 'btn-wide';
+    deleteSessionsButton.textContent = 'Elimina sessioni';
+    const deleteProgressButton = document.createElement('button');
+    deleteProgressButton.type = 'button';
+    deleteProgressButton.className = 'btn-wide';
+    deleteProgressButton.textContent = 'Elimina progressi';
+    const deleteDataButton = document.createElement('button');
+    deleteDataButton.type = 'button';
+    deleteDataButton.className = 'btn-wide';
+    deleteDataButton.textContent = 'Elimina dati locali';
+    const privacyStatus = document.createElement('p');
+    privacyStatus.className = 'settings-help';
+    privacyStatus.setAttribute('aria-live', 'polite');
+    privacyActions.appendChild(exportDataButton);
+    privacyActions.appendChild(deleteSessionsButton);
+    privacyActions.appendChild(deleteProgressButton);
+    privacyActions.appendChild(deleteDataButton);
+
     const actions = document.createElement('div');
     actions.className = 'settings-actions';
 
@@ -308,6 +374,13 @@ function initGlobalSettings() {
     modal.appendChild(exercisesTitle);
     modal.appendChild(exercisesRow1);
     modal.appendChild(exercisesRow2);
+    modal.appendChild(privacyTitle);
+    modal.appendChild(localDataRow);
+    modal.appendChild(feedbackDataRow);
+    modal.appendChild(demographicsRow);
+    modal.appendChild(privacyHelp);
+    modal.appendChild(privacyActions);
+    modal.appendChild(privacyStatus);
     modal.appendChild(actions);
     overlay.appendChild(modal);
 
@@ -448,6 +521,105 @@ function initGlobalSettings() {
     parensInput.addEventListener('change', function() {
         writeBool(EX_PARENS_KEY, Boolean(parensInput.checked));
         publishExerciseSettings();
+    });
+
+    localDataInput.addEventListener('change', function() {
+        if (privacy) privacy.update({ localData: localDataInput.checked });
+        privacyStatus.textContent = localDataInput.checked
+            ? 'Salvataggio locale attivato.'
+            : 'Salvataggio locale disattivato. I dati esistenti non sono stati eliminati.';
+    });
+
+    feedbackDataInput.addEventListener('change', function() {
+        demographicsInput.disabled = !feedbackDataInput.checked;
+        if (!feedbackDataInput.checked) {
+            demographicsInput.checked = false;
+            clearLegacyDemographics();
+        }
+        if (privacy) {
+            privacy.update({
+                anonymousFeedback: feedbackDataInput.checked,
+                includeDemographics: demographicsInput.checked
+            });
+        }
+        privacyStatus.textContent = feedbackDataInput.checked
+            ? 'Invio feedback anonimo consentito.'
+            : 'Invio feedback disattivato.';
+    });
+
+    demographicsInput.addEventListener('change', function() {
+        if (!demographicsInput.checked) clearLegacyDemographics();
+        if (privacy) privacy.update({ includeDemographics: demographicsInput.checked });
+        privacyStatus.textContent = demographicsInput.checked
+            ? 'I dati demografici saranno inclusi nel feedback.'
+            : 'I dati demografici saranno esclusi dal feedback.';
+    });
+
+    exportDataButton.addEventListener('click', async function() {
+        if (!appStorage) {
+            privacyStatus.textContent = 'Archivio locale non disponibile.';
+            return;
+        }
+        const records = await appStorage.exportAll();
+        const blob = new Blob([JSON.stringify({ version: 1, exportedAt: Date.now(), records: records }, null, 2)], {
+            type: 'application/json'
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'testlogica-dati.json';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        privacyStatus.textContent = 'Dati esportati.';
+    });
+
+    deleteDataButton.addEventListener('click', async function() {
+        if (window.LogicAppEvents) window.LogicAppEvents.emit('privacy:data-clearing');
+        try {
+            clearLegacyDemographics();
+            if (appStorage) await appStorage.clearAll();
+            privacyStatus.textContent = 'Sessioni, progressi e dati demografici locali eliminati.';
+        } catch (error) {
+            privacyStatus.textContent = 'Non è stato possibile eliminare tutti i dati locali. Riprova.';
+            if (window.LogicLogger) window.LogicLogger.error('Cancellazione dati locali fallita:', error);
+        } finally {
+            if (window.LogicAppEvents) window.LogicAppEvents.emit('privacy:data-cleared');
+        }
+    });
+
+    deleteSessionsButton.addEventListener('click', async function() {
+        if (window.LogicAppEvents) window.LogicAppEvents.emit('privacy:sessions-clearing');
+        try {
+            if (appStorage) {
+                await appStorage.clearType('sessions');
+                await appStorage.clearType('sessionHistory');
+            }
+            privacyStatus.textContent = 'Sessioni attive e concluse eliminate.';
+        } catch (error) {
+            privacyStatus.textContent = 'Non è stato possibile eliminare tutte le sessioni locali. Riprova.';
+            if (window.LogicLogger) window.LogicLogger.error('Cancellazione sessioni locali fallita:', error);
+        } finally {
+            if (window.LogicAppEvents) window.LogicAppEvents.emit('privacy:sessions-cleared');
+        }
+    });
+
+    deleteProgressButton.addEventListener('click', async function() {
+        if (window.LogicAppEvents) window.LogicAppEvents.emit('privacy:progress-clearing');
+        try {
+            if (appStorage) {
+                await appStorage.clearType('attempts');
+                await appStorage.clearType('errors');
+                await appStorage.clearType('lessonProgress');
+            }
+            privacyStatus.textContent = 'Tentativi, errori e progresso delle lezioni eliminati.';
+        } catch (error) {
+            privacyStatus.textContent = 'Non è stato possibile eliminare tutti i progressi locali. Riprova.';
+            if (window.LogicLogger) window.LogicLogger.error('Cancellazione progressi locali fallita:', error);
+        } finally {
+            if (window.LogicAppEvents) window.LogicAppEvents.emit('privacy:progress-cleared');
+        }
     });
 
     themeSelect.addEventListener('change', function() {

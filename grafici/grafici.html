@@ -8,11 +8,17 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="stylesheet" href="../styles/base.css">
         <link rel="stylesheet" href="../styles/components.css">
+        <link rel="stylesheet" href="../styles/graphs.css">
         <link rel="stylesheet" href="../styles/quiz.css">
         <link rel="stylesheet" href="../styles/themes.css">
     </head>
     <body>
-        <script src="../scripts/settings.js?v=2"></script>
+        <script src="../scripts/settings-preferences.js"></script>
+        <script src="../scripts/app-events.js"></script>
+        <script src="../scripts/data-contracts.js"></script>
+        <script src="../scripts/privacy-controls.js"></script>
+        <script src="../scripts/app-storage.js"></script>
+        <script src="../scripts/settings.js?v=3"></script>
         <script src="../scripts/app.js"></script>
 
         <main class="graphs-page" id="main-content" tabindex="-1">
@@ -170,7 +176,7 @@
         </main>
 
         <div class="graphs-lightbox" id="graphsLightbox" hidden>
-            <div class="graphs-lightbox-panel" role="dialog" aria-modal="true" aria-labelledby="graphsLightboxTitle">
+            <div class="graphs-lightbox-panel" role="dialog" aria-modal="true" aria-labelledby="graphsLightboxTitle" aria-describedby="graphsLightboxCaption" tabindex="-1">
                 <div class="graphs-lightbox-header">
                     <h2 class="graphs-lightbox-title" id="graphsLightboxTitle">Grafico ingrandito</h2>
                     <button class="graphs-lightbox-close" type="button" id="graphsLightboxClose" aria-label="Chiudi grafico ingrandito">&times;</button>
@@ -180,81 +186,6 @@
             </div>
         </div>
 
-        <script>
-            (function() {
-                const images = Array.from(document.querySelectorAll('.graph-card img'));
-                const lightbox = document.getElementById('graphsLightbox');
-                const lightboxImage = document.getElementById('graphsLightboxImage');
-                const lightboxCaption = document.getElementById('graphsLightboxCaption');
-                const lightboxClose = document.getElementById('graphsLightboxClose');
-                const lightboxTitle = document.getElementById('graphsLightboxTitle');
-                const activeImageClass = 'is-lightbox-active';
-                let lastFocusedElement = null;
-
-                function openLightbox(image) {
-                    if (!lightbox || !lightboxImage || !lightboxCaption || !lightboxClose || !lightboxTitle) return;
-                    lastFocusedElement = document.activeElement;
-                    lightboxImage.src = image.currentSrc || image.src;
-                    lightboxImage.alt = image.alt || '';
-                    lightboxCaption.textContent = image.alt || 'Grafico ingrandito';
-                    lightboxTitle.textContent = image.alt || 'Grafico ingrandito';
-                    lightbox.hidden = false;
-                    document.body.classList.add('graphs-modal-open');
-                    lightboxClose.focus();
-                    image.classList.add(activeImageClass);
-                }
-
-                function closeLightbox() {
-                    if (!lightbox || lightbox.hidden) return;
-                    lightbox.hidden = true;
-                    document.body.classList.remove('graphs-modal-open');
-                    if (lightboxImage) {
-                        lightboxImage.src = '';
-                        lightboxImage.alt = '';
-                    }
-                    if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
-                        lastFocusedElement.focus();
-                    }
-                    images.forEach(function(image) {
-                        image.classList.remove(activeImageClass);
-                    });
-                }
-
-                images.forEach(function(image) {
-                    image.setAttribute('role', 'button');
-                    image.setAttribute('tabindex', '0');
-                    image.setAttribute('aria-label', 'Ingrandisci grafico: ' + (image.alt || 'grafico'));
-
-                    image.addEventListener('click', function() {
-                        openLightbox(image);
-                    });
-
-                    image.addEventListener('keydown', function(event) {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault();
-                            openLightbox(image);
-                        }
-                    });
-                });
-
-                if (lightbox) {
-                    lightbox.addEventListener('click', function(event) {
-                        if (event.target === lightbox) {
-                            closeLightbox();
-                        }
-                    });
-                }
-
-                if (lightboxClose) {
-                    lightboxClose.addEventListener('click', closeLightbox);
-                }
-
-                document.addEventListener('keydown', function(event) {
-                    if (event.key === 'Escape' && lightbox && !lightbox.hidden) {
-                        closeLightbox();
-                    }
-                });
-            })();
-        </script>
+        <script src="../scripts/graphs-gallery.js"></script>
     </body>
 </html>

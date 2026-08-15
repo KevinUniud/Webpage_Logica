@@ -10,6 +10,7 @@
  * @post Event listener e stato interno vengono inizializzati; il quiz entra in intro o in caricamento diretto.
  */
 function initEquivalentQuiz(rootId) {
+    const logger = window.LogicLogger;
         /**
          * Restituisce le opzioni attive (testi) mostrate all'utente per le domande.
          * @returns {string[]} Array dei testi delle opzioni attuali.
@@ -45,6 +46,9 @@ function initEquivalentQuiz(rootId) {
         el = document.createElement('div');
         el.id = 'quizTimerDisplay';
         el.className = 'quiz-timer';
+        el.setAttribute('role', 'timer');
+        el.setAttribute('aria-label', 'Tempo rimanente');
+        el.setAttribute('aria-live', 'off');
         el.hidden = true;
         el.textContent = '20:00';
         document.body.appendChild(el);
@@ -59,10 +63,21 @@ function initEquivalentQuiz(rootId) {
     const colorAtomsInput = root.querySelector('#quizColorAtoms');
     const spokenLanguageInput = root.querySelector('#quizSpokenLanguage');
     const showWrongActionImagesInput = root.querySelector('#quizShowWrongActionImages');
+    const presetSelect = root.querySelector('#quizPreset');
+    const modeSelect = root.querySelector('#quizMode');
+    const difficultySelect = root.querySelector('#quizDifficulty');
+    const adaptiveInput = root.querySelector('#quizAdaptive');
+    const showConstructionInput = root.querySelector('#quizShowConstruction');
+    const adaptiveNoticeEl = root.querySelector('#quizAdaptiveNotice');
+    const resumePanelEl = root.querySelector('#quizResumePanel');
+    const resumeSummaryEl = root.querySelector('#quizResumeSummary');
+    const resumeButton = root.querySelector('#quizResumeButton');
+    const discardSessionButton = root.querySelector('#quizDiscardSessionButton');
     const logDataAgeInput = root.querySelector('#quizLogDataAge');
     const logDataInstitutionSelect = root.querySelector('#quizLogDataInstitution');
     const logDataStemRow = root.querySelector('#quizLogDataStemRow');
     const logDataStemSelect = root.querySelector('#quizLogDataStem');
+    const logDataSection = root.querySelector('#quizLogDataSection');
     const testEl = root.querySelector('#quizTest');
     const splitLayoutEl = document.getElementById('quizTestLayout') || root.querySelector('#quizTestLayout');
     const formulasPaneEl = document.getElementById('quizFormulasPane') || root.querySelector('#quizFormulasPane');
@@ -80,24 +95,26 @@ function initEquivalentQuiz(rootId) {
     const optionsEl = root.querySelector('#quizOptions');
     const actionButton = root.querySelector('#quizActionButton');
     const statusEl = root.querySelector('#quizStatus');
+    const formulaTransformationEl = root.querySelector('#quizFormulaTransformation');
     const wrongActionImagesEl = root.querySelector('#quizWrongActionImages');
+    const exportJsonButton = document.getElementById('quizExportJson');
+    const exportCsvButton = document.getElementById('quizExportCsv');
+    const printResultsButton = document.getElementById('quizPrintResults');
 
     if (!questionEl || !infoEl || !optionsEl || !actionButton || !statusEl) return;
 
     const DEFAULT_EXERCISES = 10;
     const DEFAULT_TIME_MINUTES = 20;
-    const TARGET_ATOM_COUNT = 3;
     let currentExercise = 0;
     let totalExercises = DEFAULT_EXERCISES;
     let standardTimeMinutes = DEFAULT_TIME_MINUTES;
-    let timerSecondsRemaining = DEFAULT_TIME_MINUTES * 60;
-    let timerIntervalId = null;
     const reviewResults = [];
     let currentQuestionInfo = [];
     let currentTruthAssignments = {};
     let atomSpokenMap = {};
     let currentSpokenNameColors = {};
     let currentQuestionText = '';
+    let currentQuestionId = '';
     let currentImageFormulaSteps = { question: [], correct: [], wrongByFormula: {} };
     let quantifierNegationTarget = 0;
     let quantifierNegationUsed = 0;
@@ -108,69 +125,36 @@ function initEquivalentQuiz(rootId) {
     let batchCacheIndex = 0;
     let batchInitialized = false;
     let batchOperationsPlan = [];
-    const FEEDBACK_FIELDS = [
-        { id: 'expectation', payloadKey: 'Aspettative test', label: 'Il test è andato bene:' },
-        { id: 'aidsUtility', payloadKey: 'Utilità ausili', label: 'Gli ausili mi hanno aiutato a svolgere il test:' },
-        { id: 'lessonsUtility', payloadKey: 'Utilità lezioni', label: 'Le lezioni di introduzione sono state utili per affrontare il test:' },
-        { id: 'testDifficulty', payloadKey: 'Difficoltà test', label: 'I test sono stati difficili:' },
-        { id: 'control', payloadKey: 'Controllo', label: 'Gli ausili non sono stati utili durante il test:' }
-    ];
+    const FEEDBACK_FIELDS = window.LogicQuizFeedback.FIELDS;
     let feedbackValues = createEmptyFeedbackValues();
+    let currentQuizConfig = window.LogicDataContracts.normalizeQuizConfig({});
+    let activeSession = null;
+    let resumeSelectedIndex = null;
+    const recordedAttempts = [];
+    let adaptiveMessage = '';
+    let quizMaximumQuestions = 100;
+    const sessionManager = window.LogicQuizSession.create({ storage: window.LogicAppStorage.instance });
+    const errorNotebook = window.LogicErrorNotebook.create({ storage: window.LogicAppStorage.instance });
     const reviewSubmissionState = {
         inFlight: false,
         sent: false
     };
 
     /**
-     * Converte un timestamp in formato leggibile: anno/mese/giorno ore:minuti:secondi
-     * @param {number} timestamp - Timestamp in millisecondi
-     * @returns {string} Data formattata
-     */
-    function formatDateTime(timestamp) {
-        if (!timestamp || typeof timestamp !== 'number') return '';
-        const date = new Date(timestamp);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        const seconds = String(date.getSeconds()).padStart(2, '0');
-        return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
-    }
-
-    /**
-     * Legge la modalità di logging e la scuola selezionata dalle impostazioni.
-     * @returns {Object} Oggetto con mode e school
+     * Legge i dati demografici direttamente dai controlli correnti del form.
+     * @returns {Object} Oggetto con age, institution e stem, se consentiti.
      */
     function getLogDataSettings() {
-        const age = localStorage.getItem('logDataAge') || '';
-        const institution = localStorage.getItem('logDataInstitution') || '';
-        const stem = localStorage.getItem('logDataStem') || '';
-        
-        return {
-            age: age,
-            institution: institution,
-            stem: stem
-        };
-    }
-
-    function getLogDataInstitutionLabel(value) {
-        const labels = {
-            'triennale': 'Corso di laurea Triennale',
-            'magistrale': 'Corso di laurea Magistrale',
-            'ciclo-unico': 'Ciclo unico',
-            'liceo-scientifico': 'Liceo scientifico',
-            'altro-liceo': 'Altro liceo',
-            'iti': 'Istituto tecnico industriale',
-            'altri-tecnici': 'Altri istituti tecnici',
-            'professionale': 'Istituto professionale',
-            'altro': 'Altro'
-        };
-        return labels[String(value || '')] || '';
+        if (!window.LogicPrivacy.includeDemographics()) return {};
+        return window.LogicQuizReport.readDemographics({
+            age: logDataAgeInput,
+            institution: logDataInstitutionSelect,
+            stem: logDataStemRow && logDataStemRow.hidden ? null : logDataStemSelect
+        });
     }
 
     function isLogDataStemRequired(institutionValue) {
-        return ['triennale', 'magistrale', 'ciclo-unico'].indexOf(String(institutionValue || '')) >= 0;
+        return window.LogicQuizReport.isStemRequired(institutionValue);
     }
 
     function syncLogDataStemVisibility() {
@@ -179,36 +163,27 @@ function initEquivalentQuiz(rootId) {
         logDataStemRow.hidden = !required;
         if (!required) {
             logDataStemSelect.value = '';
-            localStorage.removeItem('logDataStem');
         }
     }
 
-    function commitLogDataSettings() {
+    function syncLogDataSettings() {
         if (logDataAgeInput) {
             const rawAge = String(logDataAgeInput.value || '').trim();
-            if (rawAge === '') {
-                localStorage.removeItem('logDataAge');
-            } else {
+            if (rawAge !== '') {
                 const ageValue = parseInt(rawAge, 10);
                 if (Number.isFinite(ageValue) && ageValue > 0 && ageValue < 200) {
-                    localStorage.setItem('logDataAge', String(ageValue));
                     logDataAgeInput.value = String(ageValue);
                 }
             }
         }
 
         if (logDataInstitutionSelect) {
-            const institutionValue = String(logDataInstitutionSelect.value || '');
-            localStorage.setItem('logDataInstitution', institutionValue);
             syncLogDataStemVisibility();
-        }
-
-        if (logDataStemSelect && !logDataStemRow?.hidden) {
-            localStorage.setItem('logDataStem', String(logDataStemSelect.value || ''));
         }
     }
 
     function validateLogDataSettings() {
+        if (!window.LogicPrivacy.includeDemographics()) return true;
         const ageValue = logDataAgeInput ? String(logDataAgeInput.value || '').trim() : '';
         const institutionValue = logDataInstitutionSelect ? String(logDataInstitutionSelect.value || '') : '';
         const stemValue = logDataStemSelect ? String(logDataStemSelect.value || '') : '';
@@ -231,89 +206,41 @@ function initEquivalentQuiz(rootId) {
             return false;
         }
 
-        commitLogDataSettings();
+        syncLogDataSettings();
         return true;
     }
 
     function createEmptyFeedbackValues() {
-        return {
-            expectation: '',
-            aidsUtility: '',
-            lessonsUtility: '',
-            testDifficulty: '',
-            control: ''
-        };
+        return window.LogicQuizReport.emptyFeedback();
     }
 
     function isFeedbackComplete() {
-        return FEEDBACK_FIELDS.every(function(field) {
-            return /^[1-5]$/.test(String(feedbackValues[field.id] || ''));
-        });
+        return window.LogicQuizFeedback.isComplete(feedbackValues);
     }
 
     function buildReviewReport(feedbackMap) {
-        const logSettings = getLogDataSettings();
-        const now = Date.now();
-        const tempoTotale = quizStartTimestamp ? ((now - quizStartTimestamp) / 1000).toFixed(2) + 's' : '';
-        const opzioniAttiveGlobali = reviewResults.length > 0 ? reviewResults[0].opzioniAttive : {};
-
-        const feedbackPayload = {};
-        FEEDBACK_FIELDS.forEach(function(field) {
-            feedbackPayload[field.payloadKey] = String(feedbackMap[field.id] || '');
+        return window.LogicQuizReport.buildReport({
+            demographics: getLogDataSettings(),
+            feedback: feedbackMap,
+            feedbackFields: FEEDBACK_FIELDS,
+            results: reviewResults,
+            startedAt: quizStartTimestamp
         });
-
-        const initialData = {
-            "Tempo inizio esercitazione": formatDateTime(quizStartTimestamp),
-            "Tempo totale": tempoTotale,
-            "Totale domande": reviewResults.length,
-            "Totale domande corrette": reviewResults.filter(function(e) { return e.isCorrect; }).length,
-            "Totale domande errate": reviewResults.filter(function(e) { return !e.isCorrect; }).length,
-            "Opzioni attive": opzioniAttiveGlobali
-        };
-        
-        // Aggiungi i nuovi campi log dati se disponibili
-        if (logSettings.age) initialData["Età"] = logSettings.age;
-        if (logSettings.institution) initialData["Istituto di appartenenza"] = getLogDataInstitutionLabel(logSettings.institution);
-        if (logSettings.stem) initialData["Indirizzo"] = logSettings.stem;
-
-        return {
-            "Initial Data": initialData,
-            "Domande": reviewResults.map(function(entry, idx) {
-                return {
-                    ["Domanda nº " + (idx + 1)]: {
-                        "Tipologia": entry.tipoDomanda || '',
-                        "Tempo impiegato per rispondere": typeof entry.tempoRisposta === 'string' ? entry.tempoRisposta : '',
-                        "Risposta è corretta": entry.isCorrect ? 'Sì' : 'No',
-                        "Domanda": entry.question,
-                        "Risposte": entry.risposteMostrate || '',
-                        "Riposta utente": entry.selectedAnswer,
-                        "Riposta corretta": entry.correctAnswer
-                    }
-                };
-            }),
-            "Feedback": feedbackPayload
-        };
     }
 
     function submitReviewReport(report) {
+        if (!window.LogicPrivacy.canSendFeedback()) return Promise.resolve(false);
         if (reviewSubmissionState.inFlight || reviewSubmissionState.sent) {
             return Promise.resolve(reviewSubmissionState.sent);
         }
 
         reviewSubmissionState.inFlight = true;
-        return fetch('/api/revisione', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(report)
-        })
-        .then(function(res) { return res.json(); })
-        .then(function(data) {
+        return window.LogicApi.postJson('/api/revisione', report)
+        .then(function() {
             reviewSubmissionState.sent = true;
-            console.log('Dati revisione inviati:', data);
             return true;
         })
-        .catch(function(err) {
-            console.error('Errore invio revisione:', err);
+        .catch(function() {
             return false;
         })
         .finally(function() {
@@ -358,6 +285,12 @@ function initEquivalentQuiz(rootId) {
         if (!reviewListEl) return;
         reviewListEl.innerHTML = '';
         reviewListEl.classList.add('quiz-feedback-panel');
+
+        const transmissionSummary = document.createElement('p');
+        transmissionSummary.className = 'quiz-review-line';
+        transmissionSummary.textContent = 'Confermando invierai valutazioni 1-5 e risultati del quiz a /api/revisione. Dati demografici: '
+            + (window.LogicPrivacy.includeDemographics() ? 'inclusi' : 'esclusi') + '.';
+        reviewListEl.appendChild(transmissionSummary);
 
         const radioNodes = [];
         FEEDBACK_FIELDS.forEach(function(field) {
@@ -431,22 +364,61 @@ function initEquivalentQuiz(rootId) {
         maybeAutoSubmitFeedback(statusLine, continueButton, radioNodes, false);
     }
 
+    function appendReviewSummary() {
+        const total = reviewResults.length;
+        const correct = reviewResults.filter(function(entry) { return entry.isCorrect; }).length;
+        const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
+        const summary = document.createElement('section');
+        summary.className = 'quiz-review-summary';
+        summary.setAttribute('aria-label', 'Risultato complessivo');
+
+        const score = document.createElement('div');
+        score.className = 'quiz-review-score';
+        score.textContent = String(percentage) + '%';
+        score.setAttribute('aria-hidden', 'true');
+
+        const copy = document.createElement('div');
+        const title = document.createElement('h2');
+        title.textContent = String(correct) + ' risposte corrette su ' + String(total);
+        const note = document.createElement('p');
+        note.textContent = correct === total && total > 0
+            ? 'Ottimo lavoro: hai completato il quiz senza errori.'
+            : 'Rivedi le risposte qui sotto e apri i passaggi per capire dove migliorare.';
+        copy.appendChild(title);
+        copy.appendChild(note);
+        summary.appendChild(score);
+        summary.appendChild(copy);
+        reviewListEl.appendChild(summary);
+
+        const sectionTitle = document.createElement('h2');
+        sectionTitle.className = 'quiz-review-section-title';
+        sectionTitle.textContent = 'Rivedi le risposte';
+        reviewListEl.appendChild(sectionTitle);
+    }
+
     function renderReviewList() {
         if (!reviewListEl) return;
         reviewListEl.innerHTML = '';
         reviewListEl.classList.remove('quiz-feedback-panel');
+        appendReviewSummary();
 
         reviewResults.forEach(function(entry) {
-            const item = document.createElement('div');
-            item.className = 'quiz-review-item';
+            const item = document.createElement('article');
+            item.className = 'quiz-review-item ' + (entry.isCorrect ? 'is-correct' : 'is-wrong');
 
-            const title = document.createElement('p');
+            const title = document.createElement('h3');
             title.className = 'quiz-review-title';
-            title.textContent = 'Domanda ' + String(entry.number);
+            const titleText = document.createElement('span');
+            titleText.textContent = 'Domanda ' + String(entry.number);
+            const resultBadge = document.createElement('span');
+            resultBadge.className = 'quiz-review-badge';
+            resultBadge.textContent = entry.isCorrect ? 'Corretta' : 'Da rivedere';
+            title.appendChild(titleText);
+            title.appendChild(resultBadge);
 
             const questionLine = document.createElement('p');
-            questionLine.className = 'quiz-review-line';
-            questionLine.textContent = 'Testo domanda: ' + entry.question;
+            questionLine.className = 'quiz-review-line quiz-review-question';
+            questionLine.textContent = entry.question;
 
             let infoBlock = null;
             if (Array.isArray(entry.infoLines) && entry.infoLines.length > 0) {
@@ -469,8 +441,11 @@ function initEquivalentQuiz(rootId) {
             }
 
             const userLine = document.createElement('p');
-            userLine.className = 'quiz-review-line';
-            userLine.appendChild(document.createTextNode('Risposta data: '));
+            userLine.className = 'quiz-review-line quiz-review-answer-row';
+            const userLabel = document.createElement('span');
+            userLabel.className = 'quiz-review-answer-label';
+            userLabel.textContent = 'La tua risposta';
+            userLine.appendChild(userLabel);
 
             const userAnswer = document.createElement('span');
             userAnswer.className = 'quiz-review-answer ' + (entry.isCorrect ? 'is-correct' : 'is-wrong');
@@ -478,14 +453,52 @@ function initEquivalentQuiz(rootId) {
             userLine.appendChild(userAnswer);
 
             const correctLine = document.createElement('p');
-            correctLine.className = 'quiz-review-line';
-            correctLine.textContent = 'Risposta corretta: ' + entry.correctAnswer;
+            correctLine.className = 'quiz-review-line quiz-review-answer-row';
+            const correctLabel = document.createElement('span');
+            correctLabel.className = 'quiz-review-answer-label';
+            correctLabel.textContent = 'Risposta corretta';
+            const correctAnswer = document.createElement('span');
+            correctAnswer.textContent = entry.correctAnswer;
+            correctLine.appendChild(correctLabel);
+            correctLine.appendChild(correctAnswer);
 
             item.appendChild(title);
             item.appendChild(questionLine);
             if (infoBlock) item.appendChild(infoBlock);
             item.appendChild(userLine);
             item.appendChild(correctLine);
+            if (entry.transformationCorrect || entry.transformationSelected) {
+                const transformationBlock = document.createElement('div');
+                transformationBlock.className = 'formula-transformation';
+                item.appendChild(transformationBlock);
+                window.LogicFormulaTransformationRenderer.create({
+                    container: transformationBlock,
+                    formatFormula: function(formula) {
+                        return prologToLogical(String(formula || '')) || String(formula || '');
+                    }
+                }).show({
+                    correct: entry.transformationCorrect,
+                    selected: entry.transformationSelected,
+                    selectedIsCorrect: entry.isCorrect
+                });
+            }
+            if (entry.constructionCorrect) {
+                const treeDetails = document.createElement('details');
+                const treeSummary = document.createElement('summary');
+                treeSummary.textContent = 'Mostra albero della formula';
+                const treeContainer = document.createElement('div');
+                const treeDetail = document.createElement('p');
+                treeDetail.setAttribute('aria-live', 'polite');
+                treeDetails.appendChild(treeSummary);
+                treeDetails.appendChild(treeContainer);
+                treeDetails.appendChild(treeDetail);
+                treeDetails.addEventListener('toggle', function() {
+                    if (treeDetails.open && !treeContainer.firstChild) {
+                        window.LogicFormulaTree.render(treeContainer, entry.constructionCorrect, { detailElement: treeDetail });
+                    }
+                });
+                item.appendChild(treeDetails);
+            }
             reviewListEl.appendChild(item);
         });
     }
@@ -493,7 +506,7 @@ function initEquivalentQuiz(rootId) {
     function showReviewPage() {
         if (reviewTitleEl) {
             reviewTitleEl.hidden = false;
-            reviewTitleEl.textContent = 'Revisione Test';
+            reviewTitleEl.textContent = 'Risultati del quiz';
         }
         renderReviewList();
         if (reviewNavEl) reviewNavEl.hidden = false;
@@ -501,14 +514,15 @@ function initEquivalentQuiz(rootId) {
     }
 
     function normalizeApiBase(rawBase) {
-        const base = String(rawBase || '').trim();
-        if (!base) return '/api';
-        return base.replace(/\/+$/, '');
+        return window.LogicApi.normalizeBase(rawBase);
+    }
+
+    function syncPrivacyVisibility() {
+        if (logDataSection) logDataSection.hidden = !window.LogicPrivacy.includeDemographics();
     }
 
     function buildApiUrl(path) {
-        const cleanPath = String(path || '').replace(/^\/+/, '');
-        return normalizeApiBase(window.LOGIC_API_BASE_URL) + '/' + cleanPath;
+        return window.LogicApi.buildUrl(path, normalizeApiBase(window.LOGIC_API_BASE_URL));
     }
 
     const equivalenceApiUrl = buildApiUrl('generator/build-exercise-from-depth');
@@ -537,21 +551,12 @@ function initEquivalentQuiz(rootId) {
         ascolta: { day: 'Ascoltare_White.png', night: 'Ascoltare_Black.png' }
     };
 
-    const state = {
-        mode: 'check',
-        selectedIndex: 0,
-        options: [],
-        correctIndex: -1,
-        locked: false,
-        spokenlanguageLocked: false,
-        exerciseKind: 'equivalence',
-        showFormulas: false,
-        colorAtoms: false,
-        showWrongActionImages: false,
-        highlightAtoms: isExercisesPage ? readExerciseSetting(EX_HIGHLIGHT_KEY) : false,
-        differentiateParens: isExercisesPage ? readExerciseSetting(EX_PARENS_KEY) : false,
-        spokenlanguage: false
-    };
+    const state = window.LogicQuizState.create({
+        isExercisesPage: isExercisesPage,
+        highlightKey: EX_HIGHLIGHT_KEY,
+        parensKey: EX_PARENS_KEY,
+        readSetting: readExerciseSetting
+    });
 
     const quizShared = window.quizShared;
     if (!quizShared) {
@@ -564,13 +569,152 @@ function initEquivalentQuiz(rootId) {
     const pickRandom = quizShared.pickRandom;
     const normalizeNameKey = quizShared.normalizeNameKey;
     const isGenericPersonLabel = quizShared.isGenericPersonLabel;
+    const quizPayloads = window.LogicQuizPayloads;
+    if (!quizPayloads) {
+        throw new Error('Modulo quiz-payloads.js non caricato');
+    }
+    const quizNormalizers = window.LogicQuizNormalizers.create({
+        shuffle: shuffle,
+        prologToLogical: prologToLogical,
+        normalizeGenerationSteps: normalizeGenerationSteps,
+        extractWrongStepsMap: extractWrongStepsMap,
+        normalizeConstruction: window.LogicFormulaConstruction.normalize,
+        buildConstructionFromFormula: window.LogicFormulaConstruction.buildFromFormula,
+        buildQuantifiedConstruction: window.LogicFormulaConstruction.buildQuantifiedTrace,
+        normalizeTransformation: window.LogicFormulaTransformation.normalize
+    });
+    const normalizeEquivalenceResult = quizNormalizers.normalizeEquivalenceResult;
+    const normalizeTruthValueResult = quizNormalizers.normalizeTruthValueResult;
+    const normalizeLogicalConsequenceResult = quizNormalizers.normalizeLogicalConsequenceResult;
+    const normalizeTranslationResult = quizNormalizers.normalizeTranslationResult;
+    const buildQuantifiedNegationOptions = quizNormalizers.buildQuantifiedNegationOptions;
+    const formulaTransformationRenderer = window.LogicFormulaTransformationRenderer.create({
+        container: formulaTransformationEl,
+        formatFormula: function(formula) {
+            return prologToLogical(String(formula || '')) || String(formula || '');
+        }
+    });
+    const hideFormulaTransformation = formulaTransformationRenderer.hide;
+    const showFormulaTransformation = formulaTransformationRenderer.show;
+    const quizRenderer = window.LogicQuizRenderer.create({
+        state: state,
+        infoEl: infoEl,
+        optionsEl: optionsEl,
+        statusEl: statusEl,
+        escapeHtml: escapeHtml,
+        formatSpokenInfoLine: formatSpokenInfoLine,
+        colorizeAtomsInText: colorizeAtomsInText,
+        transformFormula: getCachedFormulaTransforms,
+        getOptionFormula: getOptionDisplayFormula
+    });
+    const showInfo = quizRenderer.showInfo;
+    const renderQuizOptions = quizRenderer.renderOptions;
+    const updateSelectionVisual = quizRenderer.updateSelectionVisual;
+    const setStatus = quizRenderer.setStatus;
+    const resetVisualFeedback = quizRenderer.resetVisualFeedback;
 
-    const NAME_COLOR_PALETTE_DAY = [
-        '#0057B8', '#ca6c1e', '#0B6E4F', '#B91C1C'
-    ];
-    const NAME_COLOR_PALETTE_NIGHT = [
-        '#7DD3FC', '#fcb160', '#86EFAC', '#FCA5A5'
-    ];
+    function setRenderedOptionsLocked(locked) {
+        optionsEl.querySelectorAll('.quiz-option').forEach(function(option) {
+            option.disabled = Boolean(locked);
+            option.setAttribute('aria-disabled', locked ? 'true' : 'false');
+            if (locked) option.tabIndex = -1;
+        });
+    }
+
+    function renderOptions() {
+        renderQuizOptions();
+        setRenderedOptionsLocked(state.locked);
+    }
+    const quizTimer = window.LogicQuizTimer.create({
+        display: timerDisplayEl,
+        defaultMinutes: DEFAULT_TIME_MINUTES,
+        parseMinutes: parsePositiveInt,
+        onExpire: function() {
+            if (state.mode === 'check' || state.mode === 'next') {
+                setStatus('Tempo scaduto.');
+                showCompletion();
+            }
+        }
+    });
+
+    function stableQuestionId(kind, question, answer) {
+        const text = [kind || 'unknown', question || '', answer || ''].join('|');
+        let hash = 2166136261;
+        for (let index = 0; index < text.length; index += 1) {
+            hash ^= text.charCodeAt(index);
+            hash = Math.imul(hash, 16777619);
+        }
+        return 'question-' + (hash >>> 0).toString(16);
+    }
+
+    function persistSession(patch) {
+        if (!activeSession) return Promise.resolve(null);
+        return sessionManager.update({
+            currentIndex: currentExercise,
+            remainingSeconds: quizTimer.getRemainingSeconds(),
+            operationPlan: batchOperationsPlan,
+            questions: batchQuestionsCache,
+            answers: reviewResults.slice(),
+            ...(patch || {})
+        }).then(function(session) {
+            activeSession = session;
+            window.LogicAppEvents.emit('session:saved', session);
+            return session;
+        }).catch(function(error) {
+            logger.warn('Sessione non salvata:', error && error.message);
+            return null;
+        });
+    }
+
+    function recordLearningAttempt(details) {
+        if (!details.scorable) return null;
+        const attempt = window.LogicDataContracts.createAttempt({
+            sessionId: activeSession ? activeSession.sessionId : '',
+            questionId: currentQuestionId || stableQuestionId(state.exerciseKind, details.question, details.correctAnswer),
+            type: state.exerciseKind,
+            difficulty: currentQuizConfig.difficulty,
+            elapsedMs: details.elapsedMs,
+            correct: details.correct,
+            question: details.question,
+            selectedAnswer: details.selectedAnswer,
+            correctAnswer: details.correctAnswer
+        });
+        recordedAttempts.push(attempt);
+        window.LogicAppEvents.emit('quiz:answered', attempt);
+        window.LogicAppStorage.instance.put('attempts', attempt.attemptId, attempt).catch(function() {});
+        errorNotebook.record(attempt, {
+            construction: details.construction,
+            transformationCorrect: details.transformationCorrect,
+            transformationSelected: details.transformationSelected
+        }).catch(function() {});
+
+        if (currentQuizConfig.adaptive) {
+            const topicAttempts = recordedAttempts.filter(function(item) { return item.type === state.exerciseKind; });
+            const recommendation = window.LogicAdaptiveEngine.recommend(topicAttempts, currentQuizConfig.difficulty);
+            if (recommendation.changed) {
+                currentQuizConfig = window.LogicDataContracts.normalizeQuizConfig({
+                    ...currentQuizConfig,
+                    difficulty: recommendation.difficulty
+                });
+                if (difficultySelect) difficultySelect.value = currentQuizConfig.difficulty;
+                if (adaptiveNoticeEl) adaptiveNoticeEl.textContent = recommendation.reason + ' Nuovo livello: ' + recommendation.difficulty + '.';
+                adaptiveMessage = recommendation.reason + ' La difficolta passa al livello ' + recommendation.difficulty + '.';
+                for (let index = batchCacheIndex; index < batchQuestionsCache.length; index += 1) {
+                    batchQuestionsCache[index] = null;
+                }
+                persistSession({ config: currentQuizConfig });
+            }
+        }
+        return attempt;
+    }
+    const fetchBatchQuestions = function(operations) {
+        return window.LogicQuizBatch.fetchQuestions(operations, {
+            buildApiUrl: buildApiUrl,
+            postJson: window.LogicApi.postJson
+        });
+    };
+
+    const NAME_COLOR_CLASS_COUNT = 4;
 
     // === Caches for performance optimization (Phase 2-3) ===
     // Cache for buildImageSequenceFromFormula results: key is formula+mode, value is sequence array
@@ -621,13 +765,6 @@ function initEquivalentQuiz(rootId) {
         wrongActionImagesEl.hidden = true;
     }
 
-    function syncWrongImagesWidth() {
-        if (!wrongActionImagesEl || !questionEl) return;
-        const questionLength = String(questionEl.textContent || '').trim().length;
-        const widthCh = Math.max(40, Math.min(questionLength || 40, 80));
-        wrongActionImagesEl.style.setProperty('--quiz-wrong-images-max-ch', String(widthCh));
-    }
-
     function resolveImageCandidates(action, mode) {
         const item = ACTION_IMAGE_FILES[action];
         if (!item) return [];
@@ -642,7 +779,6 @@ function initEquivalentQuiz(rootId) {
     }
 
     function buildSpokenNameColorMap() {
-        const palette = isDayMode() ? NAME_COLOR_PALETTE_DAY : NAME_COLOR_PALETTE_NIGHT;
         const assigned = {};
 
         Object.keys(atomSpokenMap || {}).forEach(function(atom) {
@@ -651,14 +787,14 @@ function initEquivalentQuiz(rootId) {
             const nameKey = normalizeNameKey(entry.nome);
             if (!nameKey || Object.prototype.hasOwnProperty.call(assigned, nameKey)) return;
 
-            const colorIndex = Object.keys(assigned).length % palette.length;
-            assigned[nameKey] = palette[colorIndex];
+            const colorIndex = Object.keys(assigned).length % NAME_COLOR_CLASS_COUNT;
+            assigned[nameKey] = 'quiz-name-color-' + colorIndex;
         });
 
         currentSpokenNameColors = assigned;
     }
 
-    function resolveNameCaptionColor(name) {
+    function resolveNameCaptionClass(name) {
         const nameKey = normalizeNameKey(name);
         if (!nameKey) return '';
         return currentSpokenNameColors[nameKey] || '';
@@ -808,8 +944,8 @@ function initEquivalentQuiz(rootId) {
         subjectNode.textContent = subjectText;
 
         if (subjectText && !isGenericPersonLabel(subjectText)) {
-            const subjectColor = resolveNameCaptionColor(subjectText);
-            if (subjectColor) subjectNode.style.color = subjectColor;
+            const subjectClass = resolveNameCaptionClass(subjectText);
+            if (subjectClass) subjectNode.classList.add(subjectClass);
         }
 
         const actionNode = document.createElement('span');
@@ -1196,21 +1332,17 @@ function initEquivalentQuiz(rootId) {
     }
 
     /**
-     * Associa ogni atomo a una coppia nome+azione per modalita linguaggio parlato.
-     * @pre atoms e un array di identificatori atomici.
-     * @post Restituisce una mappa completa atomo -> {nome, azione}.
+     * Associa gli atomi alla legenda API, con fallback deterministico se assente.
+     * @pre parsed e una domanda normalizzata con info e opzioni.
+     * @post Restituisce una mappa atomo -> {nome, azione} semanticamente coerente.
      */
-    function buildAtomSpokenMap(atoms) {
-        const shuffledNomi = shuffle(NOMI);
-        const shuffledAzioni = shuffle(AZIONI);
-        const map = {};
-        atoms.forEach(function(atom, i) {
-            map[atom] = {
-                nome: shuffledNomi[i % shuffledNomi.length],
-                azione: shuffledAzioni[i % shuffledAzioni.length]
-            };
-        });
-        return map;
+    function buildAtomSpokenMap(parsed) {
+        return quizShared.resolveSpokenMap(
+            parsed && parsed.info,
+            collectAtomsFromExercise(parsed || {}),
+            NOMI,
+            AZIONI
+        );
     }
 
     /**
@@ -1625,7 +1757,7 @@ function initEquivalentQuiz(rootId) {
 
     function updateTestTitle() {
         if (!testTitleEl) return;
-        testTitleEl.textContent = 'Esercizio nº' + String(currentExercise);
+        testTitleEl.textContent = 'Domanda ' + String(currentExercise) + ' di ' + String(totalExercises);
     }
 
     /**
@@ -1650,162 +1782,46 @@ function initEquivalentQuiz(rootId) {
      * @post Restituisce array di {operation: string, payload: object} con distribuzione ordinata.
      */
     function buildOrderedQuestionsList(totalCount, spokenlanguageMode) {
-        const operations = [];
-        const operationTypes = [
-            { type: 'build_ex_depth', builder: buildEquivalencePayload },
-            { type: 'build_tvq', builder: buildTruthValuePayload },
-            { type: 'build_logical_consequence_question', builder: buildLogicalConsequencePayload },
-            { type: 'build_translation_question', builder: buildTranslationPayload }
-        ];
-        const availableTypes = spokenlanguageMode
-            ? operationTypes.filter(t => t.type !== 'build_translation_question')
-            : operationTypes;
-
-        // Aggiungi almeno 1 di ogni tipo disponibile
-        availableTypes.forEach(function(typeConfig) {
-            if (operations.length < totalCount) {
-                operations.push({
-                    operation: typeConfig.type,
-                    payload: typeConfig.builder(spokenlanguageMode)
-                });
-            }
+        const config = window.LogicDataContracts.normalizeQuizConfig({
+            ...currentQuizConfig,
+            questionCount: totalCount,
+            spokenLanguage: spokenlanguageMode,
+            questionTypes: currentQuizConfig.questionTypes
         });
-
-        // Aggiungi quantifier-negation se target > 0
-        if (quantifierNegationTarget > 0 && operations.length < totalCount) {
-            for (let i = 0; i < quantifierNegationTarget && operations.length < totalCount; i += 1) {
-                operations.push({
-                    operation: 'build_quantifier_negation',
-                    payload: {},
-                    localOnly: true
-                });
-            }
-        }
-
-        // Riempi il resto in modo casuale (round-robin su tipi)
-        while (operations.length < totalCount) {
-            const randomType = availableTypes[operations.length % availableTypes.length];
-            operations.push({
-                operation: randomType.type,
-                payload: randomType.builder(spokenlanguageMode)
-            });
-        }
-
-        return operations;
+        const atomCount = window.LogicQuizConfig.atomCountForDifficulty(config.difficulty);
+        const quantifierRatio = config.difficulty === 'hard' ? 0.75 : config.difficulty === 'easy' ? 0.25 : 0.5;
+        const payloadOptions = { wrongAnswersCount: 3, quantifierRatio: quantifierRatio };
+        return window.LogicQuizConfig.buildOperationPlan(config, {
+            equivalence: function() { return quizPayloads.buildEquivalencePayload(config.spokenLanguage, payloadOptions); },
+            'truth-value': function() { return quizPayloads.buildTruthValuePayload(config.spokenLanguage, atomCount, payloadOptions); },
+            'logical-consequence': function() { return quizPayloads.buildLogicalConsequencePayload(config.spokenLanguage, atomCount, payloadOptions); },
+            translation: function() { return quizPayloads.buildTranslationPayload(config.spokenLanguage, NOMI, AZIONI, shuffle, payloadOptions); }
+        });
     }
 
     function buildEquivalencePayload(spokenlanguageMode) {
-        return {
-            use_all: false,
-            wrong_answers_count: 3,
-            allow_spoken_mode: Boolean(spokenlanguageMode),
-            timeout: 10
-        };
+        return quizPayloads.buildEquivalencePayload(spokenlanguageMode);
     }
 
     function buildTruthValuePayload(spokenlanguageMode) {
-        return {
-            predicate_count: TARGET_ATOM_COUNT,
-            true_options_count: 1,
-            false_options_count: 3,
-            allow_spoken_mode: Boolean(spokenlanguageMode),
-            timeout: 10
-        };
+        return quizPayloads.buildTruthValuePayload(
+            spokenlanguageMode,
+            window.LogicQuizConfig.atomCountForDifficulty(currentQuizConfig.difficulty)
+        );
     }
 
     function buildLogicalConsequencePayload(spokenlanguageMode) {
-        return {
-            variable_count: TARGET_ATOM_COUNT,
-            correct_options_count: 1,
-            wrong_options_count: 3,
-            allow_spoken_mode: Boolean(spokenlanguageMode),
-            timeout: 10
-        };
+        return quizPayloads.buildLogicalConsequencePayload(
+            spokenlanguageMode,
+            window.LogicQuizConfig.atomCountForDifficulty(currentQuizConfig.difficulty)
+        );
     }
 
     function buildTranslationPayload(spokenlanguageMode) {
-        const randomizedActionsPool = shuffle(AZIONI.slice());
-        return {
-            mode: 'auto',
-            quantifier_ratio: 0.5,
-            wrong_options_count: 3,
-            names_pool: NOMI,
-            people_count: 3,
-            actions_pool: randomizedActionsPool,
-            allow_spoken_mode: Boolean(spokenlanguageMode),
-            timeout: 10
-        };
+        const ratio = currentQuizConfig.difficulty === 'hard' ? 0.75 : currentQuizConfig.difficulty === 'easy' ? 0.25 : 0.5;
+        return quizPayloads.buildTranslationPayload(spokenlanguageMode, NOMI, AZIONI, shuffle, { quantifierRatio: ratio });
     }
 
-    /**
-     * Recupera un batch di domande dall'API.
-     * @pre operationsList e un array valido di operazioni, seed e un numero.
-     * @post Restituisce array di risposte (alcune potenzialmente null per soft-fail).
-     */
-    async function fetchBatchQuestions(operationsList) {
-        const apiQuestions = [];
-        const apiIndexToPlanIndex = [];
-        operationsList.forEach(function(entry, planIndex) {
-            if (!entry || entry.localOnly) return;
-            apiQuestions.push({
-                operation: entry.operation,
-                payload: entry.payload
-            });
-            apiIndexToPlanIndex.push(planIndex);
-        });
-
-        const alignedResults = new Array(operationsList.length).fill(null);
-        if (apiQuestions.length === 0) {
-            return alignedResults;
-        }
-
-        const batchApiUrl = buildApiUrl('generator/multiple-questions');
-        const response = await fetch(batchApiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                questions: apiQuestions
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error('HTTP ' + response.status);
-        }
-
-        try {
-            const payload = await response.json();
-            const payloadRoot = payload && typeof payload === 'object' && payload.result && typeof payload.result === 'object'
-                ? payload.result
-                : payload;
-            const questions = Array.isArray(payloadRoot && payloadRoot.questions)
-                ? payloadRoot.questions
-                : (Array.isArray(payload && payload.results) ? payload.results : []);
-
-            if (!Array.isArray(questions)) {
-                throw new Error('Batch response format invalid: missing questions array');
-            }
-
-            questions.forEach(function(item, position) {
-                if (!item || typeof item !== 'object') return;
-
-                const rawIndex = Number(item.index);
-                const apiIndex = Number.isInteger(rawIndex) ? rawIndex : position;
-                if (apiIndex < 0 || apiIndex >= apiIndexToPlanIndex.length) return;
-
-                const planIndex = apiIndexToPlanIndex[apiIndex];
-                const resultPayload = Object.prototype.hasOwnProperty.call(item, 'result') ? item.result : item;
-                const isOk = Object.prototype.hasOwnProperty.call(item, 'status')
-                    ? item.status === 'ok'
-                    : Boolean(resultPayload);
-
-                alignedResults[planIndex] = isOk ? resultPayload : null;
-            });
-
-            return alignedResults;
-        } catch (e) {
-            throw new Error('Batch response parsing failed: ' + String(e.message || e));
-        }
-    }
 
     /**
      * Ritorna la prossima domanda dalla cache batch.
@@ -1821,53 +1837,6 @@ function initEquivalentQuiz(rootId) {
         return result;
     }
 
-    function formatTimer(totalSeconds) {
-        const safe = Math.max(0, Number(totalSeconds) || 0);
-        const mm = Math.floor(safe / 60);
-        const ss = safe % 60;
-        const mText = mm < 10 ? '0' + String(mm) : String(mm);
-        const sText = ss < 10 ? '0' + String(ss) : String(ss);
-        return mText + ':' + sText;
-    }
-
-    function renderTimer() {
-        if (!timerDisplayEl) return;
-        timerDisplayEl.textContent = formatTimer(timerSecondsRemaining);
-    }
-
-    function stopTimer() {
-        if (timerIntervalId !== null) {
-            clearInterval(timerIntervalId);
-            timerIntervalId = null;
-        }
-    }
-
-    /**
-     * Avvia il timer del test con countdown in secondi.
-     * @pre minutes e convertibile in intero positivo oppure fallback.
-     * @post Il timer e visibile e decrementa ogni secondo fino a scadenza o stop esplicito.
-     */
-    function startTimer(minutes) {
-        stopTimer();
-        timerSecondsRemaining = parsePositiveInt(minutes, DEFAULT_TIME_MINUTES) * 60;
-        renderTimer();
-        if (timerDisplayEl) timerDisplayEl.hidden = false;
-
-        timerIntervalId = setInterval(function() {
-            timerSecondsRemaining -= 1;
-            if (timerSecondsRemaining <= 0) {
-                timerSecondsRemaining = 0;
-                renderTimer();
-                stopTimer();
-                if (state.mode === 'check' || state.mode === 'next') {
-                    setStatus('Tempo scaduto.');
-                    showCompletion();
-                }
-                return;
-            }
-            renderTimer();
-        }, 1000);
-    }
 
     function shouldKeepRawFormula(formula) {
         const text = String(formula || '');
@@ -1886,380 +1855,6 @@ function initEquivalentQuiz(rootId) {
         return normalizeFormulaAtoms(prologToLogical(formula));
     }
 
-    /**
-     * Renderizza il blocco "Sapendo che" della domanda corrente.
-     * @pre items e array di stringhe o valore non-array.
-     * @post Il pannello info viene popolato o nascosto coerentemente.
-     */
-    function showInfo(items) {
-        if (!Array.isArray(items) || items.length === 0) {
-            infoEl.hidden = true;
-            infoEl.innerHTML = '';
-            return;
-        }
-
-        const htmlItems = items.map(function(item) {
-            if (state.spokenlanguage) {
-                return '<li>' + escapeHtml(formatSpokenInfoLine(item)) + '</li>';
-            }
-            if (state.exerciseKind === 'translation') {
-                return '<li>' + colorizeAtomsInText(String(item)) + '</li>';
-            }
-            return '<li>' + colorizeAtomsInText(getCachedFormulaTransforms(item)) + '</li>';
-        }).join('');
-        infoEl.innerHTML = '<p>Sappiamo che:</p><ul>' + htmlItems + '</ul>';
-        infoEl.hidden = false;
-    }
-
-    function formatTruthInfo(entry) {
-        if (typeof entry !== 'string') return '';
-        const parts = entry.split('-');
-        if (parts.length !== 2) return entry;
-        const name = parts[0];
-        const value = parts[1] === 'true' ? 'vero' : 'falso';
-        return name + ' è ' + value;
-    }
-
-    function optionTextFromEntry(entry) {
-        if (typeof entry === 'string') return String(entry || '').trim();
-        if (!entry || typeof entry !== 'object') return '';
-        return String(entry.formula_prolog || entry.formula || entry.text || '').trim();
-    }
-
-    function optionBooleanFlag(entry, keys) {
-        if (!entry || typeof entry !== 'object' || !Array.isArray(keys)) return null;
-        for (let i = 0; i < keys.length; i += 1) {
-            const key = keys[i];
-            if (!Object.prototype.hasOwnProperty.call(entry, key)) continue;
-            const value = entry[key];
-            if (typeof value === 'boolean') return value;
-            if (value === 1 || value === '1' || value === 'true') return true;
-            if (value === 0 || value === '0' || value === 'false') return false;
-        }
-        return null;
-    }
-
-    function extractOptionsArray(res) {
-        if (!res || typeof res !== 'object') return [];
-        if (Array.isArray(res.options)) return res.options;
-        if (Array.isArray(res.options_prolog)) return res.options_prolog;
-        return [];
-    }
-
-    function pickGeneratorResult(payload, nestedKey) {
-        if (!payload || typeof payload !== 'object') return payload;
-        if (payload.result && typeof payload.result === 'object') {
-            return payload.result;
-        }
-        if (nestedKey && payload[nestedKey] && typeof payload[nestedKey] === 'object') {
-            return payload[nestedKey];
-        }
-        return payload;
-    }
-
-    // Normalizza il payload equivalenza in un formato uniforme per il renderer quiz.
-    function normalizeEquivalenceResult(payload) {
-        const res = pickGeneratorResult(payload, 'build_ex_depth');
-        const optionsFromPayload = extractOptionsArray(res);
-        const questionSource =
-            (res && res.question_prolog) ||
-            (res && res.original_formula && res.original_formula.formula_prolog) ||
-            '';
-
-        const fallbackQuestion = questionSource
-            ? 'Quale formula è equivalente a "' + prologToLogical(questionSource) + '":'
-            : 'Seleziona una formula dall\'esercizio ricevuto:';
-
-        const normalizedOptionsFromArray = optionsFromPayload.map(function(entry) {
-            const explicitCorrect = optionBooleanFlag(entry, ['is_correct', 'correct']);
-            return {
-                text: optionTextFromEntry(entry),
-                correct: explicitCorrect === null ? null : explicitCorrect,
-                formulaSteps: normalizeGenerationSteps(entry && entry.generation_steps)
-            };
-        }).filter(function(entry) {
-            return Boolean(entry.text);
-        });
-
-        const questionStepsRaw =
-            (res && res.original_formula && res.original_formula.generation_steps) ||
-            [];
-        let options = [];
-        if (normalizedOptionsFromArray.length > 0) {
-            options = normalizedOptionsFromArray;
-        } else {
-            const correct =
-                (res && res.correct_answer_prolog) ||
-                (res && res.modified_formula && res.modified_formula.formula_prolog) ||
-                '';
-            const wrongs =
-                (res && Array.isArray(res.wrong_answers_prolog) && res.wrong_answers_prolog) ||
-                [];
-            const allCandidateOptions = Array.from(new Set((correct ? [correct] : []).concat(wrongs))).filter(Boolean);
-            if (allCandidateOptions.length === 0) {
-                return null;
-            }
-            const correctStepsRaw =
-                (res && res.correct_answer_generation_steps) ||
-                (res && res.modified_formula && res.modified_formula.generation_steps) ||
-                [];
-            const wrongStepsMapRaw = extractWrongStepsMap(res, allCandidateOptions);
-            options = allCandidateOptions.map(function(candidateFormula) {
-                const isCorrect = correct ? candidateFormula === correct : null;
-                return {
-                    text: candidateFormula,
-                    correct: isCorrect,
-                    formulaSteps: isCorrect === true
-                        ? normalizeGenerationSteps(correctStepsRaw)
-                        : normalizeGenerationSteps(wrongStepsMapRaw[candidateFormula])
-                };
-            });
-        }
-
-        if (options.length === 0) {
-            return null;
-        }
-
-        const correctOption = options.find(function(entry) { return entry && entry.correct === true; });
-
-        const imageFormulaSteps = {
-            question: normalizeGenerationSteps(questionStepsRaw),
-            correct: normalizeGenerationSteps(correctOption && correctOption.formulaSteps),
-            wrongByFormula: {}
-        };
-
-        if (imageFormulaSteps.question.length === 0 && questionSource) {
-            imageFormulaSteps.question = [questionSource];
-        }
-        if (imageFormulaSteps.correct.length === 0 && correctOption) {
-            imageFormulaSteps.correct = [correctOption.text];
-        }
-        options.forEach(function(option) {
-            if (!option || option.correct === true) return;
-            const steps = Array.isArray(option.formulaSteps) ? option.formulaSteps.slice() : [];
-            imageFormulaSteps.wrongByFormula[option.text] = steps.length > 0 ? steps : [option.text];
-        });
-
-        return {
-            kind: 'equivalence',
-            question: fallbackQuestion,
-            info: [],
-            options: shuffle(options),
-            imageFormulaSteps: imageFormulaSteps
-        };
-    }
-
-    /**
-     * Normalizza il payload backend per esercizi sul valore di verita.
-     * @pre payload segue il contratto API truth-value (result/options/information/count).
-     * @post Restituisce oggetto quiz standard o null se il payload e invalido.
-     */
-    function normalizeTruthValueResult(payload) {
-        const res = pickGeneratorResult(payload, 'build_tvq');
-        const options = extractOptionsArray(res);
-        const info = (res && Array.isArray(res.information) && res.information) || [];
-
-        if (options.length !== 4 || info.length < 3 || info.length > 5) {
-            return null;
-        }
-
-        const parsedOptions = options.map(function(option) {
-            return {
-                text: optionTextFromEntry(option),
-                isTrue: optionBooleanFlag(option, ['is_true', 'truth_value'])
-            };
-        });
-
-        if (parsedOptions.some(function(option) {
-            return !option.text || typeof option.isTrue !== 'boolean';
-        })) {
-            return null;
-        }
-
-        const trueCount = parsedOptions.filter(function(option) { return option.isTrue; }).length;
-        const falseCount = parsedOptions.length - trueCount;
-
-        let targetTruthValue = null;
-        let question = '';
-        if (trueCount === 1 && falseCount === 3) {
-            targetTruthValue = true;
-            question = 'Quale formula è vera tra le seguenti?';
-        } else if (trueCount === 3 && falseCount === 1) {
-            targetTruthValue = false;
-            question = 'Quale formula è falsa tra le seguenti?';
-        } else {
-            return null;
-        }
-
-        const normalizedOptions = shuffle(parsedOptions.map(function(option) {
-            return {
-                text: option.text,
-                correct: option.isTrue === targetTruthValue
-            };
-        }));
-
-        return {
-            kind: 'truth-value',
-            question: question,
-            info: info.map(formatTruthInfo),
-            options: normalizedOptions
-        };
-    }
-
-    /**
-     * Normalizza il payload backend per esercizi di conseguenza logica.
-     * @pre payload segue il contratto API logical-consequence (question/options).
-     * @post Restituisce oggetto quiz standard o null se il payload e invalido.
-     */
-    function normalizeLogicalConsequenceResult(payload) {
-        const res = pickGeneratorResult(payload, 'build_logical_consequence_question');
-        if (!res || typeof res !== 'object') return null;
-
-        const question = String(res.question_prolog || '').trim();
-        let allOptions = extractOptionsArray(res);
-        const correctOptions = Array.isArray(res.correct_options) ? res.correct_options : [];
-        const wrongOptions = Array.isArray(res.wrong_options) ? res.wrong_options : [];
-
-        // Fallback: some payloads may omit `options` and provide split arrays only.
-        if (!allOptions.length && (correctOptions.length || wrongOptions.length)) {
-            allOptions = correctOptions.concat(wrongOptions);
-        }
-
-        const correctFormulaSet = new Set(correctOptions.map(function(entry) {
-            return optionTextFromEntry(entry);
-        }).filter(Boolean));
-
-        const normalizedOptions = allOptions.map(function(optionFormula) {
-            const text = optionTextFromEntry(optionFormula);
-            const explicitFlag = optionBooleanFlag(optionFormula, ['is_correct', 'correct', 'is_consequence', 'consequence']);
-            const inferredCorrect = correctFormulaSet.has(text);
-            return {
-                text: text,
-                correct: explicitFlag === true || inferredCorrect
-            };
-        }).filter(function(option) {
-            return Boolean(option.text);
-        });
-
-        if (!question || normalizedOptions.length < 2 || !normalizedOptions.some(function(option) { return option.correct; })) {
-            return null;
-        }
-
-        return {
-            kind: 'logical-consequence',
-            question: 'Quale formula è conseguenza logica di "' + prologToLogical(question) + '":',
-            info: [],
-            options: shuffle(normalizedOptions)
-        };
-    }
-
-    /**
-     * Genera opzioni multiple-choice per negazione di formule quantificate.
-     * @pre quantifier e '∀' o '∃'; baseFormula e una formula testuale.
-     * @post Restituisce domanda e 3 opzioni con esattamente una risposta corretta.
-     */
-    function buildQuantifiedNegationOptions(quantifier, baseFormula) {
-        const normalizedFormula = String(baseFormula || '').trim() || 'p';
-        const wrappedFormula = '(' + normalizedFormula + ')';
-        const isUniversal = quantifier === '∀';
-        const original = quantifier + 'x ' + wrappedFormula;
-        const correct = isUniversal
-            ? '∃x ¬' + wrappedFormula
-            : '∀x ¬' + wrappedFormula;
-
-        const wrongs = isUniversal
-            ? [
-                '∀x ¬' + wrappedFormula,
-                '∃x ' + wrappedFormula
-            ]
-            : [
-                '∃x ¬' + wrappedFormula,
-                '∀x ' + wrappedFormula
-            ];
-
-        return {
-            question: 'Qual\'è la negazione di "' + original + '"?',
-            options: shuffle([
-                { text: correct, correct: true },
-                { text: wrongs[0], correct: false },
-                { text: wrongs[1], correct: false }
-            ])
-        };
-    }
-
-    function normalizeTranslationResult(payload) {
-        const res = pickGeneratorResult(payload, 'build_translation_question');
-        if (!res || typeof res !== 'object') return null;
-
-        const question = String(res.question_text || res.question || '').trim();
-        const info = Array.isArray(res.info) ? res.info.map(function(entry) {
-            return String(entry || '').trim();
-        }).filter(Boolean) : [];
-        const allOptions = extractOptionsArray(res);
-        const normalizedOptions = allOptions.map(function(optionFormula) {
-            return {
-                text: optionTextFromEntry(optionFormula),
-                correct: optionBooleanFlag(optionFormula, ['is_correct', 'correct']) === true
-            };
-        }).filter(function(option) {
-            return Boolean(option.text);
-        });
-
-        if (!question || normalizedOptions.length < 2 || !normalizedOptions.some(function(option) { return option.correct; })) {
-            return null;
-        }
-
-        return {
-            kind: 'translation',
-            question: question,
-            info: info,
-            options: shuffle(normalizedOptions)
-        };
-    }
-
-    /**
-     * Renderizza i bottoni opzione per la domanda corrente.
-     * @pre state.options contiene il set opzioni corrente.
-     * @post optionsEl contiene i bottoni aggiornati e lo stato selezione e sincronizzato.
-     */
-    function renderOptions() {
-        optionsEl.innerHTML = '';
-
-        state.options.forEach(function(opt, index) {
-            const button = document.createElement('button');
-            button.type = 'button';
-            button.className = 'quiz-option';
-            button.setAttribute('role', 'radio');
-            button.setAttribute('aria-checked', index === state.selectedIndex ? 'true' : 'false');
-            button.dataset.index = String(index);
-            button.innerHTML = colorizeAtomsInText(getCachedFormulaTransforms(getOptionDisplayFormula(opt)));
-            optionsEl.appendChild(button);
-        });
-
-        updateSelectionVisual();
-    }
-
-    function updateSelectionVisual() {
-        const items = optionsEl.querySelectorAll('.quiz-option');
-        items.forEach(function(item, idx) {
-            item.classList.toggle('is-selected', idx === state.selectedIndex);
-            item.setAttribute('aria-checked', idx === state.selectedIndex ? 'true' : 'false');
-        });
-    }
-
-    function setStatus(msg) {
-        statusEl.textContent = msg || '';
-    }
-
-    function resetVisualFeedback() {
-        const items = optionsEl.querySelectorAll('.quiz-option');
-        items.forEach(function(item) {
-            item.classList.remove('is-correct');
-            item.classList.remove('is-correct-answer');
-            item.classList.remove('is-wrong');
-            item.classList.remove('is-final');
-        });
-    }
 
     /**
      * Recupera un esercizio di equivalenza dal backend.
@@ -2267,28 +1862,16 @@ function initEquivalentQuiz(rootId) {
      * @post Restituisce un oggetto normalizzato pronto per il rendering o solleva errore.
      */
     async function fetchEquivalenceExercise() {
-        const response = await fetch(equivalenceApiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                use_all: false,
-                wrong_answers_count: 3,
-                allow_spoken_mode: Boolean(state.spokenlanguage),
-                timeout: 10
-            })
-        });
+        const payload = await window.LogicApi.postJson(
+            equivalenceApiUrl,
+            buildEquivalencePayload(state.spokenlanguage)
+        );
 
-        try {
-            const payload = await response.json();
-            const parsed = normalizeEquivalenceResult(payload);
-            if (parsed) {
-                return parsed;
-            }
-        } catch (_) {
-            // The backend returned non-JSON or an unexpected payload.
+        const parsed = normalizeEquivalenceResult(payload);
+        if (parsed) {
+            return parsed;
         }
-
-        throw new Error('HTTP ' + response.status);
+        throw new Error('Formato risposta equivalenza non valido');
     }
 
     /**
@@ -2297,28 +1880,16 @@ function initEquivalentQuiz(rootId) {
      * @post Restituisce un oggetto normalizzato con domanda, info e 4 opzioni.
      */
     async function fetchTruthValueExercise() {
-        const response = await fetch(truthApiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                predicate_count: TARGET_ATOM_COUNT,
-                true_options_count: 1,
-                false_options_count: 3,
-                allow_spoken_mode: Boolean(state.spokenlanguage),
-                timeout: 10
-            })
-        });
-        
-        try {
-            const payload = await response.json();
-            const parsed = normalizeTruthValueResult(payload);
-            if (parsed) {
-                return parsed;
-            }
-        } catch (_) {
-            // The backend returned non-JSON or an unexpected payload.
+        const payload = await window.LogicApi.postJson(
+            truthApiUrl,
+            buildTruthValuePayload(state.spokenlanguage)
+        );
+
+        const parsed = normalizeTruthValueResult(payload);
+        if (parsed) {
+            return parsed;
         }
-        throw new Error('HTTP ' + response.status);
+        throw new Error('Formato risposta valore di verita non valido');
     }
 
     /**
@@ -2331,25 +1902,16 @@ function initEquivalentQuiz(rootId) {
         let lastDetail = '';
 
         for (let attempt = 0; attempt < 4; attempt += 1) {
-            const response = await fetch(logicalConsequenceApiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    variable_count: TARGET_ATOM_COUNT,
-                    correct_options_count: 1,
-                    wrong_options_count: 3,
-                    allow_spoken_mode: Boolean(state.spokenlanguage),
-                    timeout: 10
-                })
-            });
-
-            lastStatus = response.status;
-
             let payload = null;
             try {
-                payload = await response.json();
-            } catch (_) {
-                payload = null;
+                payload = await window.LogicApi.postJson(
+                    logicalConsequenceApiUrl,
+                    buildLogicalConsequencePayload(state.spokenlanguage)
+                );
+                lastStatus = 200;
+            } catch (error) {
+                lastStatus = Number(error && error.status) || 0;
+                payload = error && error.payload ? error.payload : null;
             }
 
             const parsed = normalizeLogicalConsequenceResult(payload);
@@ -2357,7 +1919,9 @@ function initEquivalentQuiz(rootId) {
                 return parsed;
             }
 
-            const detailText = payload && typeof payload === 'object' ? String(payload.detail || '') : '';
+            const detailText = payload && typeof payload === 'object'
+                ? String(payload.message || payload.detail || '')
+                : '';
             if (detailText) {
                 lastDetail = detailText;
             }
@@ -2370,24 +1934,19 @@ function initEquivalentQuiz(rootId) {
     }
 
     async function fetchQuantifierNegationExercise() {
-        const response = await fetch(formulaByVariableCountApiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                variable_count: TARGET_ATOM_COUNT,
-                use_all: false,
-                allow_spoken_mode: Boolean(state.spokenlanguage),
-                timeout: 10
-            })
+        const payload = await window.LogicApi.postJson(formulaByVariableCountApiUrl, {
+            variable_count: window.LogicQuizConfig.atomCountForDifficulty(currentQuizConfig.difficulty),
+            use_all: false,
+            allow_spoken_mode: Boolean(state.spokenlanguage),
+            timeout: 10
         });
-        
+
         try {
-            const payload = await response.json();
             const baseFormula = String((payload && payload.result) || '').trim();
             if (baseFormula) {
                 const logicalBaseFormula = prologToLogical(baseFormula);
                 const quantifier = Math.random() < 0.5 ? '∀' : '∃';
-                const quantified = buildQuantifiedNegationOptions(quantifier, logicalBaseFormula);
+                const quantified = buildQuantifiedNegationOptions(quantifier, logicalBaseFormula, baseFormula);
                 return {
                     kind: 'quantifier-negation',
                     question: quantified.question,
@@ -2398,7 +1957,7 @@ function initEquivalentQuiz(rootId) {
         } catch (_) {
             // The backend returned non-JSON or an unexpected payload.
         }
-        throw new Error('HTTP ' + response.status);
+        throw new Error('Formato risposta formula non valido');
     }
 
     async function fetchTranslationExercise() {
@@ -2452,27 +2011,19 @@ function initEquivalentQuiz(rootId) {
         let lastStatus = 0;
 
         for (let attempt = 0; attempt < 4; attempt += 1) {
-            const randomizedActionsPool = shuffle(AZIONI.slice());
-
-            const response = await fetch(translationApiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    mode: 'auto',
-                    quantifier_ratio: 0.5,
-                    wrong_options_count: 3,
-                    names_pool: NOMI,
-                    people_count: 3,
-                    actions_pool: randomizedActionsPool,
-                    allow_spoken_mode: Boolean(state.spokenlanguage),
-                    timeout: 10
-                })
-            });
-
-            lastStatus = response.status;
+            let payload = null;
+            try {
+                payload = await window.LogicApi.postJson(
+                    translationApiUrl,
+                    buildTranslationPayload(state.spokenlanguage)
+                );
+                lastStatus = 200;
+            } catch (error) {
+                lastStatus = Number(error && error.status) || 0;
+                continue;
+            }
 
             try {
-                const payload = await response.json();
                 const parsed = normalizeTranslationResult(payload);
                 if (!parsed) {
                     continue;
@@ -2510,12 +2061,14 @@ function initEquivalentQuiz(rootId) {
         state.locked = false;
         state.mode = 'check';
         state.selectedIndex = null;
-        actionButton.textContent = 'Controlla';
-        setStatus('Caricamento');
-        questionEl.textContent = 'Caricamento';
+        actionButton.textContent = 'Controlla la risposta';
+        actionButton.disabled = true;
+        setStatus('Caricamento della domanda…');
+        questionEl.textContent = 'Caricamento della domanda…';
         currentQuestionText = '';
         optionsEl.innerHTML = '';
         showInfo([]);
+        hideFormulaTransformation();
         clearWrongActionImages();
 
         try {
@@ -2524,36 +2077,40 @@ function initEquivalentQuiz(rootId) {
             // Primo caricamento: fetch batch
             if (!batchInitialized) {
                 try {
-                    console.log('Inizializzazione batch per ' + totalExercises + ' domande...');
+                    logger.info('Inizializzazione batch per ' + totalExercises + ' domande...');
                     const operationsList = buildOrderedQuestionsList(totalExercises, state.spokenlanguage);
                     batchOperationsPlan = operationsList.slice();
-                    console.log('Operazioni batch costruite:', operationsList.length);
+                    logger.debug('Operazioni batch costruite:', operationsList.length);
                     const batchResults = await fetchBatchQuestions(operationsList);
-                    console.log('Batch ricevuto:', batchResults.length, 'risposte');
+                    logger.debug('Batch ricevuto:', batchResults.length, 'risposte');
                     
                     // Normalizza tutte le risposte del batch
                     batchQuestionsCache = batchResults.map(function(result, index) {
                         if (!result) {
-                            console.warn('Soft-fail: operazione ' + index + ' ritornata null');
+                            logger.warn('Soft-fail: operazione ' + index + ' ritornata null');
                             return null;
                         }
                         try {
                             const operation = batchOperationsPlan[index];
                             return normalizeQuestionResult(result, operation.operation);
                         } catch (e) {
-                            console.warn('Errore normalizzazione operazione ' + index + ':', e.message);
+                            logger.warn('Errore normalizzazione operazione ' + index + ':', e.message);
                             return null;
                         }
                     });
                     
                     batchInitialized = true;
-                    console.log('Batch inizializzato con', batchQuestionsCache.filter(Boolean).length, 'domande valide su', batchQuestionsCache.length);
+                    logger.info('Batch inizializzato con', batchQuestionsCache.filter(Boolean).length, 'domande valide su', batchQuestionsCache.length);
+                    persistSession({
+                        phase: 'check',
+                        operationPlan: batchOperationsPlan,
+                        questions: batchQuestionsCache
+                    });
                 } catch (batchErr) {
-                    console.error('Errore batch fetch, fallback a singoli:', batchErr.message);
+                    logger.error('Errore batch fetch, fallback a singoli:', batchErr.message);
                     batchInitialized = true; // Evita retry infiniti
-                    batchOperationsPlan = [];
-                    // Forza uso di caricamento singolo per questa domanda
-                    parsed = await loadSingleExercise();
+                    batchQuestionsCache = [];
+                    parsed = await loadFallbackExercise(batchCacheIndex);
                 }
             }
 
@@ -2563,10 +2120,8 @@ function initEquivalentQuiz(rootId) {
                 parsed = getNextCachedQuestion();
                 if (!parsed) {
                     // Cache esaurita o nulla: fallback singolo
-                    console.log('Cache esaurita, fallback singolo per domanda', currentExercise);
-                    const planned = batchOperationsPlan[currentPlanIndex];
-                    const plannedOperation = planned && planned.operation ? planned.operation : '';
-                    parsed = await loadSingleExerciseByOperation(plannedOperation);
+                    logger.debug('Cache esaurita, fallback singolo per domanda', currentExercise);
+                    parsed = await loadFallbackExercise(currentPlanIndex);
                 }
             }
 
@@ -2580,13 +2135,14 @@ function initEquivalentQuiz(rootId) {
             state.correctIndex = parsed.options.findIndex(function(option) {
                 return option.correct;
             });
-            state.selectedIndex = parsed.options.length > 0 ? 0 : null;
+            state.selectedIndex = null;
 
             if (parsed.kind === 'quantifier-negation') {
                 quantifierNegationUsed += 1;
             }
 
             currentQuestionText = parsed.question;
+            currentQuestionId = String(parsed.questionId || '');
             currentImageFormulaSteps = parsed.imageFormulaSteps || { question: [], correct: [], wrongByFormula: {} };
             // Clear formula sequence cache when loading new question to avoid stale data
             clearFormulaSequenceCaches();
@@ -2598,7 +2154,7 @@ function initEquivalentQuiz(rootId) {
             }
 
             if (state.spokenlanguage) {
-                atomSpokenMap = buildAtomSpokenMap(collectAtomsFromExercise(parsed));
+                atomSpokenMap = buildAtomSpokenMap(parsed);
                 buildSpokenNameColorMap();
             } else {
                 atomSpokenMap = {};
@@ -2607,38 +2163,48 @@ function initEquivalentQuiz(rootId) {
             questionEl.textContent = parsed.kind === 'translation'
                 ? parsed.question
                 : applyFormulaTransforms(parsed.question);
-            syncWrongImagesWidth();
             currentQuestionInfo = Array.isArray(parsed.info) ? parsed.info.slice() : [];
             currentTruthAssignments = extractTruthAssignments(currentQuestionInfo);
             showInfo(parsed.info);
             renderOptions();
+            if (resumeSelectedIndex != null && resumeSelectedIndex < state.options.length) {
+                selectIndex(resumeSelectedIndex);
+                resumeSelectedIndex = null;
+            }
             clearWrongActionImages();
             if (!Array.isArray(state.options) || state.options.length === 0) {
                 state.locked = true;
                 state.mode = 'next';
-                actionButton.textContent = currentExercise >= totalExercises ? 'Termina' : 'Prossimo';
+                actionButton.textContent = currentExercise >= totalExercises ? 'Vedi i risultati' : 'Prossima domanda';
+                actionButton.disabled = false;
                 setStatus('L\'API non ha fornito opzioni selezionabili. Premi invio per continuare.');
             } else if (state.correctIndex < 0) {
-                setStatus('Opzioni ricevute senza risposta corretta esplicita dal backend. Seleziona e continua.');
+                setStatus('Seleziona una risposta. La correzione sarà registrata dal backend.');
             } else {
-                setStatus('Usa il mouse o le frecce per selezionare.');
+                setStatus('Seleziona una risposta. Puoi usare anche i tasti freccia.');
             }
-            optionsEl.focus();
+            if (state.selectedIndex == null) {
+                const firstOption = optionsEl.querySelector('.quiz-option');
+                if (firstOption) firstOption.focus();
+            }
             
             // Registra il timestamp di quando l'utente vede la domanda
             if (currentExercise > 0 && currentExercise <= totalExercises) {
                 questionViewTimestamps[currentExercise] = Date.now();
             }
+            persistSession({ phase: 'check' });
         } catch (err) {
             setStatus('Errore nel caricamento esercizio: ' + err.message);
             questionEl.textContent = 'Impossibile caricare l\'esercizio.';
             currentQuestionText = '';
+            currentQuestionId = '';
             atomSpokenMap = {};
             resetSpokenNameColors();
             currentQuestionInfo = [];
             currentTruthAssignments = {};
             currentImageFormulaSteps = { question: [], correct: [], wrongByFormula: {} };
             showInfo([]);
+            hideFormulaTransformation();
             clearWrongActionImages();
         }
     }
@@ -2664,7 +2230,7 @@ function initEquivalentQuiz(rootId) {
                 if (!baseFormula) throw new Error('Empty formula');
                 const logicalBaseFormula = prologToLogical(baseFormula);
                 const quantifier = Math.random() < 0.5 ? '∀' : '∃';
-                const quantified = buildQuantifiedNegationOptions(quantifier, logicalBaseFormula);
+                const quantified = buildQuantifiedNegationOptions(quantifier, logicalBaseFormula, baseFormula);
                 return {
                     kind: 'quantifier-negation',
                     question: quantified.question,
@@ -2684,28 +2250,23 @@ function initEquivalentQuiz(rootId) {
      * @post Restituisce una domanda normalizzata o solleva errore.
      */
     async function loadSingleExercise() {
-        const standardLoaders = [
-            fetchEquivalenceExercise,
-            fetchTruthValueExercise,
-            fetchLogicalConsequenceExercise
-        ];
-        const availableLoaders = state.spokenlanguage
-            ? standardLoaders.slice()
-            : standardLoaders.concat([fetchTranslationExercise]);
-        const pendingQuantifierNegation = Math.max(0, quantifierNegationTarget - quantifierNegationUsed);
-        const questionsLeftIncludingCurrent = Math.max(0, totalExercises - currentExercise + 1);
-        const mustUseQuantifierNegation = pendingQuantifierNegation > 0 && questionsLeftIncludingCurrent <= pendingQuantifierNegation;
+        const allowedOperations = window.LogicQuizConfig.allowedOperations(currentQuizConfig);
+        const operation = pickRandom(allowedOperations);
+        if (!operation) throw new Error('Nessuna tipologia configurata per il fallback');
+        return await loadSingleExerciseByOperation(operation);
+    }
 
-        let loader = null;
-        if (mustUseQuantifierNegation) {
-            loader = fetchQuantifierNegationExercise;
-        } else if (pendingQuantifierNegation > 0) {
-            loader = pickRandom(availableLoaders.concat([fetchQuantifierNegationExercise]));
-        } else {
-            loader = pickRandom(availableLoaders);
-        }
-
-        return await loader();
+    async function loadFallbackExercise(planIndex) {
+        const normalizedIndex = Math.max(0, Number(planIndex) || 0);
+        const planned = batchOperationsPlan[normalizedIndex];
+        const operation = window.LogicQuizConfig.resolveFallbackOperation(
+            currentQuizConfig,
+            planned && planned.operation
+        );
+        if (!operation) throw new Error('Nessuna operazione valida per il fallback');
+        const parsed = await loadSingleExerciseByOperation(operation);
+        batchCacheIndex = Math.max(batchCacheIndex, normalizedIndex + 1);
+        return parsed;
     }
 
     async function loadSingleExerciseByOperation(operationType) {
@@ -2732,12 +2293,15 @@ function initEquivalentQuiz(rootId) {
      * @pre delta e intero (tipicamente +/-1).
      * @post state.selectedIndex cambia se il quiz non e bloccato.
      */
-    function moveSelection(delta) {
+    function moveSelection(delta, originIndex) {
         if (state.locked || state.options.length === 0) return;
 
         const len = state.options.length;
-        state.selectedIndex = (state.selectedIndex + delta + len) % len;
-        updateSelectionVisual();
+        const currentIndex = Number.isInteger(state.selectedIndex)
+            ? state.selectedIndex
+            : (Number.isInteger(originIndex) ? originIndex : (delta > 0 ? -1 : 0));
+        const nextIndex = (currentIndex + delta + len) % len;
+        selectIndex(nextIndex, true);
     }
 
     /**
@@ -2745,11 +2309,13 @@ function initEquivalentQuiz(rootId) {
      * @pre idx e compreso tra 0 e state.options.length-1.
      * @post La selezione visiva viene aggiornata se il quiz non e bloccato.
      */
-    function selectIndex(idx) {
+    function selectIndex(idx, shouldFocus) {
         if (state.locked || idx < 0 || idx >= state.options.length) return;
 
         state.selectedIndex = idx;
-        updateSelectionVisual();
+        updateSelectionVisual({ focusIndex: idx, focus: shouldFocus === true });
+        actionButton.disabled = false;
+        persistSession({ selectedIndex: idx });
     }
 
     /**
@@ -2765,24 +2331,31 @@ function initEquivalentQuiz(rootId) {
 
     function checkAnswer() {
         if (!Array.isArray(state.options) || state.options.length === 0) {
+            hideFormulaTransformation();
             state.locked = true;
             state.mode = 'next';
-            actionButton.textContent = currentExercise >= totalExercises ? 'Termina' : 'Prossimo';
+            actionButton.textContent = currentExercise >= totalExercises ? 'Vedi i risultati' : 'Prossima domanda';
+            actionButton.disabled = false;
             setStatus('Nessuna opzione disponibile. Premi invio per continuare.');
             return;
         }
 
         if (state.locked) return;
+
+        const selected = optionsEl.querySelector('.quiz-option.is-selected');
+        if (!selected || state.selectedIndex == null) {
+            logger.warn("Nessuna selezione valida");
+            setStatus('Seleziona una risposta prima di continuare.');
+            actionButton.disabled = true;
+            const firstOption = optionsEl.querySelector('.quiz-option');
+            if (firstOption) firstOption.focus();
+            return;
+        }
+
         state.locked = true;
 
         try {
             resetVisualFeedback();
-
-            const selected = optionsEl.querySelector('.quiz-option.is-selected');
-            if (!selected || state.selectedIndex == null) {
-                console.warn("Nessuna selezione valida");
-                return;
-            }
 
             const canScore = state.correctIndex >= 0;
             const isCorrect = canScore && state.selectedIndex === state.correctIndex;
@@ -2815,8 +2388,10 @@ function initEquivalentQuiz(rootId) {
 
             // CALCOLA IL TEMPO DI RISPOSTA UNA VOLTA SOLA
             let tempoRisposta = '';
+            let elapsedMs = 0;
             if (questionViewTimestamps[currentExercise] != null) {
                 const elapsed = Date.now() - questionViewTimestamps[currentExercise];
+                elapsedMs = elapsed;
                 tempoRisposta = formatElapsedTime(elapsed);
             }
 
@@ -2866,7 +2441,7 @@ function initEquivalentQuiz(rootId) {
                 domandaCompleta = qText.replace(/\?$/, '') + ' (' + currentQuestionInfo.join(', ') + ')';
             }
 
-            reviewResults.push({
+            const reviewEntry = {
                 number: currentExercise,
                 question: domandaCompleta,
                 infoLines: state.spokenlanguage
@@ -2880,16 +2455,57 @@ function initEquivalentQuiz(rootId) {
                 tipoDomanda: tipoDomanda,
                 tempoRisposta: tempoRisposta,
                 opzioniAttive: opzioniAttive,
-                risposteMostrate: risposteMostrate
+                risposteMostrate: risposteMostrate,
+                constructionCorrect: canScore && correctRaw && typeof correctRaw === 'object'
+                    ? correctRaw.construction
+                    : null,
+                transformationCorrect: canScore && correctRaw && typeof correctRaw === 'object'
+                    ? correctRaw.transformation
+                    : null,
+                transformationSelected: selectedRaw && typeof selectedRaw === 'object'
+                    ? selectedRaw.transformation
+                    : null
+            };
+            reviewResults.push(reviewEntry);
+
+            recordLearningAttempt({
+                question: domandaCompleta,
+                selectedAnswer: reviewEntry.selectedAnswer,
+                correctAnswer: reviewEntry.correctAnswer,
+                correct: isCorrect,
+                scorable: canScore,
+                elapsedMs: elapsedMs,
+                construction: reviewEntry.constructionCorrect,
+                transformationCorrect: reviewEntry.transformationCorrect,
+                transformationSelected: reviewEntry.transformationSelected
             });
 
-            setStatus(canScore
-                ? 'Usa il mouse o premi invio per continuare'
-                : 'Risposta registrata senza correzione locale. Premi invio per continuare');
-            actionButton.textContent = currentExercise >= totalExercises ? 'Termina' : 'Prossimo';
+            if (currentQuizConfig.showConstruction) {
+                showFormulaTransformation({
+                    correct: canScore && correctRaw && typeof correctRaw === 'object'
+                        ? correctRaw.transformation
+                        : null,
+                    selected: selectedRaw && typeof selectedRaw === 'object'
+                        ? selectedRaw.transformation
+                        : null,
+                    selectedIsCorrect: isCorrect
+                });
+            } else {
+                hideFormulaTransformation();
+            }
+
+            const continuationStatus = canScore
+                ? 'Risposta registrata. Continua quando sei pronto.'
+                : 'Risposta registrata senza correzione locale. Premi invio per continuare';
+            setStatus(continuationStatus + (adaptiveMessage ? ' ' + adaptiveMessage : ''));
+            adaptiveMessage = '';
+            actionButton.textContent = currentExercise >= totalExercises ? 'Vedi i risultati' : 'Prossima domanda';
+            actionButton.disabled = false;
+            setRenderedOptionsLocked(true);
+            persistSession({ phase: 'next' });
 
         } catch (err) {
-            console.error("Errore in checkAnswer:", err);
+            logger.error("Errore in checkAnswer:", err);
         }
 
         // SEMPRE eseguito → evita blocchi
@@ -2897,8 +2513,7 @@ function initEquivalentQuiz(rootId) {
     }
 
     function renderReview() {
-        const logSettings = getLogDataSettings();
-        if (logSettings.mode === 'none') {
+        if (!window.LogicPrivacy.canSendFeedback()) {
             showReviewPage();
             return;
         }
@@ -2915,12 +2530,13 @@ function initEquivalentQuiz(rootId) {
     // Passa alla schermata finale e interrompe il timer.
     function showCompletion() {
         state.locked = true;
-        stopTimer();
-        if (timerDisplayEl) timerDisplayEl.hidden = true;
+        quizTimer.stop();
+        quizTimer.hide();
         if (introTitleEl) introTitleEl.hidden = true;
         state.options = [];
         optionsEl.innerHTML = '';
         showInfo([]);
+        hideFormulaTransformation();
         renderReview();
         if (testTitleEl) testTitleEl.hidden = true;
         if (reviewTitleEl) reviewTitleEl.hidden = false;
@@ -2928,17 +2544,22 @@ function initEquivalentQuiz(rootId) {
         if (reviewEl) reviewEl.hidden = false;
         if (indexNavEl) indexNavEl.hidden = true;
         state.mode = 'completed';
+        sessionManager.complete(reviewResults.slice()).then(function() {
+            activeSession = null;
+        }).catch(function() {});
     }
 
     // Ripristina stato iniziale del quiz e mostra la schermata intro.
     function showIntro() {
         currentExercise = 0;
         reviewResults.length = 0;
+        recordedAttempts.length = 0;
         currentQuestionInfo = [];
         currentTruthAssignments = {};
         atomSpokenMap = {};
         resetSpokenNameColors();
         currentQuestionText = '';
+        currentQuestionId = '';
         currentImageFormulaSteps = { question: [], correct: [], wrongByFormula: {} };
         quantifierNegationTarget = 0;
         quantifierNegationUsed = 0;
@@ -2950,11 +2571,10 @@ function initEquivalentQuiz(rootId) {
         batchCacheIndex = 0;
         batchInitialized = false;
         batchOperationsPlan = [];
+        hideFormulaTransformation();
         clearWrongActionImages();
-        stopTimer();
-        timerSecondsRemaining = standardTimeMinutes * 60;
-        renderTimer();
-        if (timerDisplayEl) timerDisplayEl.hidden = true;
+        quizTimer.reset(standardTimeMinutes);
+        quizTimer.hide();
         if (questionCountInput && !questionCountInput.value) questionCountInput.value = String(DEFAULT_EXERCISES);
         if (timeMinutesInput && !timeMinutesInput.value) timeMinutesInput.value = String(DEFAULT_TIME_MINUTES);
         state.showFormulas = Boolean(showFormulasInput && showFormulasInput.checked);
@@ -2968,7 +2588,7 @@ function initEquivalentQuiz(rootId) {
         if (testTitleEl) testTitleEl.hidden = true;
         if (introTitleEl) introTitleEl.hidden = false;
         if (reviewTitleEl) reviewTitleEl.hidden = true;
-        if (reviewTitleEl) reviewTitleEl.textContent = 'Revisione Test';
+        if (reviewTitleEl) reviewTitleEl.textContent = 'Risultati del quiz';
         if (reviewEl) reviewEl.hidden = true;
         if (reviewNavEl) reviewNavEl.hidden = true;
         if (testEl) testEl.hidden = true;
@@ -2981,14 +2601,28 @@ function initEquivalentQuiz(rootId) {
      * @pre Gli input intro (numero domande e minuti) sono presenti o fallback gestibili.
      * @post Timer avviato, stato azzerato e prima domanda in caricamento.
      */
-    function startTest() {
+    async function startTest() {
         if (!validateLogDataSettings()) {
             return;
         }
+        if (!root.querySelector('[data-quiz-question-type]:checked')) {
+            alert('Seleziona almeno una tipologia di domanda.');
+            return;
+        }
+        const requestedQuestionCount = Array.from(root.querySelectorAll('[data-quiz-type-count]')).reduce(function(total, input) {
+            const toggle = root.querySelector('[data-quiz-question-type][value="' + input.dataset.quizTypeCount + '"]');
+            return total + (toggle && toggle.checked ? Math.max(0, Number(input.value) || 0) : 0);
+        }, 0);
+        if (requestedQuestionCount > quizMaximumQuestions) {
+            alert('Il backend supporta al massimo ' + String(quizMaximumQuestions) + ' domande per sessione. Riduci le quantita per tipologia.');
+            return;
+        }
+        currentQuizConfig = window.LogicQuizConfig.readForm(root);
         currentExercise = 1;
         reviewResults.length = 0;
-        totalExercises = Math.min(parsePositiveInt(questionCountInput && questionCountInput.value, DEFAULT_EXERCISES), 100);
-        standardTimeMinutes = parsePositiveInt(timeMinutesInput && timeMinutesInput.value, DEFAULT_TIME_MINUTES);
+        recordedAttempts.length = 0;
+        totalExercises = currentQuizConfig.questionCount;
+        standardTimeMinutes = currentQuizConfig.timeMinutes;
         quantifierNegationTarget = pickQuantifierNegationTarget(totalExercises);
         quantifierNegationUsed = 0;
         feedbackValues = createEmptyFeedbackValues();
@@ -3003,12 +2637,13 @@ function initEquivalentQuiz(rootId) {
         batchCacheIndex = 0;
         batchInitialized = false;
         batchOperationsPlan = [];
+        activeSession = await sessionManager.start(currentQuizConfig);
         if (questionCountInput) questionCountInput.value = String(totalExercises);
         if (timeMinutesInput) timeMinutesInput.value = String(standardTimeMinutes);
         state.showFormulas = Boolean(showFormulasInput && showFormulasInput.checked);
         state.colorAtoms = Boolean(colorAtomsInput && colorAtomsInput.checked);
-        state.spokenlanguage = Boolean(spokenLanguageInput && spokenLanguageInput.checked);
-        state.showWrongActionImages = Boolean(showWrongActionImagesInput && showWrongActionImagesInput.checked);
+        state.spokenlanguage = currentQuizConfig.spokenLanguage;
+        state.showWrongActionImages = currentQuizConfig.showImages;
         state.spokenlanguageLocked = true;
         syncSpokenLanguageAvailability();
         syncWrongImagesAvailability();
@@ -3023,8 +2658,132 @@ function initEquivalentQuiz(rootId) {
         if (indexNavEl) indexNavEl.hidden = true;
         if (testEl) testEl.hidden = false;
         applyFormulasLayout();
-        startTimer(standardTimeMinutes);
+        quizTimer.start(standardTimeMinutes);
         loadExercise();
+    }
+
+    function applyConfigToForm(config) {
+        const normalized = window.LogicDataContracts.normalizeQuizConfig(config);
+        if (presetSelect) presetSelect.value = normalized.preset;
+        if (modeSelect) modeSelect.value = normalized.mode;
+        if (difficultySelect) difficultySelect.value = normalized.difficulty;
+        if (questionCountInput) questionCountInput.value = String(normalized.questionCount);
+        if (timeMinutesInput) timeMinutesInput.value = String(normalized.timeMinutes);
+        if (adaptiveInput) adaptiveInput.checked = normalized.adaptive;
+        if (showConstructionInput) showConstructionInput.checked = normalized.showConstruction;
+        if (spokenLanguageInput) spokenLanguageInput.checked = normalized.spokenLanguage;
+        if (showWrongActionImagesInput) showWrongActionImagesInput.checked = normalized.showImages;
+        root.querySelectorAll('[data-quiz-question-type]').forEach(function(input) {
+            input.checked = normalized.questionTypes.includes(input.value);
+        });
+        root.querySelectorAll('[data-quiz-type-count]').forEach(function(input) {
+            if (Object.prototype.hasOwnProperty.call(normalized.typeCounts, input.dataset.quizTypeCount)) {
+                input.value = String(normalized.typeCounts[input.dataset.quizTypeCount]);
+            }
+        });
+    }
+
+    async function resumeSavedSession() {
+        const session = await sessionManager.loadActive();
+        if (!session) return;
+        activeSession = session;
+        quizStartTimestamp = Number(session.createdAt) || Date.now();
+        currentQuizConfig = session.config;
+        applyConfigToForm(currentQuizConfig);
+        totalExercises = currentQuizConfig.questionCount;
+        standardTimeMinutes = currentQuizConfig.timeMinutes;
+        currentExercise = Math.max(1, session.currentIndex || 1);
+        reviewResults.length = 0;
+        Array.prototype.push.apply(reviewResults, session.answers || []);
+        batchOperationsPlan = Array.isArray(session.operationPlan) ? session.operationPlan.slice() : [];
+        batchQuestionsCache = Array.isArray(session.questions) ? session.questions.slice() : [];
+        batchInitialized = batchQuestionsCache.length > 0;
+        if (session.phase === 'next' && currentExercise < totalExercises) currentExercise += 1;
+        batchCacheIndex = Math.max(0, currentExercise - 1);
+        questionViewTimestamps = new Array(totalExercises + 1);
+        state.showFormulas = Boolean(showFormulasInput && showFormulasInput.checked);
+        state.colorAtoms = Boolean(colorAtomsInput && colorAtomsInput.checked);
+        state.spokenlanguage = currentQuizConfig.spokenLanguage;
+        state.showWrongActionImages = currentQuizConfig.showImages;
+        resumeSelectedIndex = session.phase === 'check' ? session.selectedIndex : null;
+        state.spokenlanguageLocked = true;
+        if (resumePanelEl) resumePanelEl.hidden = true;
+        if (introEl) introEl.hidden = true;
+        if (introTitleEl) introTitleEl.hidden = true;
+        if (testTitleEl) testTitleEl.hidden = false;
+        if (testEl) testEl.hidden = false;
+        if (indexNavEl) indexNavEl.hidden = true;
+        syncSpokenLanguageAvailability();
+        syncWrongImagesAvailability();
+        applyFormulasLayout();
+        updateTestTitle();
+        if (session.phase === 'next' && session.currentIndex >= totalExercises) {
+            showCompletion();
+            return;
+        }
+        quizTimer.startSeconds(session.remainingSeconds || (standardTimeMinutes * 60));
+        loadExercise();
+    }
+
+    function offerSavedSession() {
+        sessionManager.loadActive().then(function(session) {
+            if (!session || !resumePanelEl) return;
+            resumePanelEl.hidden = false;
+            if (resumeSummaryEl) {
+                resumeSummaryEl.textContent = 'Domanda ' + String(session.currentIndex) + ' di ' + String(session.config.questionCount)
+                    + ', tempo residuo ' + window.LogicQuizTimer.format(session.remainingSeconds) + '.';
+            }
+        }).catch(function() {});
+    }
+
+    function clearActiveSessionState() {
+        activeSession = null;
+        resumeSelectedIndex = null;
+        if (resumePanelEl) resumePanelEl.hidden = true;
+        if (resumeSummaryEl) resumeSummaryEl.textContent = '';
+        sessionManager.discard().catch(function() {});
+    }
+
+    function applyUrlConfiguration() {
+        const params = new URLSearchParams(window.location.search);
+        const requestedType = params.get('type');
+        const requestedDifficulty = params.get('difficulty');
+        if (window.LogicDataContracts.QUESTION_TYPES.includes(requestedType)) {
+            root.querySelectorAll('[data-quiz-question-type]').forEach(function(input) {
+                input.checked = input.value === requestedType;
+            });
+            if (presetSelect) presetSelect.value = 'custom';
+        }
+        if (window.LogicDataContracts.DIFFICULTIES.includes(requestedDifficulty) && difficultySelect) {
+            difficultySelect.value = requestedDifficulty;
+            if (presetSelect) presetSelect.value = 'custom';
+        }
+    }
+
+    function attemptsForExport(storedAttempts) {
+        const byId = new Map();
+        (storedAttempts || []).concat(recordedAttempts).forEach(function(attempt) {
+            byId.set(attempt.attemptId || stableQuestionId(attempt.type, attempt.question, attempt.answeredAt), attempt);
+        });
+        return Array.from(byId.values()).sort(function(left, right) { return Number(left.answeredAt) - Number(right.answeredAt); });
+    }
+
+    function loadQuizCapabilities() {
+        return window.LogicApi.requestJson(buildApiUrl('capabilities'), { timeoutMs: 5000 }).then(function(capabilities) {
+            const maximum = Number(capabilities?.limits?.question_count?.maximum);
+            if (questionCountInput && Number.isFinite(maximum)) {
+                quizMaximumQuestions = maximum;
+                questionCountInput.max = String(maximum);
+                if (Number(questionCountInput.value) > maximum) questionCountInput.value = String(maximum);
+                root.querySelectorAll('[data-quiz-type-count]').forEach(function(input) { input.max = String(maximum); });
+            }
+            const supported = Array.isArray(capabilities.question_types) ? capabilities.question_types : [];
+            root.querySelectorAll('[data-quiz-question-type]').forEach(function(input) {
+                input.disabled = supported.length > 0 && !supported.includes(input.value);
+            });
+        }).catch(function() {
+            if (adaptiveNoticeEl) adaptiveNoticeEl.textContent = 'Limiti del backend non disponibili: verranno usati i valori standard.';
+        });
     }
 
     optionsEl.addEventListener('click', function(evt) {
@@ -3034,33 +2793,37 @@ function initEquivalentQuiz(rootId) {
     });
 
     optionsEl.addEventListener('keydown', function(evt) {
+        const option = evt.target.closest('.quiz-option');
+        if (!option || state.locked) return;
+        const optionIndex = Number(option.dataset.index);
+
         if (evt.key === 'ArrowDown' || evt.key === 'ArrowRight') {
             evt.preventDefault();
-            moveSelection(1);
+            moveSelection(1, optionIndex);
             return;
         }
 
         if (evt.key === 'ArrowUp' || evt.key === 'ArrowLeft') {
             evt.preventDefault();
-            moveSelection(-1);
+            moveSelection(-1, optionIndex);
             return;
         }
 
         if (evt.key === 'Home') {
             evt.preventDefault();
-            selectIndex(0);
+            selectIndex(0, true);
             return;
         }
 
         if (evt.key === 'End') {
             evt.preventDefault();
-            selectIndex(state.options.length - 1);
+            selectIndex(state.options.length - 1, true);
             return;
         }
 
         if (evt.key === 'Enter' || evt.key === ' ') {
             evt.preventDefault();
-            actionButton.click();
+            selectIndex(optionIndex, true);
         }
     });
 
@@ -3076,7 +2839,9 @@ function initEquivalentQuiz(rootId) {
                 return;
             }
             currentExercise += 1;
+            state.selectedIndex = null;
             updateTestTitle();
+            persistSession({ currentIndex: currentExercise, phase: 'check', selectedIndex: null });
             loadExercise();
         }
     });
@@ -3089,6 +2854,59 @@ function initEquivalentQuiz(rootId) {
 
     if (startButton && introEl && testEl) {
         startButton.addEventListener('click', startTest);
+        if (presetSelect) {
+            presetSelect.addEventListener('change', function() {
+                window.LogicQuizConfig.applyPreset(root, presetSelect.value);
+            });
+        }
+        if (modeSelect) {
+            modeSelect.addEventListener('change', function() {
+                if (modeSelect.value === 'exam') {
+                    if (adaptiveInput) adaptiveInput.checked = false;
+                    if (showConstructionInput) showConstructionInput.checked = false;
+                }
+            });
+        }
+        function syncTypeCountTotal() {
+            let total = 0;
+            root.querySelectorAll('[data-quiz-question-type]').forEach(function(toggle) {
+                const count = root.querySelector('[data-quiz-type-count="' + toggle.value + '"]');
+                if (count) count.disabled = !toggle.checked;
+                if (toggle.checked && count) total += Math.max(0, Number(count.value) || 0);
+            });
+            if (questionCountInput) questionCountInput.value = String(Math.max(1, Math.min(quizMaximumQuestions, total)));
+        }
+        root.querySelectorAll('[data-quiz-question-type], [data-quiz-type-count]').forEach(function(input) {
+            input.addEventListener('change', syncTypeCountTotal);
+            if (input.matches('[data-quiz-type-count]')) input.addEventListener('input', syncTypeCountTotal);
+        });
+        if (resumeButton) resumeButton.addEventListener('click', resumeSavedSession);
+        if (discardSessionButton) {
+            discardSessionButton.addEventListener('click', function() {
+                sessionManager.discard().then(function() {
+                    activeSession = null;
+                    if (resumePanelEl) resumePanelEl.hidden = true;
+                });
+            });
+        }
+        if (exportJsonButton) {
+            exportJsonButton.addEventListener('click', function() {
+                window.LogicAppStorage.instance.list('attempts').then(function(attempts) {
+                    window.LogicResultsExport.downloadJson({
+                        configuration: currentQuizConfig,
+                        attempts: attemptsForExport(attempts)
+                    });
+                });
+            });
+        }
+        if (exportCsvButton) {
+            exportCsvButton.addEventListener('click', function() {
+                window.LogicAppStorage.instance.list('attempts').then(function(attempts) {
+                    window.LogicResultsExport.downloadCsv(attemptsForExport(attempts));
+                });
+            });
+        }
+        if (printResultsButton) printResultsButton.addEventListener('click', function() { window.print(); });
         if (showFormulasInput) {
             showFormulasInput.addEventListener('change', function() {
                 state.showFormulas = Boolean(showFormulasInput.checked);
@@ -3110,10 +2928,11 @@ function initEquivalentQuiz(rootId) {
                 state.spokenlanguage = Boolean(spokenLanguageInput.checked);
                 syncWrongImagesAvailability();
                 if (state.spokenlanguage && state.options && state.options.length > 0) {
-                    atomSpokenMap = buildAtomSpokenMap(collectAtomsFromExercise({
+                    atomSpokenMap = buildAtomSpokenMap({
+                        kind: state.exerciseKind,
                         info: currentQuestionInfo,
                         options: state.options
-                    }));
+                    });
                     buildSpokenNameColorMap();
                 } else {
                     atomSpokenMap = {};
@@ -3131,24 +2950,27 @@ function initEquivalentQuiz(rootId) {
             });
         }
         if (logDataAgeInput) {
-            const savedAge = localStorage.getItem('logDataAge') || '';
-            logDataAgeInput.value = savedAge;
-            logDataAgeInput.addEventListener('change', commitLogDataSettings);
-            logDataAgeInput.addEventListener('input', function() {
-                if (logDataAgeInput.value.trim() === '') {
-                    localStorage.removeItem('logDataAge');
-                }
-            });
+            logDataAgeInput.addEventListener('change', syncLogDataSettings);
         }
         if (logDataInstitutionSelect) {
-            logDataInstitutionSelect.value = localStorage.getItem('logDataInstitution') || '';
-            logDataInstitutionSelect.addEventListener('change', commitLogDataSettings);
+            logDataInstitutionSelect.addEventListener('change', syncLogDataSettings);
         }
         if (logDataStemSelect) {
-            logDataStemSelect.value = localStorage.getItem('logDataStem') || '';
-            logDataStemSelect.addEventListener('change', commitLogDataSettings);
+            logDataStemSelect.addEventListener('change', syncLogDataSettings);
         }
         syncLogDataStemVisibility();
+        syncPrivacyVisibility();
+        window.LogicAppEvents.on('privacy:changed', syncPrivacyVisibility);
+        window.LogicAppEvents.on('privacy:sessions-clearing', clearActiveSessionState);
+        window.LogicAppEvents.on('privacy:sessions-cleared', clearActiveSessionState);
+        window.LogicAppEvents.on('privacy:data-clearing', clearActiveSessionState);
+        window.LogicAppEvents.on('privacy:data-cleared', clearActiveSessionState);
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'hidden' && state.mode !== 'completed') persistSession();
+        });
+        window.addEventListener('beforeunload', function() {
+            if (activeSession) persistSession();
+        });
         window.addEventListener('logicExerciseSettingsChanged', function(evt) {
             if (!isExercisesPage) return;
             const detail = evt && evt.detail ? evt.detail : {};
@@ -3163,6 +2985,10 @@ function initEquivalentQuiz(rootId) {
         }
         syncWrongImagesAvailability();
         showIntro();
+        applyUrlConfiguration();
+        syncTypeCountTotal();
+        loadQuizCapabilities();
+        offerSavedSession();
         return;
     }
 

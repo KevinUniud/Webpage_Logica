@@ -176,3 +176,12 @@ html.day-mode .exists-night,
 body.day-mode .exists-night{
     display: none;
 }
+.cell-green {
+    color: var(--atom-true);
+    font-weight: 600;
+}
+
+.cell-red {
+    color: var(--atom-false);
+    font-weight: 600;
+}

@@ -7,7 +7,7 @@
  * @pre Il bottone di verifica e all'interno del blocco domanda con radio T/F.
  * @post Lo stato visivo viene aggiornato, il feedback testuale e mostrato e il form viene bloccato.
  */
-function check() {
+function check(callerElement) {
     function lockCheckButton(button) {
         if (!button) return;
         button.disabled = true;
@@ -69,7 +69,7 @@ function check() {
         });
     }
 
-    const caller = document.activeElement;
+    const caller = callerElement || document.activeElement;
 
     let scope = document;
     if (caller) {
@@ -98,6 +98,10 @@ function check() {
         markRadioOption(selected, 'is-correct');
         lockRadioScope(scope);
         lockCheckButton(caller);
+        if (window.LogicAppEvents) window.LogicAppEvents.emit('lesson:answered', {
+            exerciseId: scope.id || caller?.dataset.checkIndex || caller?.dataset.checkAction || 'radio',
+            correct: true
+        });
         //setStatus(caller, '✓ Corretto.', 'correct');
         return;
     }
@@ -109,6 +113,10 @@ function check() {
         }
         lockRadioScope(scope);
         lockCheckButton(caller);
+        if (window.LogicAppEvents) window.LogicAppEvents.emit('lesson:answered', {
+            exerciseId: scope.id || caller?.dataset.checkIndex || caller?.dataset.checkAction || 'radio',
+            correct: false
+        });
         //setStatus(caller, '✕ Errato.', 'wrong');
         return;
     }
@@ -121,7 +129,7 @@ function check() {
  * @pre n identifica una domanda presente e relativo input .expressionInput.
  * @post Mostra alert di esito e restituisce true/false in base alla correttezza.
  */
-function checkArray(n) {
+function checkArray(n, callerElement) {
     function lockCheckButton(button) {
         if (!button) return;
         button.disabled = true;
@@ -223,7 +231,7 @@ function checkArray(n) {
     window.clearExpressionFeedback = clearExpressionFeedback;
     window.unlockExpressionBuilder = unlockExpressionBuilder;
 
-    const caller = document.activeElement;
+    const caller = callerElement || document.activeElement;
 
     const answers = {
         1: [['P', 'allora', 'non', 'Q']],
@@ -272,6 +280,10 @@ function checkArray(n) {
             setExpressionFeedback(input, '✓ Corretto', 'correct');
             lockExpressionBuilder(input);
             lockCheckButton(caller);
+            if (window.LogicAppEvents) window.LogicAppEvents.emit('lesson:answered', {
+                exerciseId: 'expression-' + String(n),
+                correct: true
+            });
             return true;
         }
     }
@@ -279,5 +291,19 @@ function checkArray(n) {
     setExpressionFeedback(input, '✕ Errato', 'wrong');
     lockExpressionBuilder(input);
     lockCheckButton(caller);
+    if (window.LogicAppEvents) window.LogicAppEvents.emit('lesson:answered', {
+        exerciseId: 'expression-' + String(n),
+        correct: false
+    });
     return false;
 }
+
+document.addEventListener('click', function handleLessonCheck(event) {
+    const button = event.target.closest('[data-check-action], [data-check-index]');
+    if (!button) return;
+    if (button.dataset.checkIndex) {
+        checkArray(Number(button.dataset.checkIndex), button);
+        return;
+    }
+    check(button);
+});

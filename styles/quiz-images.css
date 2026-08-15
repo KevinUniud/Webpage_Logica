@@ -67,6 +67,11 @@
     color: inherit;
 }
 
+.quiz-name-color-0 { color: var(--quiz-name-color-0); }
+.quiz-name-color-1 { color: var(--quiz-name-color-1); }
+.quiz-name-color-2 { color: var(--quiz-name-color-2); }
+.quiz-name-color-3 { color: var(--quiz-name-color-3); }
+
 /* Evidenziazione differenze step: cambiamento o errore. */
 .quiz-wrong-images-item.is-step-changed {
     border: 1px solid var(--success-accent-border);
