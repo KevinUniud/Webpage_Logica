@@ -147,6 +147,18 @@ test('transformation contract accepts a continuous authentic rewrite path', () =
     assert.match(transformation.describeStep(normalized.steps[0]), /eliminazione dell'implicazione/);
 });
 
+test('transformation contract describes joint biconditional negation', () => {
+    const transformation = loadTransformationModule();
+    const step = {
+        kind: 'rewrite',
+        rule: 'biconditional_negation',
+        location: 'root'
+    };
+
+    assert.match(transformation.describeStep(step), /negazione simultanea/);
+    assert.equal(transformation.ruleSchema(step), 'A ↔ B ⇔ (¬A ↔ ¬B)');
+});
+
 test('transformation contract preserves complete subformula pairs and safely falls back for partial pairs', () => {
     const transformation = loadTransformationModule();
     const nested = transformation.normalize(nestedEquivalenceTrace());

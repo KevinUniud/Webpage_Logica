@@ -82,15 +82,32 @@
         });
     }
 
+    function syncPresetLocks(root, preset) {
+        const scope = root || document;
+        const examLocked = preset === 'exam';
+        const difficulty = scope.querySelector('#quizDifficulty');
+        const timeMinutes = scope.querySelector('#quizTimeMinutes');
+        const questionTypes = scope.querySelector('#quizQuestionTypes');
+
+        if (difficulty) difficulty.disabled = examLocked;
+        if (timeMinutes) timeMinutes.disabled = examLocked;
+        if (questionTypes) questionTypes.disabled = examLocked;
+    }
+
     function applyPreset(root, preset) {
         const scope = root || document;
+        const mode = scope.querySelector('#quizMode');
+        if (preset === 'custom') {
+            if (mode) mode.value = 'practice';
+            syncPresetLocks(scope, preset);
+            return;
+        }
         const values = preset === 'exam'
             ? { mode: 'exam', difficulty: 'medium', adaptive: false, construction: false }
             : preset === 'practice'
                 ? { mode: 'practice', difficulty: 'easy', adaptive: true, construction: true }
                 : null;
         if (!values) return;
-        const mode = scope.querySelector('#quizMode');
         const difficulty = scope.querySelector('#quizDifficulty');
         const adaptive = scope.querySelector('#quizAdaptive');
         const construction = scope.querySelector('#quizShowConstruction');
@@ -98,6 +115,7 @@
         if (difficulty) difficulty.value = values.difficulty;
         if (adaptive) adaptive.checked = values.adaptive;
         if (construction) construction.checked = values.construction;
+        syncPresetLocks(scope, preset);
     }
 
     global.LogicQuizConfig = Object.freeze({
@@ -107,6 +125,7 @@
         atomCountForDifficulty: atomCountForDifficulty,
         buildOperationPlan: buildOperationPlan,
         readForm: readForm,
-        resolveFallbackOperation: resolveFallbackOperation
+        resolveFallbackOperation: resolveFallbackOperation,
+        syncPresetLocks: syncPresetLocks
     });
 })(window);

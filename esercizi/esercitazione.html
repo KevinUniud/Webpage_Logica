@@ -67,22 +67,14 @@
                     </div>
                     <p>
                         <label>
-                            Profilo:
-                            <select id="quizPreset">
-                                <option value="practice">Pratica</option>
-                                <option value="exam">Esame</option>
-                                <option value="custom">Personalizzato</option>
-                            </select>
-                        </label>
-                    </p>
-                    <p>
-                        <label>
                             Modalità:
-                            <select id="quizMode">
+                            <select id="quizPreset">
                                 <option value="practice">Pratica guidata</option>
                                 <option value="exam">Simulazione esame</option>
+                                <option value="custom">Personalizzata</option>
                             </select>
                         </label>
+                        <input id="quizMode" type="hidden" value="practice">
                     </p>
                     <p>
                         <label>
@@ -94,11 +86,9 @@
                             </select>
                         </label>
                     </p>
-                    <p>
-                        <label>
-                            Numero domande (somma delle tipologie):
-                            <input id="quizQuestionCount" type="number" min="1" max="100" step="1" value="10" readonly>
-                        </label>
+                    <p class="quiz-question-total-row">
+                        <span>Numero domande (somma delle tipologie, massimo <span id="quizQuestionMaximum">100</span>):</span>
+                        <output id="quizQuestionCount" class="quiz-question-total" max="100" aria-live="polite">10</output>
                     </p>
                     <p>
                         <label>
@@ -131,7 +121,7 @@
                             Mostra immagini
                         </label>
                     </p>
-                    <fieldset class="quiz-config-group">
+                    <fieldset id="quizQuestionTypes" class="quiz-config-group">
                         <legend>Tipologie di domanda</legend>
                         <label><input type="checkbox" data-quiz-question-type value="equivalence" checked> Equivalenze <input type="number" data-quiz-type-count="equivalence" min="0" max="100" value="2" aria-label="Numero domande di equivalenza"></label>
                         <label><input type="checkbox" data-quiz-question-type value="truth-value" checked> Valore di verità <input type="number" data-quiz-type-count="truth-value" min="0" max="100" value="2" aria-label="Numero domande sul valore di verità"></label>
@@ -146,45 +136,6 @@
                         <label><input id="quizShowConstruction" type="checkbox" checked> Mostra come è stata raggiunta la formula dopo la risposta, quando disponibile</label>
                     </p>
                     <p id="quizAdaptiveNotice" class="quiz-intro-note" aria-live="polite"></p>
-                    <div class="quiz-log-data" id="quizLogDataSection" hidden>
-                        <h3>Dati demografici facoltativi</h3>
-                        <p class="quiz-intro-note">
-                        Questi campi vengono inclusi soltanto se abiliti sia l'invio del feedback sia l'inclusione dei dati nelle impostazioni privacy.
-                        </p>
-                        <p>
-                            <label>
-                                Età:
-                                <input id="quizLogDataAge" type="number" min="1" max="199" step="1">
-                            </label>
-                        </p>
-                        <p>
-                            <label>
-                                Istituto di appartenenza:
-                                <select id="quizLogDataInstitution">
-                                    <option value="">--- Seleziona ---</option>
-                                    <option value="triennale">Corso di laurea Triennale</option>
-                                    <option value="magistrale">Corso di laurea Magistrale</option>
-                                    <option value="ciclo-unico">Laurea a ciclo unico</option>
-                                    <option value="liceo-scientifico">Liceo scientifico</option>
-                                    <option value="altro-liceo">Altro liceo</option>
-                                    <option value="iti">Istituto tecnico industriale</option>
-                                    <option value="altri-tecnici">Altri istituti tecnici</option>
-                                    <option value="professionale">Istituto professionale</option>
-                                    <option value="altro">Altro</option>
-                                </select>
-                            </label>
-                        </p>
-                        <p id="quizLogDataStemRow" hidden>
-                            <label>
-                                Indirizzo:
-                                <select id="quizLogDataStem">
-                                    <option value="">--- Seleziona ---</option>
-                                    <option value="STEM">STEM</option>
-                                    <option value="Non STEM">Non STEM</option>
-                                </select>
-                            </label>
-                        </p>
-                    </div>
                     <button id="quizStartButton" class="btn-wide" type="button">Inizia il quiz</button>
                 </div>
 
@@ -199,6 +150,43 @@
                 </div>
 
                 <div id="quizReview" hidden>
+                    <section class="quiz-log-data quiz-feedback-demographics" id="quizLogDataSection" aria-labelledby="quizLogDataLegend" hidden>
+                        <fieldset>
+                            <legend id="quizLogDataLegend">Dati demografici facoltativi</legend>
+                            <p class="quiz-feedback-note">
+                                Puoi lasciare vuoti tutti i campi. Saranno inclusi nella valutazione soltanto quelli che compili e non vengono salvati nella sessione.
+                            </p>
+                            <div class="quiz-feedback-demographics-grid">
+                                <label for="quizLogDataAge">
+                                    Età
+                                    <input id="quizLogDataAge" type="number" min="1" max="199" step="1" inputmode="numeric">
+                                </label>
+                                <label for="quizLogDataInstitution">
+                                    Istituto di appartenenza
+                                    <select id="quizLogDataInstitution">
+                                        <option value="">--- Non specificato ---</option>
+                                        <option value="triennale">Corso di laurea Triennale</option>
+                                        <option value="magistrale">Corso di laurea Magistrale</option>
+                                        <option value="ciclo-unico">Laurea a ciclo unico</option>
+                                        <option value="liceo-scientifico">Liceo scientifico</option>
+                                        <option value="altro-liceo">Altro liceo</option>
+                                        <option value="iti">Istituto tecnico industriale</option>
+                                        <option value="altri-tecnici">Altri istituti tecnici</option>
+                                        <option value="professionale">Istituto professionale</option>
+                                        <option value="altro">Altro</option>
+                                    </select>
+                                </label>
+                                <label id="quizLogDataStemRow" for="quizLogDataStem" hidden>
+                                    Indirizzo
+                                    <select id="quizLogDataStem">
+                                        <option value="">--- Non specificato ---</option>
+                                        <option value="STEM">STEM</option>
+                                        <option value="Non STEM">Non STEM</option>
+                                    </select>
+                                </label>
+                            </div>
+                        </fieldset>
+                    </section>
                     <div id="quizReviewList" class="quiz-review-list"></div>
                 </div>
             </div>

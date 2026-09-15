@@ -20,50 +20,40 @@
     <script src="../scripts/app-storage.js"></script>
     <script src="../scripts/settings.js?v=3"></script>
     <script src="../scripts/api-client.js"></script>
+    <script src="../scripts/formula-syntax.js"></script>
     <script src="../scripts/formula-construction.js"></script>
     <script src="../scripts/formula-construction-renderer.js"></script>
+    <script src="../scripts/logic-tree-builder.js"></script>
     <script src="../scripts/formula-tree.js"></script>
     <script src="../scripts/logic-sandbox.js"></script>
     <script src="../scripts/app.js"></script>
     <main id="main-content" class="study-page" tabindex="-1">
         <header class="sandbox-header">
             <h1>Laboratorio di logica</h1>
-            <p class="sandbox-lead">Componi una formula nella sintassi controllata, osservane la costruzione e richiedi analisi al backend. Il testo non viene mai eseguito come codice Prolog arbitrario.</p>
+            <p class="sandbox-lead">Componi una formula con i simboli logici, osservane la struttura e richiedi l'analisi. Il testo viene validato prima di essere inviato.</p>
         </header>
         <section class="rounded-box sandbox-workbench" aria-labelledby="sandboxWorkbenchTitle">
             <h2 id="sandboxWorkbenchTitle">Componi e analizza</h2>
             <div class="sandbox-field">
-                <label for="sandboxExamples">Esempio</label>
-                <select id="sandboxExamples" class="sandbox-control">
-                    <option value="">Scegli un esempio</option>
-                    <option value="and(p,q)">p e q</option>
-                    <option value="imp(and(p,q),r)">(p e q) implica r</option>
-                    <option value="or(not(p),q)">non p oppure q</option>
-                    <option value="forall(x,imp(p(x),q(x)))">Per ogni x, se p allora q</option>
-                </select>
-            </div>
-            <div class="sandbox-field">
                 <div class="sandbox-label-row">
                     <label for="sandboxFormula">Formula principale</label>
-                    <span id="sandboxFormulaHint" class="sandbox-hint">Massimo 500 caratteri</span>
+                    <span id="sandboxFormulaHint" class="sandbox-hint">Usa ¬ ∧ ∨ → ↔ · massimo 500 caratteri</span>
                 </div>
-                <textarea id="sandboxFormula" class="sandbox-control sandbox-formula-input" rows="4" maxlength="500" spellcheck="false" autocapitalize="none" autocomplete="off" aria-describedby="sandboxFormulaHint">imp(and(p,q),r)</textarea>
+                <textarea id="sandboxFormula" class="sandbox-control sandbox-formula-input" rows="4" maxlength="500" spellcheck="false" autocapitalize="none" autocomplete="off" aria-describedby="sandboxFormulaHint"></textarea>
             </div>
             <div class="sandbox-field">
-                <p id="sandboxSymbolsLabel" class="sandbox-control-label">Operatori</p>
+                <p id="sandboxSymbolsLabel" class="sandbox-control-label">Inserisci un operatore</p>
                 <div id="sandboxSymbols" class="sandbox-symbols" role="group" aria-labelledby="sandboxSymbolsLabel">
-                    <button class="sandbox-symbol-button" type="button" data-symbol="and(,)">and</button>
-                    <button class="sandbox-symbol-button" type="button" data-symbol="or(,)">or</button>
-                    <button class="sandbox-symbol-button" type="button" data-symbol="not()">not</button>
-                    <button class="sandbox-symbol-button" type="button" data-symbol="imp(,)">implica</button>
-                    <button class="sandbox-symbol-button" type="button" data-symbol="iff(,)">iff</button>
-                    <button class="sandbox-symbol-button" type="button" data-symbol="forall(,)">forall</button>
-                    <button class="sandbox-symbol-button" type="button" data-symbol="exists(,)">exists</button>
+                    <button class="sandbox-symbol-button" type="button" data-symbol="∧" aria-label="Inserisci congiunzione">∧</button>
+                    <button class="sandbox-symbol-button" type="button" data-symbol="∨" aria-label="Inserisci disgiunzione">∨</button>
+                    <button class="sandbox-symbol-button" type="button" data-symbol="¬" aria-label="Inserisci negazione">¬</button>
+                    <button class="sandbox-symbol-button" type="button" data-symbol="→" aria-label="Inserisci implicazione">→</button>
+                    <button class="sandbox-symbol-button" type="button" data-symbol="↔" aria-label="Inserisci doppia implicazione">↔</button>
                 </div>
             </div>
             <div class="sandbox-field">
                 <label for="sandboxCompareFormula">Seconda formula, per il confronto</label>
-                <textarea id="sandboxCompareFormula" class="sandbox-control sandbox-formula-input" rows="3" maxlength="500" spellcheck="false" autocapitalize="none" autocomplete="off">or(not(and(p,q)),r)</textarea>
+                <textarea id="sandboxCompareFormula" class="sandbox-control sandbox-formula-input" rows="3" maxlength="500" spellcheck="false" autocapitalize="none" autocomplete="off" aria-describedby="sandboxFormulaHint"></textarea>
             </div>
             <div class="sandbox-actions" role="group" aria-label="Azioni di analisi">
                 <button class="sandbox-action-button" id="sandboxVariables" type="button">Trova variabili</button>
@@ -81,8 +71,31 @@
         </section>
         <section class="sandbox-output-section">
             <h2>Albero della formula</h2>
-            <p class="sandbox-section-help">Seleziona un nodo con mouse, Invio o barra spaziatrice. L'elenco testuale precedente resta la descrizione completa.</p>
-            <div id="sandboxTree" class="sandbox-tree"></div>
+            <div id="sandboxTreeBuilder" class="rounded-box sandbox-tree-builder" aria-labelledby="sandboxTreeBuilderTitle">
+                <h3 id="sandboxTreeBuilderTitle">Costruisci dall'albero</h3>
+                <p class="sandbox-section-help">Aggiungi gli atomi, seleziona le radici nell'ordine desiderato e applica un operatore. Il primo nodo selezionato resta a sinistra, il secondo a destra; la negazione usa un solo nodo.</p>
+                <div class="sandbox-tree-atom-row">
+                    <label for="sandboxTreeAtom">Nome dell'atomo</label>
+                    <div class="sandbox-tree-atom-controls">
+                        <input id="sandboxTreeAtom" class="sandbox-control" type="text" maxlength="40" pattern="[a-z][A-Za-z0-9_]*" spellcheck="false" autocapitalize="none" autocomplete="off">
+                        <button id="sandboxTreeAddAtom" class="sandbox-action-button" type="button">Aggiungi atomo</button>
+                    </div>
+                </div>
+                <fieldset class="sandbox-tree-operator-fieldset">
+                    <legend>Collega le radici selezionate</legend>
+                    <div id="sandboxTreeOperators" class="sandbox-tree-operators">
+                        <button class="sandbox-symbol-button" type="button" data-tree-operator="not" aria-label="Applica negazione">¬</button>
+                        <button class="sandbox-symbol-button" type="button" data-tree-operator="and" aria-label="Applica congiunzione">∧</button>
+                        <button class="sandbox-symbol-button" type="button" data-tree-operator="or" aria-label="Applica disgiunzione">∨</button>
+                        <button class="sandbox-symbol-button" type="button" data-tree-operator="imp" aria-label="Applica implicazione">→</button>
+                        <button class="sandbox-symbol-button" type="button" data-tree-operator="iff" aria-label="Applica doppia implicazione">↔</button>
+                    </div>
+                </fieldset>
+                <button id="sandboxTreeReset" class="sandbox-action-button sandbox-clear-button" type="button">Reimposta albero</button>
+                <p id="sandboxTreeBuilderStatus" class="sandbox-tree-builder-status" role="status" aria-live="polite">L'albero è vuoto. Aggiungi un atomo per iniziare.</p>
+            </div>
+            <p id="sandboxTreeHelp" class="sandbox-section-help">Puoi selezionare una radice disponibile con mouse, Invio o barra spaziatrice. Ogni nodo mostra la formula completa raggiunta in quel punto.</p>
+            <div id="sandboxTree" class="sandbox-tree" aria-describedby="sandboxTreeHelp sandboxTreeDetail"></div>
             <p id="sandboxTreeDetail" class="sandbox-tree-detail" aria-live="polite"></p>
         </section>
         <section class="sandbox-output-section">

@@ -21,6 +21,9 @@
         const normalizeTransformation = typeof dependencies.normalizeTransformation === 'function'
             ? dependencies.normalizeTransformation
             : function() { return null; };
+        const removeFormulaNegations = typeof dependencies.removeFormulaNegations === 'function'
+            ? dependencies.removeFormulaNegations
+            : function(formula) { return String(formula || ''); };
 
     function formatTruthInfo(entry) {
         if (typeof entry !== 'string') return '';
@@ -313,28 +316,58 @@
         };
     }
 
+    function bindPropositionalAtoms(formula, boundVariable) {
+        const variable = String(boundVariable || 'x').trim().toLowerCase() || 'x';
+        const reserved = new Set(['and', 'or', 'not', 'imp', 'iff', 'equiv', 'forall', 'exists', 'true', 'false']);
+        return String(formula || '').replace(/\b([A-Za-z][A-Za-z0-9_]*)\b/g, function(token, _name, offset, source) {
+            const lower = token.toLowerCase();
+            if (reserved.has(lower)) return token;
+
+            const tail = source.slice(offset + token.length);
+            if (/^\s*\(/.test(tail)) return token;
+
+            const prefix = source.slice(0, offset);
+            if (lower === variable && /[A-Za-z][A-Za-z0-9_]*\(\s*$/.test(prefix)) return token;
+
+            return token.charAt(0).toUpperCase() + token.slice(1) + '(' + variable + ')';
+        });
+    }
+
     /**
      * Genera opzioni multiple-choice per negazione di formule quantificate.
-     * @pre quantifier e '∀' o '∃'; baseFormula e una formula testuale.
+     * @pre quantifier e '∀' o '∃'; baseFormula e una formula testuale;
+     *      spokenMode richiede una base positiva ricavata strutturalmente.
      * @post Restituisce domanda e 3 opzioni con esattamente una risposta corretta.
      */
-    function buildQuantifiedNegationOptions(quantifier, baseFormula, baseFormulaSource) {
-        const normalizedFormula = String(baseFormula || '').trim() || 'p';
+    function buildQuantifiedNegationOptions(quantifier, baseFormula, baseFormulaSource, spokenMode) {
+        const boundVariable = 'x';
+        const rawFormulaSource = String(baseFormulaSource || '').trim();
+        const preparedFormulaSource = spokenMode
+            ? removeFormulaNegations(rawFormulaSource)
+            : rawFormulaSource;
+        const preparedDisplayFormula = spokenMode && preparedFormulaSource
+            ? prologToLogical(preparedFormulaSource)
+            : String(baseFormula || '').trim();
+        const normalizedFormula = bindPropositionalAtoms(
+            preparedDisplayFormula || 'p',
+            boundVariable
+        );
+        const predicateFormulaSource = bindPropositionalAtoms(preparedFormulaSource, boundVariable);
         const wrappedFormula = '(' + normalizedFormula + ')';
         const isUniversal = quantifier === '∀';
-        const original = quantifier + 'x ' + wrappedFormula;
+        const original = quantifier + boundVariable + ' ' + wrappedFormula;
         const correct = isUniversal
-            ? '∃x ¬' + wrappedFormula
-            : '∀x ¬' + wrappedFormula;
+            ? '∃' + boundVariable + ' ¬' + wrappedFormula
+            : '∀' + boundVariable + ' ¬' + wrappedFormula;
 
         const wrongs = isUniversal
             ? [
-                '∀x ¬' + wrappedFormula,
-                '∃x ' + wrappedFormula
+                '∀' + boundVariable + ' ¬' + wrappedFormula,
+                '∃' + boundVariable + ' ' + wrappedFormula
             ]
             : [
-                '∃x ¬' + wrappedFormula,
-                '∀x ' + wrappedFormula
+                '∃' + boundVariable + ' ¬' + wrappedFormula,
+                '∀' + boundVariable + ' ' + wrappedFormula
             ];
 
         function quantifiedOption(text, optionQuantifier, negated) {
@@ -346,7 +379,7 @@
                     normalizedFormula,
                     negated,
                     text,
-                    baseFormulaSource
+                    predicateFormulaSource
                 ),
                 transformation: null
             };

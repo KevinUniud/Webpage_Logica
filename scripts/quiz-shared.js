@@ -122,7 +122,113 @@
         return parseNode();
     }
 
-    function formatAst(ast, parentPrec, parentName) {
+    function serializePrologFormula(ast) {
+        if (!ast) return '';
+        if (ast.type === 'var') return String(ast.name || '');
+        if (ast.type !== 'call') return '';
+        return String(ast.name || '') + '(' + (ast.args || []).map(serializePrologFormula).join(',') + ')';
+    }
+
+    /**
+     * Restituisce lo scheletro positivo di una formula Prolog.
+     *
+     * È usato soltanto per scegliere la base, ancora non mostrata, degli
+     * esercizi di negazione dei quantificatori in forma parlata. La rimozione
+     * opera sull'AST e non sul testo finale: domanda, opzioni e construction
+     * trace vengono quindi ricostruiti tutti dalla stessa formula.
+     */
+    function removeFormulaNegations(formula) {
+        const source = String(formula || '').trim();
+        if (!source) return '';
+        const ast = parsePrologFormula(source);
+        if (!ast) return source;
+
+        function visit(node) {
+            if (!node || node.type === 'var') return node;
+            if (node.type !== 'call') return node;
+            const args = node.args || [];
+            if (node.name === 'not' && args.length === 1) {
+                return visit(args[0]);
+            }
+            return {
+                type: 'call',
+                name: node.name,
+                args: args.map(visit)
+            };
+        }
+
+        return serializePrologFormula(visit(ast)) || source;
+    }
+
+    /**
+     * Rende leggibili anche le formule Prolog di sessioni parlate precedenti.
+     * Quando due negazioni cadono sullo stesso ramo, le porta fino agli atomi
+     * mediante equivalenze logiche (non tramite sostituzioni della frase).
+     * Non cambia mai la formula salvata, la risposta o il payload API.
+     */
+    function spokenFriendlyPrologFormula(formula) {
+        const source = String(formula || '').trim();
+        if (!source || !/^[A-Za-z0-9_,()\s]+$/.test(source)) return source;
+        const ast = parsePrologFormula(source);
+        if (!ast || serializePrologFormula(ast).toLowerCase() !== source.replace(/\s+/g, '').toLowerCase()) {
+            return source;
+        }
+
+        function excessiveNegation(node, count) {
+            if (!node || node.type !== 'call') return false;
+            const nextCount = count + (node.name === 'not' ? 1 : 0);
+            if (nextCount > 1) return true;
+            return (node.args || []).some(function(arg) {
+                return excessiveNegation(arg, nextCount);
+            });
+        }
+
+        if (!excessiveNegation(ast, 0)) return source;
+
+        function call(name, left, right) {
+            return { type: 'call', name: name, args: right === undefined ? [left] : [left, right] };
+        }
+
+        function normalize(node, negated) {
+            if (!node || node.type !== 'call') {
+                return negated ? call('not', node) : node;
+            }
+            const args = node.args || [];
+            if (node.name === 'not' && args.length === 1) {
+                return normalize(args[0], !negated);
+            }
+            if ((node.name === 'and' || node.name === 'or') && args.length === 2) {
+                const operator = negated ? (node.name === 'and' ? 'or' : 'and') : node.name;
+                return call(operator, normalize(args[0], negated), normalize(args[1], negated));
+            }
+            if ((node.name === 'forall' || node.name === 'exists') && args.length === 2) {
+                const quantifier = negated ? (node.name === 'forall' ? 'exists' : 'forall') : node.name;
+                return call(quantifier, args[0], normalize(args[1], negated));
+            }
+            if (node.name === 'imp' && args.length === 2) {
+                // Una implicazione non negata resta in forma compatta.
+                // La sua negazione equivale ad A ∧ ¬B.
+                return negated
+                    ? call('and', normalize(args[0], false), normalize(args[1], true))
+                    : call('imp', normalize(args[0], false), normalize(args[1], false));
+            }
+            if ((node.name === 'iff' || node.name === 'equiv') && args.length === 2) {
+                // Solo la forma negativa richiede l'espansione XOR.
+                return negated
+                    ? call('or',
+                        call('and', normalize(args[0], false), normalize(args[1], true)),
+                        call('and', normalize(args[0], true), normalize(args[1], false)))
+                    : call(node.name, normalize(args[0], false), normalize(args[1], false));
+            }
+            // Predicati/operazioni sconosciute non si riscrivono: la negazione
+            // può restare davanti a un atomo, senza inventare una legge logica.
+            return negated ? call('not', node) : node;
+        }
+
+        return serializePrologFormula(normalize(ast, false)) || source;
+    }
+
+    function formatAst(ast, parentPrec, parentName, side) {
         if (!ast) return '';
 
         if (ast.type === 'var') {
@@ -137,18 +243,18 @@
         const args = ast.args || [];
 
         if (name === 'not' && args.length === 1) {
-            const inner = formatAst(args[0], 4, name);
+            const inner = formatAst(args[0], 4, name, 'operand');
             const text = '¬' + inner;
             return parentPrec > 4 ? '(' + text + ')' : text;
         }
 
         if ((name === 'forall' || name === 'exists') && args.length === 2) {
             const quantifier = name === 'forall' ? '∀' : '∃';
-            const variable = String(formatAst(args[0], -1, name) || '').trim().toLowerCase();
-            const bodyRaw = String(formatAst(args[1], -1, name) || '').trim();
-            const body = bodyRaw
-                ? (bodyRaw[0] === '(' && bodyRaw[bodyRaw.length - 1] === ')' ? bodyRaw : '(' + bodyRaw + ')')
-                : '()';
+            const variable = String(formatAst(args[0], -1, name, 'variable') || '').trim().toLowerCase();
+            const bodyRaw = String(formatAst(args[1], -1, name, 'body') || '').trim();
+            // Le parentesi finali di un predicato (es. R(x)) non indicano che
+            // l'intero corpo sia già racchiuso: delimitiamo sempre lo scope.
+            const body = bodyRaw ? '(' + bodyRaw + ')' : '()';
             return quantifier + variable + ' ' + body;
         }
 
@@ -160,42 +266,22 @@
             iff: { symbol: '↔', prec: 0 }
         };
 
-        function isMixedAndOrChild(parentName, child) {
-            return Boolean(
-                child &&
-                child.type === 'call' &&
-                (parentName === 'and' || parentName === 'or') &&
-                (child.name === 'and' || child.name === 'or') &&
-                child.name !== parentName
-            );
-        }
-
-        function wrapIfMissing(text) {
-            const value = String(text || '').trim();
-            if (!value) return value;
-            if (value[0] === '(' && value[value.length - 1] === ')') return value;
-            return '(' + value + ')';
-        }
-
         const op = binaryMap[name];
         if (op && args.length === 2) {
-            let left = formatAst(args[0], op.prec, name);
-            let right = formatAst(args[1], op.prec + (name === 'imp' ? 1 : 0), name);
-
-            if (isMixedAndOrChild(name, args[0])) {
-                left = wrapIfMissing(left);
-            }
-            if (isMixedAndOrChild(name, args[1])) {
-                right = wrapIfMissing(right);
-            }
-
+            const left = formatAst(args[0], op.prec, name, 'left');
+            const right = formatAst(args[1], op.prec, name, 'right');
             const text = left + ' ' + op.symbol + ' ' + right;
-            const needsParens = parentPrec > op.prec || ((name === 'equiv' || name === 'iff') && (parentName === 'equiv' || parentName === 'iff'));
+            let needsParens = parentPrec > op.prec;
+            if (parentPrec === op.prec) {
+                // Mantiene lo stesso raggruppamento del Laboratorio: l'implicazione
+                // e associativa a destra, gli altri operatori sono resi a sinistra.
+                needsParens = parentName === 'imp' ? side === 'left' : side === 'right';
+            }
             return needsParens ? '(' + text + ')' : text;
         }
 
         const renderedArgs = args.map(function(arg) {
-            return formatAst(arg, -1, name);
+            return formatAst(arg, -1, name, 'argument');
         }).join(', ');
         return name + '(' + renderedArgs + ')';
     }
@@ -373,6 +459,9 @@
         parsePositiveInt: parsePositiveInt,
         tokenizeFormula: tokenizeFormula,
         parsePrologFormula: parsePrologFormula,
+        serializePrologFormula: serializePrologFormula,
+        removeFormulaNegations: removeFormulaNegations,
+        spokenFriendlyPrologFormula: spokenFriendlyPrologFormula,
         formatAst: formatAst,
         prologToLogical: prologToLogical,
         shuffle: shuffle,

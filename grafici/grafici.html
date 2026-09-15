@@ -25,7 +25,15 @@
             <h1>Grafici del progetto</h1>
             
             <div class="rounded-box index-actions-box">
-                <p>Questi grafici sono generati grazie ai feedback degli utenti e vengono aggiornati settimanalmente.</p>
+                <p>I grafici vengono pubblicati dal servizio feedback quando è disponibile uno snapshot aggregato compatibile. Il repository Web non contiene risultati o grafici storici.</p>
+                <p id="feedbackChartsStatus" role="status" aria-live="polite" data-state="fallback">Verifica della disponibilità dei grafici aggregati. Nel frattempo vengono mostrati segnaposto privi di dati.</p>
+                <div class="graphs-refresh-details" aria-label="Aggiornamento grafici">
+                    <p>
+                        <time id="feedbackChartsLastAttempt">Ultimo tentativo: non ancora eseguito.</time>
+                        <time id="feedbackChartsLastPublished">Ultima pubblicazione: non ancora disponibile.</time>
+                    </p>
+                    <button class="btn-wide graphs-refresh-button" id="feedbackChartsRefresh" type="button">Aggiorna grafici</button>
+                </div>
             </div>
 
             <br>
@@ -44,15 +52,15 @@
                 <h2>Generali</h2>
                 <div class="graphs-grid">
                     <figure class="graph-card rounded-box">
-                        <img src="./general/performance_summary.png" alt="Riepilogo prestazioni generali del test" loading="lazy" decoding="async">
+                        <img src="./placeholder.svg" data-chart-id="general.performance_summary" alt="Riepilogo prestazioni generali del test" loading="lazy" decoding="async">
                         <figcaption>Panoramica complessiva delle prestazioni.</figcaption>
                     </figure>
                     <figure class="graph-card rounded-box">
-                        <img src="./general/percentuale_domande_corrette.png" alt="Percentuale di domande corrette" loading="lazy" decoding="async">
+                        <img src="./placeholder.svg" data-chart-id="general.percentuale_domande_corrette" alt="Percentuale di domande corrette" loading="lazy" decoding="async">
                         <figcaption>Quota di risposte corrette sul totale.</figcaption>
                     </figure>
                     <figure class="graph-card rounded-box">
-                        <img src="./general/corrette_vs_errate.png" alt="Confronto tra risposte corrette e errate" loading="lazy" decoding="async">
+                        <img src="./placeholder.svg" data-chart-id="general.corrette_vs_errate" alt="Confronto tra risposte corrette e errate" loading="lazy" decoding="async">
                         <figcaption>Bilancio tra risposte corrette ed errate.</figcaption>
                     </figure>
                 </div>
@@ -62,28 +70,28 @@
                 <h2>Tempi</h2>
                 <div class="graphs-grid">
                     <figure class="graph-card rounded-box">
-                        <img src="./timings/tempo_medio_risposta.png" alt="Tempo medio di risposta" loading="lazy" decoding="async">
+                        <img src="./placeholder.svg" data-chart-id="timings.tempo_medio_risposta" alt="Tempo medio di risposta" loading="lazy" decoding="async">
                         <figcaption>Tempo medio necessario per rispondere.</figcaption>
                     </figure>
                     <figure class="graph-card rounded-box">
-                        <img src="./timings/tempo_per_tipologia.png" alt="Tempo di risposta per tipologia di domanda" loading="lazy" decoding="async">
+                        <img src="./placeholder.svg" data-chart-id="timings.tempo_per_tipologia" alt="Tempo di risposta per tipologia di domanda" loading="lazy" decoding="async">
                         <figcaption>Confronto dei tempi per tipologia di domanda.</figcaption>
                     </figure>
                     <figure class="graph-card rounded-box">
-                        <img src="./timings/tempo_vs_correttezza.png" alt="Relazione tra tempo di risposta e correttezza" loading="lazy" decoding="async">
+                        <img src="./placeholder.svg" data-chart-id="timings.tempo_vs_correttezza" alt="Relazione tra tempo di risposta e correttezza" loading="lazy" decoding="async">
                         <figcaption>Relazione tra rapidita e accuratezza.</figcaption>
                     </figure>
                     <figure class="graph-card rounded-box">
-                        <img src="./timings/distribuzione_tempi.png" alt="Distribuzione dei tempi di risposta" loading="lazy" decoding="async">
-                        <figcaption>Distribuzione complessiva dei tempi registrati.</figcaption>
+                        <img src="./placeholder.svg" data-chart-id="timings.distribuzione_tempi" alt="Distribuzione aggregata dei tempi di risposta" loading="lazy" decoding="async">
+                        <figcaption>Distribuzione dei tempi di risposta su coorti aggregate.</figcaption>
                     </figure>
                     <figure class="graph-card rounded-box">
-                        <img src="./timings/boxplot_tempi_tipologia.png" alt="Boxplot dei tempi per tipologia" loading="lazy" decoding="async">
+                        <img src="./placeholder.svg" data-chart-id="timings.boxplot_tempi_tipologia" alt="Boxplot dei tempi per tipologia" loading="lazy" decoding="async">
                         <figcaption>Variabilita dei tempi per tipologia.</figcaption>
                     </figure>
                     <figure class="graph-card rounded-box">
-                        <img src="./timings/timeline_risposte.png" alt="Timeline delle risposte nel tempo" loading="lazy" decoding="async">
-                        <figcaption>Sequenza temporale delle risposte fornite.</figcaption>
+                        <img src="./placeholder.svg" data-chart-id="timings.timeline_risposte" alt="Tempo medio aggregato per posizione della domanda" loading="lazy" decoding="async">
+                        <figcaption>Tempo medio aggregato per posizione della domanda nel quiz.</figcaption>
                     </figure>
                 </div>
             </section>
@@ -92,11 +100,11 @@
                 <h2>Andamento temporale</h2>
                 <div class="graphs-grid">
                     <figure class="graph-card rounded-box">
-                        <img src="./temporal/accuracy_timeline.png" alt="Andamento temporale dell'accuratezza" loading="lazy" decoding="async">
+                        <img src="./placeholder.svg" data-chart-id="temporal.accuracy_timeline" alt="Andamento temporale dell'accuratezza" loading="lazy" decoding="async">
                         <figcaption>Evoluzione dell'accuratezza nel tempo.</figcaption>
                     </figure>
                     <figure class="graph-card rounded-box">
-                        <img src="./temporal/velocity_timeline.png" alt="Andamento temporale della velocita di risposta" loading="lazy" decoding="async">
+                        <img src="./placeholder.svg" data-chart-id="temporal.velocity_timeline" alt="Andamento temporale della velocita di risposta" loading="lazy" decoding="async">
                         <figcaption>Evoluzione della velocita di risposta nel tempo.</figcaption>
                     </figure>
                 </div>
@@ -106,12 +114,12 @@
                 <h2>Comportamentali</h2>
                 <div class="graphs-grid">
                     <figure class="graph-card rounded-box">
-                        <img src="./behavioral/opzioni_vs_performance.png" alt="Relazione tra opzioni selezionate e prestazioni" loading="lazy" decoding="async">
+                        <img src="./placeholder.svg" data-chart-id="behavioral.opzioni_vs_performance" alt="Relazione tra opzioni selezionate e prestazioni" loading="lazy" decoding="async">
                         <figcaption>Effetto delle opzioni di configurazione sulle prestazioni.</figcaption>
                     </figure>
                     <figure class="graph-card rounded-box">
-                        <img src="./behavioral/heatmap_sessioni_tipologie.png" alt="Heatmap delle sessioni per tipologia" loading="lazy" decoding="async">
-                        <figcaption>Distribuzione delle sessioni per tipologia di esercizio.</figcaption>
+                        <img src="./placeholder.svg" data-chart-id="behavioral.heatmap_sessioni_tipologie" alt="Heatmap dell'accuratezza aggregata per tipologia" loading="lazy" decoding="async">
+                        <figcaption>Accuratezza aggregata per tipologia di esercizio.</figcaption>
                     </figure>
                 </div>
             </section>
@@ -120,11 +128,11 @@
                 <h2>Demografici</h2>
                 <div class="graphs-grid">
                     <figure class="graph-card rounded-box">
-                        <img src="./demographics/performance_per_demographic.png" alt="Prestazioni per gruppo demografico" loading="lazy" decoding="async">
+                        <img src="./placeholder.svg" data-chart-id="demographics.performance_per_demographic" alt="Prestazioni per gruppo demografico" loading="lazy" decoding="async">
                         <figcaption>Confronto delle prestazioni tra gruppi demografici.</figcaption>
                     </figure>
                     <figure class="graph-card rounded-box">
-                        <img src="./demographics/feedback_correlation.png" alt="Correlazione tra feedback e prestazioni" loading="lazy" decoding="async">
+                        <img src="./placeholder.svg" data-chart-id="demographics.feedback_correlation" alt="Correlazione tra feedback e prestazioni" loading="lazy" decoding="async">
                         <figcaption>Relazione tra feedback raccolto e risultati.</figcaption>
                     </figure>
                 </div>
@@ -134,19 +142,19 @@
                 <h2>Accuratezza</h2>
                 <div class="graphs-grid">
                     <figure class="graph-card rounded-box">
-                        <img src="./accuracy/accuratezza_per_tipologia.png" alt="Accuratezza per tipologia di domanda" loading="lazy" decoding="async">
+                        <img src="./placeholder.svg" data-chart-id="accuracy.accuratezza_per_tipologia" alt="Accuratezza per tipologia di domanda" loading="lazy" decoding="async">
                         <figcaption>Accuratezza suddivisa per tipologia.</figcaption>
                     </figure>
                     <figure class="graph-card rounded-box">
-                        <img src="./accuracy/difficolta_vs_risultato.png" alt="Relazione tra difficolta e risultato" loading="lazy" decoding="async">
+                        <img src="./placeholder.svg" data-chart-id="accuracy.difficolta_vs_risultato" alt="Relazione tra difficolta e risultato" loading="lazy" decoding="async">
                         <figcaption>Confronto tra difficolta percepita e risultato ottenuto.</figcaption>
                     </figure>
                     <figure class="graph-card rounded-box">
-                        <img src="./accuracy/multipanel_tipologia.png" alt="Vista multipannello per tipologia" loading="lazy" decoding="async">
+                        <img src="./placeholder.svg" data-chart-id="accuracy.multipanel_tipologia" alt="Vista multipannello per tipologia" loading="lazy" decoding="async">
                         <figcaption>Quadro multipannello delle principali tipologie.</figcaption>
                     </figure>
                     <figure class="graph-card rounded-box">
-                        <img src="./accuracy/radar_competenze.png" alt="Grafico radar delle competenze" loading="lazy" decoding="async">
+                        <img src="./placeholder.svg" data-chart-id="accuracy.radar_competenze" alt="Grafico radar delle competenze" loading="lazy" decoding="async">
                         <figcaption>Radar sintetico delle competenze osservate.</figcaption>
                     </figure>
                 </div>
@@ -156,16 +164,16 @@
                 <h2>Avanzati</h2>
                 <div class="graphs-grid">
                     <figure class="graph-card rounded-box">
-                        <img src="./advanced/performance_projection.png" alt="Proiezione delle prestazioni future" loading="lazy" decoding="async">
-                        <figcaption>Proiezione delle prestazioni sulla base dei dati raccolti.</figcaption>
+                        <img src="./placeholder.svg" data-chart-id="advanced.performance_projection" alt="Tendenza aggregata delle prestazioni" loading="lazy" decoding="async">
+                        <figcaption>Tendenza aggregata delle prestazioni nelle finestre temporali disponibili.</figcaption>
                     </figure>
                     <figure class="graph-card rounded-box">
-                        <img src="./advanced/learning_curve.png" alt="Curva di apprendimento" loading="lazy" decoding="async">
-                        <figcaption>Andamento della curva di apprendimento.</figcaption>
+                        <img src="./placeholder.svg" data-chart-id="advanced.learning_curve" alt="Andamento globale delle sessioni" loading="lazy" decoding="async">
+                        <figcaption>Andamento globale delle sessioni aggregate nel tempo.</figcaption>
                     </figure>
                     <figure class="graph-card rounded-box">
-                        <img src="./advanced/regression_tempo_accuracy.png" alt="Regressione tra tempo e accuratezza" loading="lazy" decoding="async">
-                        <figcaption>Modello di regressione tra tempo e accuratezza.</figcaption>
+                        <img src="./placeholder.svg" data-chart-id="advanced.regression_tempo_accuracy" alt="Relazione aggregata tra tempo e accuratezza" loading="lazy" decoding="async">
+                        <figcaption>Relazione aggregata tra tempo medio e accuratezza.</figcaption>
                     </figure>
                 </div>
             </section>
@@ -186,6 +194,7 @@
             </div>
         </div>
 
+        <script src="../scripts/feedback-charts.js"></script>
         <script src="../scripts/graphs-gallery.js"></script>
     </body>
 </html>

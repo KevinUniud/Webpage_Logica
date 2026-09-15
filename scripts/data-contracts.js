@@ -3,6 +3,7 @@
     'use strict';
 
     const SCHEMA_VERSION = 1;
+    const MAX_QUIZ_QUESTIONS = 100;
     const QUESTION_TYPES = Object.freeze([
         'equivalence',
         'truth-value',
@@ -35,7 +36,7 @@
         const typeCounts = {};
         if (source.typeCounts && typeof source.typeCounts === 'object') {
             QUESTION_TYPES.forEach(function(type) {
-                typeCounts[type] = clampInteger(source.typeCounts[type], 0, 100, 0);
+                typeCounts[type] = clampInteger(source.typeCounts[type], 0, MAX_QUIZ_QUESTIONS, 0);
             });
         }
         const configuredTotal = Object.values(typeCounts).reduce(function(total, count) { return total + count; }, 0);
@@ -43,7 +44,7 @@
             version: SCHEMA_VERSION,
             preset: ['practice', 'exam', 'custom'].includes(source.preset) ? source.preset : 'practice',
             mode: MODES.includes(source.mode) ? source.mode : 'practice',
-            questionCount: clampInteger(configuredTotal || source.questionCount, 1, 100, 10),
+            questionCount: clampInteger(configuredTotal || source.questionCount, 1, MAX_QUIZ_QUESTIONS, 10),
             timeMinutes: clampInteger(source.timeMinutes, 1, 240, 20),
             difficulty: DIFFICULTIES.includes(source.difficulty) ? source.difficulty : 'medium',
             questionTypes: questionTypes.length ? questionTypes : ['equivalence'],
@@ -102,6 +103,7 @@
 
     global.LogicDataContracts = Object.freeze({
         DIFFICULTIES: DIFFICULTIES,
+        MAX_QUIZ_QUESTIONS: MAX_QUIZ_QUESTIONS,
         MODES: MODES,
         QUESTION_TYPES: QUESTION_TYPES,
         SCHEMA_VERSION: SCHEMA_VERSION,

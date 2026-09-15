@@ -1,5 +1,4 @@
 const assert = require('node:assert/strict');
-const crypto = require('node:crypto');
 const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
@@ -132,18 +131,17 @@ function galleryHarness() {
     return { document, listeners, body, main, card, image, lightbox, close, largeImage, utility };
 }
 
-function normalizedSha256(name) {
-    const source = fs.readFileSync(name, 'utf8').replace(/\r\n/g, '\n');
-    return crypto.createHash('sha256').update(source).digest('hex');
-}
-
 test('secondary page styles retain the historical baseline and scoped study controls', () => {
-    assert.equal(normalizedSha256('styles/study-tools.css'),
-        '85893202ff117021cd687d177c400bcfd3f52e57694cb714f158164af6c88cef');
-    assert.equal(normalizedSha256('styles/errori.css'),
-        '00d22d6db6768abacb66549be41902730b84c7c945a6c4aca02e5915271ac341');
-    assert.equal(normalizedSha256('styles/graphs.css'),
-        '1f667a8c5c27358332f0a46aa8ae2bda54c75004339231dddea0df79c6556b7d');
+    const studyCss = fs.readFileSync('styles/study-tools.css', 'utf8');
+    const errorCss = fs.readFileSync('styles/errori.css', 'utf8');
+    const graphsCss = fs.readFileSync('styles/graphs.css', 'utf8');
+    assert.match(studyCss, /\.study-grid\s*\{[\s\S]*?minmax\(min\(17rem, 100%\), 1fr\)/);
+    assert.match(studyCss, /\.study-toolbar select,[\s\S]*?min-width:\s*0;[\s\S]*?min-height:\s*44px/);
+    assert.match(studyCss, /#errorNotebookList \.study-card select\s*\{[\s\S]*?width:\s*100%;[\s\S]*?min-width:\s*0/);
+    assert.match(errorCss, /@media \(max-width:\s*700px\)[\s\S]*?\.esiste-original \.grid,[\s\S]*?grid-template-columns:\s*1fr/);
+    assert.doesNotMatch(errorCss, /\.errori-page\b/);
+    assert.match(graphsCss, /\.graphs-grid\s*\{[\s\S]*?minmax\(min\(280px, 100%\), 1fr\)/);
+    assert.match(graphsCss, /\.graphs-lightbox-panel\s*\{[\s\S]*?overflow:\s*auto/);
 
     const commonErrorPages = fs.readdirSync('Errori_comuni').filter(name => name.endsWith('.html'));
     commonErrorPages.forEach(name => {
@@ -172,6 +170,15 @@ test('secondary page styles retain the historical baseline and scoped study cont
     assert.match(graphs, /class="rounded-box index-actions-box"/);
     assert.match(graphs, /<br>/);
     assert.match(graphs, /<div class="graphs-footer">/);
+    assert.match(graphs, /id="feedbackChartsStatus"[^>]*role="status"[^>]*aria-live="polite"/);
+    assert.match(graphs, /id="feedbackChartsRefresh"[^>]*type="button"[^>]*>Aggiorna grafici<\/button>/);
+    assert.match(graphs, /id="feedbackChartsLastAttempt"/);
+    assert.match(graphs, /id="feedbackChartsLastPublished"/);
+    assert.equal((graphs.match(/data-chart-id="[a-z0-9_.]+"/g) || []).length, 22);
+    assert.match(graphs, /scripts\/feedback-charts\.js[\s\S]*scripts\/graphs-gallery\.js/);
+    assert.match(graphs, /data-chart-id="timings\.timeline_risposte"[^>]*alt="Tempo medio aggregato per posizione della domanda"/);
+    assert.match(graphs, /data-chart-id="behavioral\.heatmap_sessioni_tipologie"[^>]*alt="Heatmap dell'accuratezza aggregata per tipologia"/);
+    assert.match(graphs, /data-chart-id="timings\.distribuzione_tempi"[^>]*alt="Distribuzione aggregata dei tempi di risposta"/);
     assert.doesNotMatch(graphs, /graphs-intro-card/);
 });
 
@@ -182,21 +189,78 @@ test('logic sandbox controls are grouped, labelled and responsive without changi
 
     assert.match(html, /<body class="sandbox-page">/);
     assert.match(html, /class="rounded-box sandbox-workbench"[^>]*aria-labelledby="sandboxWorkbenchTitle"/);
-    assert.match(html, /id="sandboxFormula"[^>]*class="sandbox-control sandbox-formula-input"[^>]*aria-describedby="sandboxFormulaHint"/);
-    assert.match(html, /id="sandboxCompareFormula"[^>]*class="sandbox-control sandbox-formula-input"/);
+    assert.match(html, /id="sandboxFormula"[^>]*class="sandbox-control sandbox-formula-input"[^>]*aria-describedby="sandboxFormulaHint"[^>]*><\/textarea>/);
+    assert.match(html, /id="sandboxCompareFormula"[^>]*class="sandbox-control sandbox-formula-input"[^>]*><\/textarea>/);
     assert.match(html, /id="sandboxSymbols"[^>]*class="sandbox-symbols"[^>]*aria-labelledby="sandboxSymbolsLabel"/);
-    assert.equal((html.match(/class="sandbox-symbol-button"/g) || []).length, 7);
-    assert.equal((html.match(/class="sandbox-action-button(?: sandbox-clear-button)?"/g) || []).length, 6);
+    assert.equal((html.match(/data-symbol="[¬∧∨→↔]"/g) || []).length, 5);
+    assert.equal((html.match(/data-tree-operator="(?:not|and|or|imp|iff)"/g) || []).length, 5);
+    assert.equal((html.match(/class="sandbox-symbol-button"/g) || []).length, 10);
+    assert.equal((html.match(/class="sandbox-action-button(?: sandbox-clear-button)?"/g) || []).length, 8);
+    assert.equal((html.match(/id="sandbox(?:Variables|TruthTable|Tautology|Rewrite|Compare|Clear)"/g) || []).length, 6);
+    assert.doesNotMatch(html, /sandboxExamples|Scegli un esempio|forall\(|exists\(|>and<|>or<|>not</);
+    assert.match(html, /scripts\/formula-syntax\.js[\s\S]*scripts\/logic-tree-builder\.js[\s\S]*scripts\/formula-tree\.js/);
+    assert.match(html, /id="sandboxTreeAtom"[^>]*pattern="\[a-z\]\[A-Za-z0-9_\]\*"/);
+    assert.match(html, /id="sandboxTreeAddAtom"[^>]*>Aggiungi atomo<\/button>/);
+    assert.match(html, /id="sandboxTreeReset"[^>]*>Reimposta albero<\/button>/);
+    assert.match(html, /id="sandboxTreeBuilderStatus"[^>]*role="status"[^>]*aria-live="polite"/);
     assert.match(html, /id="sandboxStatus"[^>]*role="status"/);
     assert.match(html, /Tabella di verità/);
     assert.match(script, /Tabella di verità della formula/);
+    assert.doesNotMatch(script, /sandboxExamples/);
+    assert.match(script, /syntax\.toProlog\(formula\)/);
+    assert.match(script, /const left = validateFormula\(input\.value\);[\s\S]*const right = validateFormula\(compareInput\.value\);[\s\S]*left:\s*left,[\s\S]*right:\s*right/);
+    assert.match(script, /availableRootIds:\s*state\.roots[\s\S]*onSelect:\s*function\(node\)/);
+    assert.match(script, /tree\.scrollLeft = Math\.max\(0, \(tree\.scrollWidth - tree\.clientWidth\) \/ 2\)/);
 
     assert.match(css, /body\.sandbox-page\s*\{[\s\S]*?margin:\s*0;[\s\S]*?padding:\s*4vh 0;/);
     assert.match(css, /\.sandbox-control\s*\{[\s\S]*?min-height:\s*44px;[\s\S]*?border:\s*2px solid var\(--input-border\);/);
     assert.match(css, /\.sandbox-symbol-button:focus-visible,[\s\S]*?outline:\s*3px solid var\(--link\);/);
     assert.match(css, /\.sandbox-action-button:disabled\s*\{[\s\S]*?cursor:\s*not-allowed;[\s\S]*?opacity:\s*0\.55;/);
     assert.match(css, /\.sandbox-symbols\s*\{[\s\S]*?grid-template-columns:\s*repeat\(auto-fit,/);
+    assert.match(css, /\.sandbox-tree-atom-controls\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\) auto/);
+    assert.match(css, /\.sandbox-tree-operators\s*\{[\s\S]*?grid-template-columns:\s*repeat\(5, minmax\(44px, 1fr\)\)/);
     assert.match(css, /@media \(max-width:\s*600px\)[\s\S]*?\.sandbox-actions\s*\{[\s\S]*?grid-template-columns:\s*1fr;/);
+});
+
+test('logic sandbox invalidates pending analyses on builder mutations and restores keyboard focus', () => {
+    const script = fs.readFileSync('scripts/logic-sandbox.js', 'utf8');
+
+    assert.match(
+        script,
+        /function cancelAnalysis\(\)\s*\{[\s\S]*?requestSequence \+= 1;[\s\S]*?controller\.abort\(\);[\s\S]*?controller = null;/
+    );
+    assert.match(
+        script,
+        /const nextState = builder\.toggleSelection\(node\.id\);\s*cancelAnalysis\(\);\s*renderBuilder\(nextState\.selected\.length === 2 \? 'binary-operator' : node\.id\);/
+    );
+    assert.match(script, /const node = builder\.addAtom\(atomInput\.value\);\s*cancelAnalysis\(\);/);
+    assert.match(script, /const node = builder\.applyOperator\(button\.dataset\.treeOperator\);\s*cancelAnalysis\(\);/);
+    assert.match(
+        script,
+        /getElementById\('sandboxTreeReset'\)\.addEventListener\('click',[\s\S]*?cancelAnalysis\(\);[\s\S]*?builder\.reset\(\);/
+    );
+    assert.match(
+        script,
+        /compareInput\.addEventListener\('input',[\s\S]*?cancelAnalysis\(\);[\s\S]*?result\.innerHTML = '';/
+    );
+    assert.match(
+        script,
+        /const sequence = requestSequence;[\s\S]*?if \(sequence !== requestSequence\) return;[\s\S]*?if \(sequence !== requestSequence\) return;/
+    );
+
+    assert.match(
+        script,
+        /function restoreBuilderFocus\(target, state\)[\s\S]*?data-tree-operator="and"[\s\S]*?binaryOperator\.focus\(\)[\s\S]*?tree\.querySelectorAll\('\[data-node-id\]'\)[\s\S]*?groups\[index\]\.focus\(\)/
+    );
+    assert.match(script, /restoreBuilderFocus\(focusTarget, state\);/);
+    assert.match(
+        script,
+        /const node = builder\.addAtom\(atomInput\.value\);[\s\S]*?renderBuilder\(\);[\s\S]*?atomInput\.focus\(\);/
+    );
+    assert.match(
+        script,
+        /getElementById\('sandboxTreeReset'\)\.addEventListener\('click',[\s\S]*?renderBuilder\(\);\s*atomInput\.focus\(\);/
+    );
 });
 
 test('progress dashboard uses labelled controls, readable panels and a non-overlapping responsive navigation', () => {

@@ -8,6 +8,34 @@
     gap: 14px;
 }
 
+.quiz-wrong-images[hidden],
+.quiz-wrong-images-panel[hidden] {
+    display: none;
+}
+
+.quiz-wrong-images-toggle {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--border-mid);
+    border-radius: 8px;
+    background: var(--surface-2);
+    color: inherit;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.quiz-wrong-images-toggle:focus-visible {
+    outline: 3px solid var(--focus-ring, currentColor);
+    outline-offset: 2px;
+}
+
+.quiz-wrong-images-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
 /* Blocchi file e badge informativi. */
 .quiz-wrong-images-file {
     border: 1px solid var(--border-mid);

@@ -1,27 +1,8 @@
 /* Errori_comuni: styles adapted from Original.html but using theme variables */
 
-/* Page-level layout */
-body.errori-page {
-    margin: 0;
-    padding: 40px;
-    background: var(--bg);
-    font-family: "Segoe UI", sans-serif;
-    color: var(--fg);
-    line-height: 1.7;
-}
-
 .container{
     max-width: 1000px;
     margin: auto;
-}
-
-/* Centered, prominent page title variant */
-.error-title{
-    text-align: center;
-    margin-bottom: 40px;
-    font-size: 1.5rem; /* ~24px, closer to standard */
-    font-weight: 700;
-    color: var(--box-title);
 }
 
 /* Section card similar to Original.html but using theme surfaces */
@@ -119,32 +100,9 @@ ul{
     color: var(--box-title);
 }
 
-/* Centered bold that does not increase font-size */
-.center-strong{
-    display: block;
-    text-align: center;
-    font-weight: 700;
-    font-size: inherit;
-    color: var(--box-title);
-    margin: 10px 0;
-}
-
-/* small helper to ensure pages using this stylesheet have the intended layout */
-.errori-link-list a.btn-wide{
-    display: inline-block;
-    margin: 8px 0;
-}
-
-/* Override the global strong/b block-centering from base.css on error pages. */
-.errori-page b,
-.errori-page strong{
-    display: inline;
-    text-align: inherit;
-}
-
 .exists-gallery{
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
     gap: 14px;
     margin: 14px 0 20px;
 }
@@ -184,4 +142,20 @@ body.day-mode .exists-night{
 .cell-red {
     color: var(--atom-false);
     font-weight: 600;
+}
+
+@media (max-width: 700px) {
+    body.esiste-original {
+        padding: 20px;
+    }
+
+    .esiste-original .section,
+    .esiste-original .rounded-box {
+        padding: 18px;
+    }
+
+    .esiste-original .grid,
+    .esiste-original .exists-gallery {
+        grid-template-columns: 1fr;
+    }
 }

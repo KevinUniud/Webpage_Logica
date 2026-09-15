@@ -26,8 +26,40 @@ test('HTML contains no inline CSS, scripts, or event handlers', () => {
 
 test('nginx CSP does not allow inline styles or scripts', () => {
     const config = fs.readFileSync('nginx/default.conf.template', 'utf8');
-    const csp = config.split('\n').find(line => line.includes('Content-Security-Policy')) || '';
+    const headers = fs.readFileSync('nginx/security-headers.conf', 'utf8');
+    const csp = headers.split('\n').find(line => line.includes('Content-Security-Policy')) || '';
+    assert.match(config, /include \/etc\/nginx\/security-headers\.conf;/);
     assert.doesNotMatch(csp, /unsafe-inline/);
     assert.match(csp, /style-src 'self'/);
     assert.match(csp, /script-src 'self'/);
+});
+
+test('locations with custom response headers keep the complete security policy', () => {
+    const config = fs.readFileSync('nginx/default.conf.template', 'utf8');
+    const headers = fs.readFileSync('nginx/security-headers.conf', 'utf8');
+    const dockerfile = fs.readFileSync('Dockerfile', 'utf8');
+    const required = [
+        'X-Content-Type-Options',
+        'X-Frame-Options',
+        'Referrer-Policy',
+        'Permissions-Policy',
+        'Cross-Origin-Opener-Policy',
+        'Cross-Origin-Resource-Policy',
+        'Content-Security-Policy'
+    ];
+    required.forEach(header => assert.match(headers, new RegExp(`add_header ${header} `)));
+    assert.match(
+        dockerfile,
+        /COPY nginx\/security-headers\.conf \/etc\/nginx\/security-headers\.conf/
+    );
+
+    [
+        /location = \/service-worker\.js \{([\s\S]*?)\n\s*\}/,
+        /location ~\* \\.\(\?:css\|js\)\$ \{([\s\S]*?)\n\s*\}/,
+        /location \^~ \/api\/feedback\/charts\/ \{([\s\S]*?)\n\s*\}/
+    ].forEach(pattern => {
+        const location = config.match(pattern);
+        assert.ok(location, `Location Nginx non trovata: ${pattern}`);
+        assert.match(location[1], /include \/etc\/nginx\/security-headers\.conf;/);
+    });
 });

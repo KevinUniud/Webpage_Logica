@@ -28,6 +28,9 @@
 
 .settings-modal {
     width: min(560px, 100%);
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
     background: var(--box-bg);
     border: 2px solid var(--box-border);
     border-radius: 10px;
@@ -68,7 +71,23 @@
 .settings-actions {
     display: flex;
     justify-content: center;
+    flex-wrap: wrap;
     gap: 10px;
+}
+
+.settings-privacy-actions .btn-wide {
+    flex: 1 1 10rem;
+    min-width: 0;
+}
+
+.settings-row > input[type="checkbox"] {
+    flex: 0 0 auto;
+}
+
+.settings-row > input[type="checkbox"] + label {
+    flex: 1 1 14rem;
+    min-width: 0;
+    text-align: left;
 }
 
 /* Azioni e controlli della home/index. */
@@ -353,9 +372,13 @@ body::after{
 /* Navigazione tra lezioni (precedente/successivo e switcher laterale). */
 .lesson-nav {
     position: relative;
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 10px;
     min-height: 56px;
-    padding: 8px 0;
+    padding: 8px;
     border: none;
     background: transparent;
 }
@@ -371,17 +394,18 @@ body::after{
     border-radius: 10px;
     background: transparent;
     display: inline-block;
-    position: absolute;
-    top: 50%;
-    transform: translate(-50%, -50%);
+    position: static;
+    max-width: 100%;
+    transform: none;
+    overflow-wrap: anywhere;
 }
 
 .lesson-nav-btn:first-child {
-    left: 25%;
+    left: auto;
 }
 
 .lesson-nav-btn:last-child {
-    left: 75%;
+    left: auto;
 }
 
 .lesson-nav-btn:hover {
@@ -403,6 +427,32 @@ body::after{
     position: static;
     transform: none;
     left: auto;
+}
+
+#quizReviewNav {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    min-height: 0;
+    padding: 20px;
+}
+
+#quizReviewNav .quiz-export-summary {
+    flex: 0 0 100%;
+    margin: 0 0 4px;
+    text-align: center;
+}
+
+#quizReviewNav .lesson-nav-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1 1 11rem;
+    width: auto;
+    min-width: 0;
+    min-height: 44px;
 }
 
 .lesson-switcher {
@@ -489,9 +539,45 @@ body::after{
 }
 
 @media (max-width: 700px) {
-    html,
     body {
+        height: auto;
+        min-height: 100%;
+        margin: 0;
         padding: 3vh 6%;
+        text-align: left;
+    }
+
+    h1 {
+        font-size: 1.3em;
+        line-height: 1.25;
+    }
+
+    h2,
+    h3 {
+        font-size: 1em;
+        line-height: 1.35;
+    }
+
+    legend {
+        max-width: 100%;
+        overflow-wrap: anywhere;
+    }
+
+    body > #main-content {
+        padding-top: 52px;
+    }
+
+    .lesson-expression-input-wrap.has-feedback .expressionInput {
+        padding-right: 12px;
+    }
+
+    .lesson-expression-input-wrap .lesson-expression-status,
+    .lesson-expression-input-wrap .quiz-status.lesson-expression-status {
+        position: static;
+        transform: none;
+        margin-top: 6px;
+        text-align: right;
+        white-space: normal;
     }
 }
 

@@ -25,6 +25,42 @@
     text-decoration: none;
 }
 
+.graphs-refresh-details {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.graphs-refresh-details p {
+    display: grid;
+    gap: 4px;
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.92rem;
+    line-height: 1.45;
+}
+
+.graphs-refresh-button {
+    flex: 0 0 auto;
+    min-height: 44px;
+    margin: 0;
+}
+
+.graphs-refresh-button[disabled] {
+    cursor: wait;
+    opacity: 0.7;
+}
+
+#feedbackChartsStatus[data-state="error"] {
+    color: var(--danger, #c43d4b);
+}
+
+#feedbackChartsStatus[data-state="updated"] {
+    color: var(--success, #217a4b);
+}
+
 .graphs-section {
     margin: 0 0 32px;
 }
@@ -36,7 +72,7 @@
 
 .graphs-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
     gap: 16px;
 }
 
@@ -92,6 +128,8 @@
 .graphs-lightbox-panel {
     width: min(96vw, 1400px);
     max-height: 92vh;
+    min-width: 0;
+    overflow: auto;
     display: grid;
     gap: 14px;
     padding: 18px;
@@ -109,12 +147,15 @@
 }
 
 .graphs-lightbox-title {
+    min-width: 0;
     margin: 0;
     font-size: 1rem;
     color: var(--fg);
+    overflow-wrap: anywhere;
 }
 
 .graphs-lightbox-close {
+    flex: 0 0 auto;
     min-width: 44px;
     min-height: 44px;
     border-radius: 10px;
@@ -146,4 +187,19 @@
 
 body.graphs-modal-open {
     overflow: hidden;
+}
+
+@media (max-width: 640px) {
+    .graphs-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .graphs-refresh-details {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .graphs-refresh-button {
+        width: 100%;
+    }
 }

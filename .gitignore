@@ -9,6 +9,7 @@ npm-debug.log*
 .env
 .env.*
 !.env.example
+!.env.server.example
 
 # Generated output
 dist/
@@ -19,4 +20,3 @@ build/
 .vscode/
 .DS_Store
 Thumbs.db
-

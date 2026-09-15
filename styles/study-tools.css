@@ -17,7 +17,7 @@
 }
 
 .study-grid {
-    grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr));
 }
 
 .metric-grid {
@@ -29,6 +29,29 @@
     border: 1px solid currentColor;
     border-radius: 0.75rem;
     padding: 1rem;
+}
+
+#errorNotebookList .study-card {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+#errorNotebookList .study-card > label {
+    display: grid;
+    min-width: 0;
+    gap: 8px;
+}
+
+#errorNotebookList .study-card select {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+
+#errorNotebookList .quiz-inline-actions,
+#errorNotebookList .quiz-inline-actions > * {
+    min-width: 0;
+    max-width: 100%;
 }
 
 .metric-value {
@@ -56,6 +79,23 @@
     border: 1px dashed currentColor;
     border-radius: 0.75rem;
     padding: 1.25rem;
+}
+
+.study-toolbar label {
+    display: grid;
+    min-width: 0;
+    gap: 8px;
+    text-align: left;
+}
+
+.study-toolbar select,
+.study-toolbar button {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 9px 12px;
+    border: 1px solid var(--border-mid);
+    border-radius: 8px;
 }
 
 .formula-tree-node {
@@ -273,7 +313,9 @@ body.sandbox-page {
 
 .sandbox-tree svg {
     display: block;
-    max-width: 100%;
+    width: auto;
+    min-width: 100%;
+    max-width: none;
     height: auto;
     margin-inline: auto;
 }
@@ -283,6 +325,94 @@ body.sandbox-page {
     margin: 8px 0 0;
     color: var(--muted);
     text-align: left;
+}
+
+.sandbox-tree-builder {
+    display: grid;
+    gap: 16px;
+    margin: 14px 0 18px;
+}
+
+.sandbox-tree-builder > h3,
+.sandbox-tree-builder > p {
+    margin: 0;
+    text-align: left;
+}
+
+.sandbox-tree-atom-row {
+    display: grid;
+    min-width: 0;
+    gap: 8px;
+}
+
+.sandbox-tree-atom-row > label,
+.sandbox-tree-operator-fieldset > legend {
+    font-weight: 700;
+    text-align: left;
+}
+
+.sandbox-tree-atom-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: stretch;
+    gap: 10px;
+    min-width: 0;
+}
+
+.sandbox-tree-atom-controls .sandbox-action-button {
+    min-width: 0;
+}
+
+.sandbox-tree-operator-fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 12px;
+    border: 1px solid var(--border-mid);
+    border-radius: 8px;
+}
+
+.sandbox-tree-operators {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(44px, 1fr));
+    gap: 8px;
+    min-width: 0;
+}
+
+.sandbox-tree-builder > .sandbox-action-button {
+    justify-self: start;
+}
+
+.sandbox-tree-builder-status {
+    min-height: 1.5em;
+    color: var(--muted);
+}
+
+.sandbox-tree .formula-tree-group.is-available .formula-tree-node {
+    stroke-width: 3;
+}
+
+.sandbox-tree .formula-tree-group.is-selected .formula-tree-node {
+    fill: var(--selection-bg);
+    stroke: var(--link);
+    stroke-width: 4;
+}
+
+.sandbox-tree .formula-tree-group.is-selected .formula-tree-label {
+    fill: var(--fg);
+}
+
+.sandbox-tree .formula-tree-group:focus-visible .formula-tree-node {
+    stroke: var(--link);
+    stroke-width: 4;
+}
+
+.sandbox-tree.is-builder-mode .formula-tree-group:not(.is-available),
+.sandbox-tree.is-builder-mode .formula-tree-group:not(.is-available) .formula-tree-node {
+    cursor: default;
+}
+
+.sandbox-tree .formula-tree-label {
+    font-size: 14px;
 }
 
 .sandbox-result {
@@ -558,6 +688,11 @@ body.progress-page {
 }
 
 @media (max-width: 600px) {
+    .study-toolbar,
+    .study-grid {
+        grid-template-columns: 1fr;
+    }
+
     .sandbox-page .study-page {
         padding-inline: 0;
     }
@@ -580,6 +715,19 @@ body.progress-page {
     .sandbox-actions {
         display: grid;
         grid-template-columns: 1fr;
+    }
+
+    .sandbox-tree-atom-controls {
+        grid-template-columns: 1fr;
+    }
+
+    .sandbox-tree-atom-controls .sandbox-action-button,
+    .sandbox-tree-builder > .sandbox-action-button {
+        width: 100%;
+    }
+
+    .sandbox-tree-operators {
+        grid-template-columns: repeat(5, minmax(40px, 1fr));
     }
 
     .sandbox-action-button {

@@ -25,11 +25,16 @@ function cssBlock(source, selector) {
 }
 
 test('global layout retains the visual spacing and typography of static cache v5', () => {
-    const page = cssBlock(base, 'html,\nbody{');
-    assert.match(page, /height:\s*100%/);
+    const root = cssBlock(base, 'html {');
+    const page = cssBlock(base, 'body{');
+    assert.match(root, /min-height:\s*100%/);
+    assert.match(root, /margin:\s*0/);
+    assert.match(root, /padding:\s*0/);
+    assert.match(page, /min-height:\s*100%/);
     assert.match(page, /margin:\s*15px/);
     assert.match(page, /padding:\s*4vh 18%/);
     assert.match(page, /text-align:\s*justify/);
+    assert.match(page, /overflow-wrap:\s*anywhere/);
     assert.match(page, /font-family:\s*"JetBrains Mono"/);
     assert.doesNotMatch(base, /--font-sans:/);
 
@@ -37,6 +42,17 @@ test('global layout retains the visual spacing and typography of static cache v5
     assert.match(emphasis, /display:\s*block/);
     assert.match(emphasis, /text-align:\s*center/);
     assert.match(emphasis, /color:\s*var\(--box-title\)/);
+});
+
+test('mobile typography wraps within the viewport without duplicating page spacing', () => {
+    const mobileStart = components.indexOf('@media (max-width: 700px)');
+    const mobile = components.slice(mobileStart);
+    assert.ok(mobileStart >= 0);
+    assert.match(mobile, /body\s*\{[\s\S]*?margin:\s*0;[\s\S]*?text-align:\s*left/);
+    assert.match(mobile, /h1\s*\{[\s\S]*?font-size:\s*1\.3em/);
+    assert.match(mobile, /h2,[\s\S]*?h3\s*\{[\s\S]*?font-size:\s*1em/);
+    assert.match(mobile, /legend\s*\{[\s\S]*?overflow-wrap:\s*anywhere/);
+    assert.match(mobile, /body > #main-content\s*\{[\s\S]*?padding-top:\s*52px/);
 });
 
 test('global palette and common surfaces match the v5 visual baseline', () => {
@@ -62,10 +78,16 @@ test('settings and navigation retain the v5 placement', () => {
     assert.match(settings, /right:\s*16px/);
     assert.match(settings, /min-width:\s*56px/);
 
+    const modal = cssBlock(components, '.settings-modal {');
+    assert.match(modal, /max-height:\s*calc\(100dvh - 32px\)/);
+    assert.match(modal, /overflow-y:\s*auto/);
+    assert.match(cssBlock(components, '.settings-actions {'), /flex-wrap:\s*wrap/);
+
     const navigation = cssBlock(components, '.lesson-nav {');
     assert.match(navigation, /position:\s*relative/);
-    assert.match(navigation, /display:\s*block/);
-    assert.match(cssBlock(components, '.lesson-nav-btn {'), /position:\s*absolute/);
+    assert.match(navigation, /display:\s*flex/);
+    assert.match(navigation, /flex-wrap:\s*wrap/);
+    assert.match(cssBlock(components, '.lesson-nav-btn {'), /position:\s*static/);
 });
 
 test('home and global bootstrap retain the v5 visual structure', () => {

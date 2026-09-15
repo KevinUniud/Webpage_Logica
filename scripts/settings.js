@@ -296,7 +296,7 @@ function initGlobalSettings() {
     feedbackDataInput.checked = privacyValues.anonymousFeedback;
     const feedbackDataLabel = document.createElement('label');
     feedbackDataLabel.setAttribute('for', feedbackDataInput.id);
-    feedbackDataLabel.textContent = 'Consenti invio feedback anonimo';
+    feedbackDataLabel.textContent = 'Consenti invio feedback senza nome o account';
     feedbackDataRow.appendChild(feedbackDataInput);
     feedbackDataRow.appendChild(feedbackDataLabel);
 
@@ -543,7 +543,7 @@ function initGlobalSettings() {
             });
         }
         privacyStatus.textContent = feedbackDataInput.checked
-            ? 'Invio feedback anonimo consentito.'
+            ? 'Invio feedback senza nome o account consentito.'
             : 'Invio feedback disattivato.';
     });
 
